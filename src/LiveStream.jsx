@@ -10,6 +10,8 @@ import { PixelStreamingWrapper } from './Components/PixelStreamingWrapper';
 // import { WebSocketService } from './websocketService';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 
+import MicrophoneStreamer from './Components/MicStreamer';
+
 
 const LiveStream = ({livestreamId }) => {
   const [messages, setMessages] = useState([]);
@@ -37,9 +39,12 @@ const LiveStream = ({livestreamId }) => {
       }
       console.log('Message: ', data);
       if (data.type === 'textout') {
-        console.log('Textout:  ', data);
         setMessages(prevMessages => [...prevMessages, { user: 'assistant', text: data.content }]);
       }
+
+      if (data.type === 'textin') {
+        setMessages(prevMessages => [...prevMessages, { user: 'You', text: data.content }]);
+      }      
       
     },
 
@@ -92,23 +97,7 @@ const LiveStream = ({livestreamId }) => {
           }}>
 
 
-
-            {/* <video 
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%'
-              }}
-              controls 
-              autoPlay 
-              muted
-            >
-              <source src="your-video-stream-url" type="video/mp4" />
-              Your browser does not support the video tag.
-            </video> */}
-      <PixelStreamingWrapper
+      {/* <PixelStreamingWrapper
             initialSettings={{
               ss: liveStreamUrl,
               AutoPlayVideo: true ,
@@ -128,7 +117,7 @@ const LiveStream = ({livestreamId }) => {
               width: '100%',
               // height: '100%'
             }}
-          />
+          /> */}
 
 
 
@@ -166,7 +155,13 @@ const LiveStream = ({livestreamId }) => {
               >
                 <SendFill />
               </Button>
+              <MicrophoneStreamer livestreamId={livestreamId} wsReadyState={readyState} sendMessage={sendMessage} ReadyState={ReadyState} />
             </Form.Group>
+
+            
+          
+
+
             <div className="text-end mt-1">
               <small className={readyState !== ReadyState.OPEN ? 'text-success' : 'text-danger'}>
                 {ReadyState.OPEN ? <Wifi /> : <WifiOff />}
