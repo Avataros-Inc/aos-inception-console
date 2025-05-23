@@ -7,7 +7,7 @@ import AccountSettings from './AccountSettings';
 import CharPage from './CharPage';
 import { getCharacters, getSessionToken, API_BASE_URL } from './postgrestAPI';
 import { RenderQueue } from './Renders';
-import ComingSoonCard from './Components/ComingSoon';
+import { ComingSoonCard, AlphaCard} from './Components/ComingSoon';
 import { Login, Register, ResetPassword} from './LoginRegister'
 import { jwtDecode } from 'jwt-decode';
 import ApiKeys from './ApiKeys';
@@ -113,7 +113,7 @@ const Sidebar = () => {
             <PersonBadge style={styles.navIcon} />
             Avatar Editor
           </Nav.Link>
-          <Nav.Link as={Link} to="/console/conversational-ai" style={styles.navLink}>
+          <Nav.Link as={Link} to="/console/trainer" style={styles.navLink}>
             <ChatSquareText style={styles.navIcon} />
             Avatar Trainer
           </Nav.Link>
@@ -183,12 +183,45 @@ const Sidebar = () => {
 
 // Home Page Component
 const HomePage = ({characters}) => {
+  const [apiStatus, setApiStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkApiHealth = async () => {
+      try {
+        const response = await fetch(API_BASE_URL);
+        if (response.ok) {
+          const data = await response.json();
+          setApiStatus(data);
+        } else {
+          setApiStatus({ status: 'unhealthy' });
+        }
+      } catch (error) {
+        setApiStatus({ status: 'error', message: error.message });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkApiHealth();
+  }, []);
+
   return (
     <div>
       <h2>Welcome to the AvatarOS Console</h2>
-                <div className="text-right mt-3">
-                  <small className="text-muted">Api: {API_BASE_URL}</small>
-                </div>
+      <div className="text-right mt-3">
+        <small className="text-muted">Api: {API_BASE_URL}</small>
+        {loading ? (
+          <Spinner animation="border" size="sm" />
+        ) : (
+          <div className="mt-2">
+            <small className="text-muted">
+              Status: {JSON.stringify(apiStatus)}
+            </small>
+          </div>
+        )}
+      </div>
+      <AlphaCard />
     </div>
   );
 };
@@ -235,11 +268,12 @@ const Console = () => {
           <Route path="/audio-to-avatar" element={<AudioToAvatar characters={characters} />} />
           <Route path="/scenes" element={<div><h2>My Scenes</h2><ComingSoonCard /></div>} />
           <Route path="/scene-editor" element={<div><h2>Scene Editor</h2><ComingSoonCard /></div>} />
+          <Route path="/trainer" element={<div><h2>Avatar Trainer</h2><ComingSoonCard /></div>} />
           <Route path="/renders" element={<RenderQueue characters={characters} />}  />
           <Route path="/videos" element={<div><h2>Videos</h2></div>} />
           <Route path="/conversational-ai" element={<LiveStreamPage characters={characters} />} />
           <Route path="/apikeys" element={<ApiKeys />} />
-          <Route path="/billing" element={<div><h2>Billing</h2></div>} />
+          <Route path="/billing" element={<div><h2>Billing</h2><ComingSoonCard /></div>} />
           <Route path="/account" element={<AccountSettings />} />
         </Routes>
       </div>
