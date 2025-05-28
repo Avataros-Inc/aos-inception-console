@@ -4,7 +4,9 @@ import { Container, Nav, Navbar, Button, Card, Form, Row, Col, Spinner } from 'r
 import TextToAvatar from './TextToAvatar';
 import AudioToAvatar from './AudioToAvatar';
 import AccountSettings from './AccountSettings';
+import Videos from  './Videos'
 import CharPage from './CharPage';
+import AssetFetcher from './AssetFetcher';
 import { getCharacters, getSessionToken, API_BASE_URL } from './postgrestAPI';
 import { RenderQueue } from './Renders';
 import { ComingSoonCard, AlphaCard} from './Components/ComingSoon';
@@ -270,11 +272,12 @@ const Console = () => {
           <Route path="/scene-editor" element={<div><h2>Scene Editor</h2><ComingSoonCard /></div>} />
           <Route path="/trainer" element={<div><h2>Avatar Trainer</h2><ComingSoonCard /></div>} />
           <Route path="/renders" element={<RenderQueue characters={characters} />}  />
-          <Route path="/videos" element={<div><h2>Videos</h2></div>} />
+          <Route path="/videos" element={<Videos characters={characters} />} />
           <Route path="/conversational-ai" element={<LiveStreamPage characters={characters} />} />
           <Route path="/apikeys" element={<ApiKeys />} />
           <Route path="/billing" element={<div><h2>Billing</h2><ComingSoonCard /></div>} />
           <Route path="/account" element={<AccountSettings />} />
+          <Route path="/fetch-asset/:org/:job/:filename" element={<AssetFetcher />} />
         </Routes>
       </div>
     </div>

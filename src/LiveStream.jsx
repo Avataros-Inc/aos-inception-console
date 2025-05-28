@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Container, Row, Col, Form, Button, Card, Spinner, Alert } from 'react-bootstrap';
 import { SendFill, Wifi, WifiOff, Broadcast } from 'react-bootstrap-icons';
-import { getRenderJob, insertRenderJob, getSessionToken, updateRenderJob } from './postgrestAPI';
+import { getRenderJob, insertRenderJob, getSessionToken, updateRenderJob, API_BASE_URL } from './postgrestAPI';
 import A2FConfigTab from './ConfigTabs/A2FConfigTab';
 import VisualConfigTab from './ConfigTabs/VisualConfigTab';
 import VoiceConfigTab from './ConfigTabs/VoiceConfigTab';
@@ -31,10 +31,12 @@ const LiveStream = ({ livestreamId }) => {
   const wsRef = useRef(null);
 
   // const socketUrl = 'http://192.168.4.118:8080/ws/'+livestreamId;
-  const socketUrl = 'ws://192.168.4.118:8082/ws';
+  // const socketUrl = 'ws://192.168.4.118:8082/ws';
+  const socketUrl = `${API_BASE_URL.replace('https:','wss:').replace('http:','ws:')}/ws`;
 
-  // const liveStreamUrl = `ws://192.168.4.118:8080/livestream?id=${livestreamId}`;
-  const liveStreamUrl = `ws://192.168.4.118:8080/livestream/${livestreamId}`;
+
+  // const liveStreamUrl = `ws://192.168.4.118:8080/livestream/${livestreamId}`;
+  const liveStreamUrl = `${API_BASE_URL.replace('https:','wss:').replace('http:','ws:')}/livestream/${livestreamId}`;
 
   const { sendMessage, lastMessage, readyState } = useWebSocket(socketUrl, {
     // protocols: [`auth-${getSessionToken()}`, "test"],

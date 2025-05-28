@@ -19,9 +19,14 @@ export const removeSession = () => {
   localStorage.removeItem('session');
 };
 
+export const getOrgId = () => {
+  const sessionObj = getSession();
+  return sessionObj?.org_id || null;
+};
+
 // Hardcoded authorization token (will be replaced with cookie-based auth later)
-// TODO: remove 
-const ORG_ID = 'd4f8d7e9-bbd5-4080-8149-451e56c18e61';
+// TODO: remove
+const ORG_ID = getOrgId();
 
 // Cache configuration
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
@@ -243,7 +248,7 @@ export const getRenderJob = async (jobId) => {
       headers:  {
          'Content-Type':  'application/json',
          'Authorization': `Bearer ${getSessionToken()}`,
-         'Prefer': 'return=representation' 
+         'Prefer': 'return=representation'
          }
        });
     if  (!response.ok)  {
@@ -315,7 +320,33 @@ export const getApiKeys = async () => {
   }
 };
 
-export const createApiKey = async ({ name, expires_at }) => { };
+export const createApiKey = async ({ name, expires_at }) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/apikeys`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getSessionToken()}`,
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({
+        name,
+        expires_at,
+        org_id: ORG_ID
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data; // Return the created API key
+  } catch (error) {
+    console.error('Error creating API key:', error);
+    throw error;
+  }
+};
 
 export const getPresignedUrl = async ({ fileName, fileType }) => {
   try {
@@ -343,13 +374,13 @@ export const checkVideoStatus = async (renderJobID) => {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${getSessionToken()}`,
-      }      
+      }
     });
-    
+
     if (!response.ok) {
       const retryAfter = response.headers.get('Retry-After') || '5';
       const errorData = await response.json();
-      
+
       return {
         error: errorData.error || errorData.message || 'Failed to fetch video',
         retryAfter: parseInt(retryAfter, 10),
@@ -357,7 +388,7 @@ export const checkVideoStatus = async (renderJobID) => {
         exists: errorData.exists || false
       };
     }
-    
+
     const data = await response.json();
     return { url: data.url, exists: true };
   } catch (err) {
@@ -368,6 +399,5 @@ export const checkVideoStatus = async (renderJobID) => {
     };
   }
 };
-
 
 

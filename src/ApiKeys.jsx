@@ -74,7 +74,7 @@ const ApiKeys = () => {
       });
 
       // Show the new key in modal
-      setNewKey(response.key); // Adjust based on your API response structure
+      setNewKey(response.apikey); // Adjust based on your API response structure
       setShowModal(true);
       
       // Refresh the keys list
