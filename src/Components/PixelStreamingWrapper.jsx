@@ -52,7 +52,7 @@ export const PixelStreamingWrapper = ({ initialSettings }) => {
         }
     }, []);
 
-    console.log('Pixel Streaming Wrapper', { pixelStreaming, clickToPlayVisible });
+    // console.log('Pixel Streaming Wrapper', { pixelStreaming, clickToPlayVisible });
 
     return (
         <div
@@ -62,7 +62,7 @@ export const PixelStreamingWrapper = ({ initialSettings }) => {
                 position: 'relative'
             }}
         >
-            <div
+            <div id="video-parent"
                 style={{
                     width: '100%',
                     height: '100%'

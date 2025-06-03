@@ -16,7 +16,7 @@ Object.defineProperty(String.prototype, 'capitalize', {
 
 const VisualConfigTab = ({ characters, updateConfig, config }) => {
 
-
+  const cameraPreset = config.camera?.preset || 'Preset1';
 
   return (
 
@@ -37,7 +37,7 @@ const VisualConfigTab = ({ characters, updateConfig, config }) => {
         <h6>Environment</h6>
         <div>
           <Form.Select aria-label="Select Environment" defaultValue={config.environment} onChange={(e) => updateConfig("environment", e.target.value)}>
-            <option value="Map_Env_Basic_01">Env_Basic_01</option>
+            {/* <option value="Map_Env_Basic_01">Env_Basic_01</option>
             <option value="Map_Env_Basic_02">Env_Basic_02</option>
             <option value="Map_Env_ltBrightCommercial_01">Env_ltBrightCommercial_01</option>
             <option value="Map_Env_ltCreepySpotlight_01">Env_ltCreepySpotlight_01</option>
@@ -49,30 +49,34 @@ const VisualConfigTab = ({ characters, updateConfig, config }) => {
             <option value="Map_Env_ltSoftLeftKey_01">Env_ltSoftLeftKey_01</option>
             <option value="Map_Env_ltWarmBackLight_01">Env_ltWarmBackLight_01</option>
             <option value="Map_Env_PPV-green_01">Env_PPV-green_01</option>
-            <option value="Map_Env_PPVandSphere_01">Env_PPVandSphere_01</option>
+            <option value="Map_Env_PPVandSphere_01">Env_PPVandSphere_01</option> */}
 
+              {/* FROM FLO */}
+            <option value="Map_Env_Basic_01">Env_Basic_01</option>
+            <option value="Map_Env_ltSubtleFrontLit">Env_ltSubtleFrontLit</option>
+            <option value="Map_Env_ltSideSoft_02">Env_ltSideSoft_02</option>
+            <option value="Map_Env_ltBalanced">Env_ltBalanced</option>
+            <option value="Map_Env_ltLoopLighting_02">Env_ltLoopLighting_02</option>
+            <option value="Map_Env_Basic_01">Env_Basic_01</option>
+            <option value="Map_Env_ltWarmBackLight_01">Env_ltWarmBackLight_01</option>
+            <option value="Map_Env_ltNaturalKeySoft">ltNaturalKeySoft</option>
+            <option value="Map_Env_ltHighLow">ltHighLow</option>
+            <option value="Map_Env_ltSubtleFrontLitBnW">Env_ltSubtleFrontLitBnW</option>
+            <option value="Map_Env_ltScaryLighting_01">Env_ltScaryLighting_01</option>
+            <option value="Map_Env_ltCreepySpotLight_01">Env_ltCreepySpotLight_01</option>
+            <option value="Map_Env_ltWarmNatural">Env_ltWarmNatural</option>
 
           </Form.Select>
         </div>
       </div>
 
       <div style={styles.settingGroup}>
-        <h6>Framing</h6>
+        <h6>Camera</h6>
         <div className="d-flex gap-2 mb-2">
-          <Button variant="outline-secondary" size="sm">Close-up</Button>
-          <Button variant="primary" size="sm">Medium</Button>
-          <Button variant="outline-secondary" size="sm">Wide</Button>
-        </div>
-      </div>
-
-      <div style={styles.settingGroup}>
-        <h6>Video Quality</h6>
-        <div style={styles.sliderContainer}>
-          <div style={styles.controlRow}>
-            <span>Low</span>
-            <span>High</span>
-          </div>
-          <Form.Range defaultValue={75} />
+          <Button variant={cameraPreset === 'Preset1' ? 'primary' : 'outline-secondary'} size="sm" onClick={() => updateConfig('camera', { preset: 'Preset1' })}>Preset1</Button>
+          <Button variant={cameraPreset === 'Preset2' ? 'primary' : 'outline-secondary'} size="sm" onClick={() => updateConfig('camera', { preset: 'Preset2' })}>Preset2</Button>
+          <Button variant={cameraPreset === 'Preset3' ? 'primary' : 'outline-secondary'} size="sm" onClick={() => updateConfig('camera', { preset: 'Preset3' })}>Preset3</Button>
+          <Button variant={cameraPreset === 'Preset4' ? 'primary' : 'outline-secondary'} size="sm" onClick={() => updateConfig('camera', { preset: 'Preset4' })}>Preset4</Button>
         </div>
       </div>
 

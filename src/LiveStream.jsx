@@ -11,6 +11,7 @@ import { PixelStreamingWrapper } from './Components/PixelStreamingWrapper';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 
 import MicrophoneStreamer from './Components/MicStreamer';
+import CameraControls from './Components/CameraControls';
 
 
 const handleEndSession = async (jobId) => {
@@ -32,11 +33,11 @@ const LiveStream = ({ livestreamId }) => {
 
   // const socketUrl = 'http://192.168.4.118:8080/ws/'+livestreamId;
   // const socketUrl = 'ws://192.168.4.118:8082/ws';
-  const socketUrl = `${API_BASE_URL.replace('https:','wss:').replace('http:','ws:')}/ws`;
+  const socketUrl = `${API_BASE_URL.replace('https:', 'wss:').replace('http:', 'ws:')}/ws`;
 
 
   // const liveStreamUrl = `ws://192.168.4.118:8080/livestream/${livestreamId}`;
-  const liveStreamUrl = `${API_BASE_URL.replace('https:','wss:').replace('http:','ws:')}/livestream/${livestreamId}`;
+  const liveStreamUrl = `${API_BASE_URL.replace('https:', 'wss:').replace('http:', 'ws:')}/livestream/${livestreamId}`;
 
   const { sendMessage, lastMessage, readyState } = useWebSocket(socketUrl, {
     // protocols: [`auth-${getSessionToken()}`, "test"],
@@ -94,7 +95,7 @@ const LiveStream = ({ livestreamId }) => {
   return (
     <Container fluid className="vh-100 p-0 d-flex flex-column">
       {/* Video Stream */}
-      <Row className="flex-grow-1 m-0 bg-dark" style={{ position: 'relative' }}>
+      <Row className="flex-grow-1 m-0" style={{ position: 'relative', width:  '100%', minHeight: '50vh'  }}>
         <Col className="p-0 d-flex justify-content-center">
           <div style={{
             width: '100%',
@@ -130,6 +131,10 @@ const LiveStream = ({ livestreamId }) => {
 
           </div>
         </Col>
+      </Row>
+      <Row className="" style={{ position: 'relative' }}>
+        {/* <h1>Camera controls</h1> */}
+        <CameraControls sendMessage={sendMessage} />
       </Row>
 
       {/* Chat Area */}
@@ -242,7 +247,7 @@ const LiveStreamPage = ({ characters }) => {
         setConfig(prev => {
           const newConfig = { ...prev };
           let current = newConfig;
-          
+
           for (let i = 0; i < keys.length - 1; i++) {
             const currentKey = keys[i];
             if (!current[currentKey]) {
@@ -250,7 +255,7 @@ const LiveStreamPage = ({ characters }) => {
             }
             current = current[currentKey];
           }
-          
+
           current[keys[keys.length - 1]] = value;
           return newConfig;
         });
@@ -283,7 +288,13 @@ const LiveStreamPage = ({ characters }) => {
     const checkLivestream = async () => {
       try {
         const renderjob = await getRenderJob(livestreamId);
-        if (renderjob.jobstatus === 1) {
+        if (renderjob === undefined) {
+          localStorage.removeItem('current_livestream');
+          window.location.reload();
+        } else if (renderjob.ended_at !== null) {
+          localStorage.removeItem('current_livestream');
+          window.location
+        } else if (renderjob.jobstatus === 1) {
           setStatus('ready');
         } else if (renderjob.jobstatus >= 6) {
           setLoadingMessage('Waiting streaming client')
@@ -355,9 +366,8 @@ const LiveStreamPage = ({ characters }) => {
         )}
 
         <pre>
-        {JSON.stringify(config, null, 2)}
+          {JSON.stringify(config, null, 2)}
         </pre>
-
 
       </div>
 
