@@ -52,19 +52,18 @@ const VisualConfigTab = ({ characters, updateConfig, config }) => {
             <option value="Map_Env_PPVandSphere_01">Env_PPVandSphere_01</option> */}
 
               {/* FROM FLO */}
-            <option value="Map_Env_Basic_01">Env_Basic_01</option>
-            <option value="Map_Env_ltSubtleFrontLit">Env_ltSubtleFrontLit</option>
-            <option value="Map_Env_ltSideSoft_02">Env_ltSideSoft_02</option>
-            <option value="Map_Env_ltBalanced">Env_ltBalanced</option>
-            <option value="Map_Env_ltLoopLighting_02">Env_ltLoopLighting_02</option>
-            <option value="Map_Env_Basic_01">Env_Basic_01</option>
-            <option value="Map_Env_ltWarmBackLight_01">Env_ltWarmBackLight_01</option>
-            <option value="Map_Env_ltNaturalKeySoft">ltNaturalKeySoft</option>
-            <option value="Map_Env_ltHighLow">ltHighLow</option>
-            <option value="Map_Env_ltSubtleFrontLitBnW">Env_ltSubtleFrontLitBnW</option>
-            <option value="Map_Env_ltScaryLighting_01">Env_ltScaryLighting_01</option>
-            <option value="Map_Env_ltCreepySpotLight_01">Env_ltCreepySpotLight_01</option>
-            <option value="Map_Env_ltWarmNatural">Env_ltWarmNatural</option>
+            <option value="Map_Env_ltSubtleFrontLit">Intimate</option>
+            <option value="Map_Env_ltSideSoft_02">Soft Side Light</option>
+            <option value="Map_Env_ltBalanced">Balanced</option>
+            <option value="Map_Env_ltLoopLighting_02">Loop Lighting</option>
+            <option value="Map_Env_Original_01">Original</option>
+            <option value="Map_Env_ltNaturalKeySoft">Natural Soft</option>
+            <option value="Map_Env_ltHighLow">Dark and Moody</option>
+            <option value="Map_Env_ltCreepySpotLight_01">Story Time</option>
+            <option value="Map_Env_ltWarmNatural">Warm Natural</option>
+            <option value="Map_Env_ltAudrey">Audrey's Lighting</option>
+
+          
 
           </Form.Select>
         </div>
