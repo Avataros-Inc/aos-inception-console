@@ -1,17 +1,38 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Mic, MicMute } from 'react-bootstrap-icons';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { Mic, MicMute, ChatDots } from 'react-bootstrap-icons';
 import { Button, Alert  } from 'react-bootstrap';
 
+import { useMicVAD } from "@ricky0123/vad-react"
 
-const MicrophoneStreamer = ({ livestreamId, wsReadyState, sendMessage, ReadyState }) => {
+const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }, ref) => {
     const [isRecording, setIsRecording] = useState(false);
     const [hasPermission, setHasPermission] = useState(null);
+    const [userTalking, setUserTalking] = useState(false);
+    const [AvatarTalking, setAvatarTalking] = useState(false);
+    const [muted, setMuted] = useState(true);
+    
     const mediaRecorderRef = useRef(null);
     const audioContextRef = useRef(null);
     const audioChunksRef = useRef([]);
     // const { sendMessage } = useWebSocket(`ws://192.168.4.118:8082/ws`, {
     //     share: true, // Share the existing WebSocket connection
     // });
+
+    const vad = useMicVAD({
+        // model: "v5",
+        // frameSamples: 512,
+        startOnLoad: false,
+        redemptionFrames: 8,
+        onSpeechRealStart: (audio) => {
+            setUserTalking(true);
+            startRecording();
+        },
+        onSpeechEnd: (audio) => {
+            setUserTalking(false);
+            stopRecording();
+        },
+    });
+
 
     const checkMicrophonePermission = async () => {
         try {
@@ -76,6 +97,37 @@ const MicrophoneStreamer = ({ livestreamId, wsReadyState, sendMessage, ReadyStat
         setIsRecording(false);
     };
 
+    const handleButton = () => {
+        if (AvatarTalking) {
+            sendMessage(JSON.stringify({ type: 'cmd', content: "audio=stop" }));
+            handleAvatarTalking(false);
+            return;
+        }
+
+        if (muted) {
+            vad.start();
+        } else {
+            vad.pause();
+        }
+        setMuted(!muted);
+
+    }
+
+    const handleAvatarTalking = (isTalking) => {
+        // console.log('isTalking', isTalking);
+        setAvatarTalking(isTalking);
+        if (isTalking) {
+            vad.pause();
+        } else if (!muted) {
+            vad.start();
+        }
+        
+    };
+
+    useImperativeHandle(ref, () => ({
+        handleAvatarTalking,
+      }));
+
     useEffect(() => {
         checkMicrophonePermission();
         return () => {
@@ -94,16 +146,18 @@ const MicrophoneStreamer = ({ livestreamId, wsReadyState, sendMessage, ReadyStat
     return (
         <div className="d-flex justify-content-center mb-2">
             <Button
-                variant={isRecording ? 'danger' : 'outline-primary'}
-                onClick={isRecording ? stopRecording : startRecording}
+                variant={userTalking ? 'danger' : 'outline-primary'}
+                onClick={handleButton}
                 disabled={wsReadyState !== ReadyState.OPEN || hasPermission === false}
             >
-                {isRecording ? <MicMute /> : <Mic />}
+                {muted ? <MicMute /> : <Mic />}
+                {AvatarTalking ? <ChatDots /> : ""}
                 {/* {isRecording ? ' Stop Mic' : ' Start Mic'} */}
             </Button>
+            {/* {AvatarTalking ? "yapping": "not yapping"} */}
         </div>
     );
-};
+});
 
 
 export default MicrophoneStreamer;

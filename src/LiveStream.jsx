@@ -27,9 +27,12 @@ const handleEndSession = async (jobId) => {
 const LiveStream = ({ livestreamId }) => {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
+  const [AvatarTalking, setAvatarTalking] = useState(false);
   const [status, setStatus] = useState('disconnected');
   const messagesEndRef = useRef(null);
   const wsRef = useRef(null);
+
+  const MicRef = useRef();
 
   // const socketUrl = 'http://192.168.4.118:8080/ws/'+livestreamId;
   // const socketUrl = 'ws://192.168.4.118:8082/ws';
@@ -54,9 +57,17 @@ const LiveStream = ({ livestreamId }) => {
       if (data.type === 'textout') {
         setMessages(prevMessages => [...prevMessages, { user: 'assistant', text: data.content }]);
       }
-
-      if (data.type === 'textin') {
+      else if (data.type === 'textin') {
         setMessages(prevMessages => [...prevMessages, { user: 'You', text: data.content }]);
+      }
+      else if (data.type === 'avatarTalking') {
+        setAvatarTalking(data.content);
+        if (MicRef.current) {
+          MicRef.current.handleAvatarTalking(data.content);
+        };
+      }
+      else {
+        console.log('Unknown message type: ', data);
       }
 
     },
@@ -115,7 +126,8 @@ const LiveStream = ({ livestreamId }) => {
                 KeyboardInput: true,
                 MouseInput: true,
                 TouchInput: false,
-                MatchViewportResolution: true
+                MatchViewportResolution: true,
+                ForceTurn: true
               }}
               style={{
                 position: 'absolute',
@@ -128,12 +140,11 @@ const LiveStream = ({ livestreamId }) => {
 
 
 
-
           </div>
         </Col>
       </Row>
       <Row className="" style={{ position: 'relative' }}>
-        {/* <h1>Camera controls</h1> */}
+        <h1>ForceTurn</h1>
         <CameraControls sendMessage={sendMessage} />
       </Row>
 
@@ -166,7 +177,7 @@ const LiveStream = ({ livestreamId }) => {
               >
                 <SendFill />
               </Button>
-              <MicrophoneStreamer livestreamId={livestreamId} wsReadyState={readyState} sendMessage={sendMessage} ReadyState={ReadyState} />
+              <MicrophoneStreamer ref={MicRef} wsReadyState={readyState} sendMessage={sendMessage} ReadyState={ReadyState} />
             </Form.Group>
 
 

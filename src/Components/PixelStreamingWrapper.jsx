@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
     Config,
     PixelStreaming
-} from '@epicgames-ps/lib-pixelstreamingfrontend-ue5.5';
+} from '@epicgames-ps/lib-pixelstreamingfrontend-ue5.4';
 
 export const PixelStreamingWrapper = ({ initialSettings }) => {
     // A reference to parent div element that the Pixel Streaming library attaches into:
