@@ -127,7 +127,7 @@ const LiveStream = ({ livestreamId }) => {
                 MouseInput: true,
                 TouchInput: false,
                 MatchViewportResolution: true,
-                ForceTurn: true
+                // ForceTurn: true
               }}
               style={{
                 position: 'absolute',
@@ -144,7 +144,7 @@ const LiveStream = ({ livestreamId }) => {
         </Col>
       </Row>
       <Row className="" style={{ position: 'relative' }}>
-        <h1>ForceTurn</h1>
+        <h2>{livestreamId}</h2>
         <CameraControls sendMessage={sendMessage} />
       </Row>
 
@@ -227,9 +227,11 @@ const LiveStreamPage = ({ characters }) => {
   const [livestreamId, setLivestreamId] = useState(null);
   const [loadingMessage, setLoadingMessage] = useState('Checking for existing livestream...');
 
+  const recheckTime = 500;
+
   const [config, setConfig] = useState({
     avatar: characters[0].id,
-    environment: 'Map_Env_Basic_01', //TODO
+    environment: 'Map_Env_Original_01', //TODO
     a2f_config: characters[0].a2f_config,
     voice_config: characters[0].voice_config,
     llm_config: characters[0].llm_config,
@@ -309,21 +311,21 @@ const LiveStreamPage = ({ characters }) => {
           setStatus('ready');
         } else if (renderjob.jobstatus >= 6) {
           setLoadingMessage('Waiting streaming client')
-          setTimeout(checkLivestream, 5000);
+          setTimeout(checkLivestream, recheckTime);
         } else if (renderjob.jobstatus >= 4 && renderjob.jobstatus < 6) {
           setLoadingMessage('Streaming finished');
           localStorage.removeItem('current_livestream');
           setStatus('needs_request');
         } else {
-          setTimeout(checkLivestream, 5000);
+          setTimeout(checkLivestream, recheckTime);
         }
       } catch (error) {
         console.error('Error checking livestream:', error);
-        setTimeout(checkLivestream, 5000);
+        setTimeout(checkLivestream, recheckTime);
       }
     };
 
-    const timer = setTimeout(checkLivestream, 1000);
+    const timer = setTimeout(checkLivestream, recheckTime);
     return () => clearTimeout(timer);
   }, [status, livestreamId]);
 
@@ -375,6 +377,8 @@ const LiveStreamPage = ({ characters }) => {
         {status !== 'needs_request' && (
           <Button onClick={() => handleEndSession(livestreamId)} variant="danger" size="sm">End Session</Button>
         )}
+
+        <h2>{livestreamId}</h2>
 
         <pre>
           {JSON.stringify(config, null, 2)}
