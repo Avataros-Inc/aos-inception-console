@@ -52,16 +52,16 @@ const VisualConfigTab = ({ characters, updateConfig, config }) => {
             <option value="Map_Env_PPVandSphere_01">Env_PPVandSphere_01</option> */}
 
               {/* FROM FLO */}
-            <option value="Map_Env_ltSubtleFrontLit">Intimate</option>
-            <option value="Map_Env_ltSideSoft_02">Soft Side Light</option>
-            <option value="Map_Env_ltBalanced">Balanced</option>
+            <option value="Map_Env_ltOliverDefault_v01">Oliver Lighting</option>
+            <option value="Map_Env_ltHardLight">Hard Lighting</option>
+            <option value="Map_Env_ltSideSoft_02">Soft Lighting</option>
+            <option value="Map_Env_ltStandard">Standard Lighting</option>
+            <option value="Map_Env_ltSubtleFrontLit">Intimate Lighting</option>
+            <option value="Map_Env_ltWarmNatural">Warm Lighting</option>
+            <option value="Map_Env_ltOriginal_01">Original Lighting</option>
+            <option value="Map_Env_ltCreepySpotlight_01">Story Time</option>
+            <option value="Map_Env_ltBalanced">Balanced Lighting</option>
             <option value="Map_Env_ltLoopLighting_02">Loop Lighting</option>
-            <option value="Map_Env_Original_01">Original</option>
-            <option value="Map_Env_ltNaturalKeySoft">Natural Soft</option>
-            <option value="Map_Env_ltHighLow">Dark and Moody</option>
-            <option value="Map_Env_ltCreepySpotLight_01">Story Time</option>
-            <option value="Map_Env_ltWarmNatural">Warm Natural</option>
-            <option value="Map_Env_ltAudrey">Audrey's Lighting</option>
 
           
 
