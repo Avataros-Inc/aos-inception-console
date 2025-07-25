@@ -1,9 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* AVATAROS Brand Colors and Theme Variables */
 :root {
-  /* AVATAROS Brand Colors */
   --bg-primary: #0f1419;
   --bg-secondary: #1a1f2e;
   --bg-sidebar: #0a0f14;
@@ -13,7 +11,6 @@
   --border-subtle: #2a2f3a;
   --border-focus: #74ecc7;
 
-  /* Standard theme variables for Bootstrap compatibility */
   --bs-primary: #74ecc7;
   --bs-secondary: #1a1f2e;
   --bs-success: #22c55e;
@@ -23,21 +20,21 @@
   --bs-light: #f8f9fa;
   --bs-dark: #0f1419;
 
-  /* Override Bootstrap's default CSS variables */
   --bs-body-bg: var(--bg-primary);
   --bs-body-color: var(--text-primary);
   --bs-border-color: var(--border-subtle);
 }
 
-/* Base styling overrides for AVATAROS theme */
 * {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
 }
 
 body {
   background-color: var(--bg-primary) !important;
   color: var(--text-primary) !important;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
   margin: 0;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -50,7 +47,8 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -59,8 +57,6 @@ code {
   font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
 }
 
-/* AVATAROS Component Classes for Bootstrap integration */
-/* Primary button styling with AVATAROS gradient */
 .btn-primary {
   background: linear-gradient(to right, #74ecc7, #10b981) !important;
   border-color: #74ecc7 !important;
@@ -87,9 +83,12 @@ code {
   opacity: 0.8;
 }
 
-/* Card styling */
 .card {
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, #1e2532 100%) !important;
+  background: linear-gradient(
+    135deg,
+    var(--bg-secondary) 0%,
+    #1e2532 100%
+  ) !important;
   border-color: var(--border-subtle) !important;
   border-radius: 0.75rem !important;
   transition: all 0.3s ease-out;
@@ -111,7 +110,6 @@ code {
   color: var(--text-primary) !important;
 }
 
-/* Form controls */
 .form-control,
 .form-select {
   background-color: var(--bg-secondary) !important;
@@ -132,7 +130,6 @@ code {
   font-weight: 500;
 }
 
-/* Table styling */
 .table {
   color: var(--text-primary) !important;
 }
@@ -143,7 +140,6 @@ code {
   --bs-table-border-color: var(--border-subtle);
 }
 
-/* Navigation styling */
 .navbar {
   background-color: var(--bg-sidebar) !important;
   border-bottom: 1px solid var(--border-subtle);
@@ -165,7 +161,6 @@ code {
   border-left: 4px solid var(--accent-mint) !important;
 }
 
-/* Alert styling */
 .alert-primary {
   background-color: rgba(116, 236, 199, 0.1) !important;
   border-color: var(--accent-mint) !important;
@@ -184,7 +179,6 @@ code {
   color: #4ade80 !important;
 }
 
-/* Badge styling */
 .badge {
   font-weight: 500;
 }
@@ -215,7 +209,6 @@ code {
   background-color: #3b82f6 !important;
 }
 
-/* Modal styling */
 .modal-content {
   background-color: var(--bg-secondary) !important;
   border-color: var(--border-subtle) !important;
@@ -229,7 +222,6 @@ code {
   border-top-color: var(--border-subtle) !important;
 }
 
-/* Special AVATAROS styling classes */
 .avataros-title {
   font-family: 'Montserrat', sans-serif;
   font-weight: 600;
@@ -253,8 +245,8 @@ code {
 .sidebar-glass {
   position: relative;
   border-radius: 0 12px 12px 0;
-  box-shadow: inset 1px 1px 2px rgba(116, 236, 199, 0.1), inset -1px -1px 2px rgba(0, 0, 0, 0.2),
-    2px 0 8px rgba(0, 0, 0, 0.3);
+  box-shadow: inset 1px 1px 2px rgba(116, 236, 199, 0.1),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.2), 2px 0 8px rgba(0, 0, 0, 0.3);
   border-right: 1px solid rgba(116, 236, 199, 0.2);
 }
 
@@ -265,7 +257,11 @@ code {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(116, 236, 199, 0.05) 0%, transparent 50%);
+  background: linear-gradient(
+    135deg,
+    rgba(116, 236, 199, 0.05) 0%,
+    transparent 50%
+  );
   pointer-events: none;
   border-radius: 0 12px 12px 0;
 }
@@ -284,7 +280,6 @@ code {
   border-left: 4px solid var(--accent-mint) !important;
 }
 
-/* Utility classes for text colors */
 .text-text-primary {
   color: var(--text-primary) !important;
 }
@@ -293,7 +288,6 @@ code {
   color: var(--text-secondary) !important;
 }
 
-/* Utility classes for spacing and layout */
 .p-4 {
   padding: 1.5rem !important;
 }
@@ -350,7 +344,6 @@ code {
   opacity: 0.5 !important;
 }
 
-/* Custom scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -369,7 +362,6 @@ code {
   background: var(--accent-mint);
 }
 
-/* Loading animations */
 @keyframes spin-slow {
   from {
     transform: rotate(0deg);
@@ -383,7 +375,6 @@ code {
   animation: spin-slow 3s linear infinite;
 }
 
-/* Mobile responsive adjustments */
 @media (max-width: 768px) {
   .sidebar-mobile {
     position: fixed;
