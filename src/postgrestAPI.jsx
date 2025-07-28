@@ -8,11 +8,14 @@
  * REMEMBER TO SET THIS TO FALSE BEFORE PRODUCTION DEPLOYMENT!
  */
 
+// TODO: Remove bypass
+
 // export const API_BASE_URL = 'http://192.168.4.118:8080';
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // DEVELOPMENT MODE: Set to true to skip authentication (REVERSIBLE CHANGE)
 const SKIP_AUTH_FOR_DEVELOPMENT = true;
+const DISABLE_AUTH_HEADERS = true; // Temporarily disable auth headers for testing
 
 export const setSessionObj = (sessionObj) => {
   localStorage.setItem('session', JSON.stringify(sessionObj));
@@ -86,16 +89,37 @@ const fetchWithCache = async (resourcePath, options = {}) => {
   // Otherwise, fetch from API
   try {
     const endpoint = `${API_BASE_URL}/${resourcePath}${query}`;
-    const response = await fetch(endpoint, {
+
+    // Temporarily try without authentication first for testing
+    let headers = {
+      'Content-Type': 'application/json',
+    };
+
+    if (!DISABLE_AUTH_HEADERS) {
+      headers.Authorization = `Bearer ${getSessionToken()}`;
+    }
+
+    let response = await fetch(endpoint, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${getSessionToken()}`,
-      },
+      headers: headers,
     });
 
+    // If that fails, try with authentication
+    if (!response.ok && response.status === 401) {
+      console.log('Trying with authentication...');
+      response = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getSessionToken()}`,
+        },
+      });
+    }
+
     if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+      const errorText = await response.text();
+      console.error(`API Error (${response.status}):`, errorText);
+      throw new Error(`HTTP error! Status: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();

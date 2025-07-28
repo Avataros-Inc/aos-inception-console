@@ -1,19 +1,6 @@
 import { useState } from 'react';
-import { useLocation } from 'wouter';
-import {
-  Home,
-  User,
-  Camera,
-  Play,
-  Code,
-  ChevronRight,
-  Settings,
-  CreditCard,
-  HelpCircle,
-  LogOut,
-  Menu,
-  X,
-} from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Home, User, Camera, Play, Code, ChevronRight, Settings, CreditCard, HelpCircle, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -22,15 +9,15 @@ const navItems = [
     key: 'home',
     label: 'Home',
     icon: Home,
-    path: '/',
+    path: '/console',
   },
   {
     key: 'characters',
     label: 'Characters',
     icon: User,
     subsections: [
-      { key: 'my-avatars', label: 'My Avatars', path: '/characters' },
-      { key: 'avatar-editor', label: 'Avatar Editor', path: '/avatar-editor' },
+      { key: 'my-avatars', label: 'Avatar Editor', path: '/console/characters' },
+      { key: 'avatar-trainer', label: 'Avatar Trainer', path: '/console/trainer' },
     ],
   },
   {
@@ -38,8 +25,8 @@ const navItems = [
     label: 'Scenes',
     icon: Camera,
     subsections: [
-      { key: 'my-scenes', label: 'My Scenes', path: '/scenes' },
-      { key: 'scene-editor', label: 'Scene Editor', path: '/scene-editor' },
+      { key: 'my-scenes', label: 'My Scenes', path: '/console/scenes' },
+      { key: 'scene-editor', label: 'Scene Editor', path: '/console/scene-editor' },
     ],
   },
   {
@@ -47,117 +34,97 @@ const navItems = [
     label: 'Playground',
     icon: Play,
     subsections: [
-      { key: 'text-to-avatar', label: 'Text to Avatar', path: '/text-to-avatar' },
-      { key: 'audio-to-avatar', label: 'Audio to Avatar', path: '/audio-to-avatar' },
-      { key: 'interactive-agent', label: 'Interactive Agent', path: '/conversational-ai' },
-    ],
-  },
-  {
-    key: 'developer',
-    label: 'Developer',
-    icon: Code,
-    subsections: [
-      { key: 'api-access', label: 'API Access', path: '/apikeys' },
-      { key: 'character-ids', label: 'Character IDs', path: '/characters' },
+      { key: 'text-to-avatar', label: 'Text to Avatar', path: '/console/text-to-avatar' },
+      { key: 'audio-to-avatar', label: 'Audio to Avatar', path: '/console/audio-to-avatar' },
+      { key: 'interactive-agent', label: 'Interactive Agent', path: '/console/conversational-ai' },
     ],
   },
 ];
 
 const settingsItems = [
-  { key: 'settings', label: 'Settings', icon: Settings, path: '/account' },
-  { key: 'billing', label: 'Billing', icon: CreditCard, path: '/billing' },
-  { key: 'help', label: 'Help & Support', icon: HelpCircle, path: '/help' },
-  { key: 'logout', label: 'Logout', icon: LogOut, path: '/logout' },
+  { key: 'renders', label: 'Render Queue', icon: Settings, path: '/console/renders' },
+  { key: 'videos', label: 'Videos', icon: CreditCard, path: '/console/videos' },
+  { key: 'apikeys', label: 'API Keys', icon: Code, path: '/console/apikeys' },
+  { key: 'billing', label: 'Billing', icon: CreditCard, path: '/console/billing' },
+  { key: 'account', label: 'Account', icon: LogOut, path: '/console/account' },
 ];
 
-export function Sidebar() {
-  const [location, setLocation] = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [expandedSections, setExpandedSections] = useState({
-    playground: true,
-  });
+export const Sidebar = () => {
+  const [expandedSections, setExpandedSections] = useState({});
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const handleSectionClick = (item) => {
     if (item.subsections) {
+      // Toggle expansion for sections with subsections
       setExpandedSections((prev) => ({
         ...prev,
         [item.key]: !prev[item.key],
       }));
     } else {
-      setLocation(item.path);
-      setSidebarOpen(false);
+      navigate(item.path);
     }
   };
 
+  // Helper function to check if a section is active
+  const isSectionActive = (item) => {
+    if (item.path && location.pathname === item.path) return true;
+    if (item.subsections) {
+      return item.subsections.some((sub) => location.pathname === sub.path);
+    }
+    return false;
+  };
+
   const handleSubsectionClick = (path) => {
-    setLocation(path);
-    setSidebarOpen(false);
+    navigate(path);
   };
 
   return (
-    <>
-      {/* Mobile menu button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="fixed top-4 left-4 z-50 lg:hidden"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
-        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-      </Button>
-
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          'fixed left-0 top-16 bottom-0 w-64 bg-bg-sidebar border-r border-border-subtle z-40 transition-transform duration-200 ease-in-out',
-          'lg:translate-x-0',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        )}
-      >
-        <div className="flex flex-col h-full">
-          {/* Logo/Brand */}
-          <div className="p-6 border-b border-border-subtle">
-            <h2 className="text-xl font-bold text-accent-mint">AVATAROS</h2>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2">
-            {navItems.map((item) => (
-              <div key={item.key}>
+    <aside className="fixed left-0 top-16 bottom-0 w-64 bg-sidebar/80 backdrop-blur-md z-50 sidebar-glass">
+      <div className="flex flex-col h-full">
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-1">
+          {navItems.map((item) => {
+            const isActive = isSectionActive(item);
+            return (
+              <div key={item.key} className="space-y-1">
                 <Button
                   variant="ghost"
                   className={cn(
-                    'w-full justify-start gap-3 text-left',
-                    location === item.path && 'bg-bg-secondary text-accent-mint'
+                    'w-full justify-start gap-3 text-left rounded-xl py-3 px-4 transition-all duration-300',
+                    'hover:bg-accent-mint/10 hover:text-white',
+                    isActive
+                      ? 'bg-accent-mint/20 text-accent-mint border-l-4 border-l-accent-mint'
+                      : 'text-slate-300 border-l-4 border-transparent'
                   )}
                   onClick={() => handleSectionClick(item)}
                 >
-                  <item.icon size={20} />
-                  <span className="flex-1">{item.label}</span>
+                  <item.icon size={20} className={cn(isActive ? 'text-accent-mint' : 'text-slate-300')} />
+                  <span className="flex-1 font-medium">{item.label}</span>
                   {item.subsections && (
                     <ChevronRight
                       size={16}
-                      className={cn('transition-transform', expandedSections[item.key] && 'rotate-90')}
+                      className={cn(
+                        'transition-transform duration-300',
+                        expandedSections[item.key] && 'rotate-90',
+                        isActive ? 'text-accent-mint' : 'text-slate-300'
+                      )}
                     />
                   )}
                 </Button>
 
                 {/* Subsections */}
                 {item.subsections && expandedSections[item.key] && (
-                  <div className="ml-8 mt-2 space-y-1">
+                  <div className="ml-4 mt-1 space-y-1 pl-2">
                     {item.subsections.map((sub) => (
                       <Button
                         key={sub.key}
                         variant="ghost"
                         size="sm"
                         className={cn(
-                          'w-full justify-start text-text-secondary hover:text-text-primary',
-                          location === sub.path && 'text-accent-mint bg-bg-secondary'
+                          'w-full justify-start text-sm rounded-lg py-2 px-3 transition-all duration-300',
+                          'hover:bg-accent-mint/10 hover:text-white',
+                          location.pathname === sub.path ? 'text-accent-mint bg-accent-mint/20' : 'text-slate-400'
                         )}
                         onClick={() => handleSubsectionClick(sub.path)}
                       >
@@ -167,28 +134,34 @@ export function Sidebar() {
                   </div>
                 )}
               </div>
-            ))}
-          </nav>
+            );
+          })}
+        </nav>
 
-          {/* Settings section */}
-          <div className="p-4 border-t border-border-subtle space-y-2">
-            {settingsItems.map((item) => (
-              <Button
-                key={item.key}
-                variant="ghost"
-                className={cn(
-                  'w-full justify-start gap-3',
-                  location === item.path && 'bg-bg-secondary text-accent-mint'
-                )}
-                onClick={() => handleSubsectionClick(item.path)}
-              >
-                <item.icon size={20} />
-                {item.label}
-              </Button>
-            ))}
-          </div>
+        {/* Settings section */}
+        <div className="p-4 border-t border-border-subtle space-y-2">
+          {settingsItems.map((item) => (
+            <Button
+              key={item.key}
+              variant="ghost"
+              className={cn(
+                'w-full justify-start gap-3 rounded-xl py-3 px-4 transition-all duration-300',
+                'hover:bg-accent-mint/10 hover:text-white',
+                location.pathname === item.path
+                  ? 'bg-accent-mint/20 text-accent-mint border-l-4 border-l-accent-mint'
+                  : 'text-slate-300 border-l-4 border-transparent'
+              )}
+              onClick={() => handleSubsectionClick(item.path)}
+            >
+              <item.icon
+                size={20}
+                className={cn(location.pathname === item.path ? 'text-accent-mint' : 'text-slate-300')}
+              />
+              <span className="font-medium">{item.label}</span>
+            </Button>
+          ))}
         </div>
-      </aside>
-    </>
+      </div>
+    </aside>
   );
-}
+};

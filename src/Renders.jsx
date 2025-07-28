@@ -1,20 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import Table from 'react-bootstrap/Table';
-import Button from 'react-bootstrap/Button';
-import Spinner from 'react-bootstrap/Spinner';
-import Badge from 'react-bootstrap/Badge';
-import Card from 'react-bootstrap/Card';
 import { getRenderJobs, cancelRenderJob, retryRenderJob } from './postgrestAPI';
-import { Tv, Play, Stop, ArrowClockwise, Clock } from 'react-bootstrap-icons';
+import { MonitorPlay, Play, Square, RotateCcw, Clock, Loader2 } from 'lucide-react';
 
 // Status mapping object
 const JOB_STATUS = {
-  0: { text: 'Unknown', variant: 'secondary', icon: Clock },
-  1: { text: 'Active', variant: 'primary', icon: Play },
-  2: { text: 'Suspended', variant: 'warning', icon: Stop },
-  3: { text: 'Completed', variant: 'success', icon: Tv },
-  4: { text: 'Failed', variant: 'danger', icon: Stop },
-  6: { text: 'Pending', variant: 'info', icon: Clock },
+  0: { text: 'Unknown', variant: 'secondary', icon: Clock, bgColor: 'bg-slate-500', textColor: 'text-slate-100' },
+  1: { text: 'Active', variant: 'primary', icon: Play, bgColor: 'bg-blue-500', textColor: 'text-blue-100' },
+  2: { text: 'Suspended', variant: 'warning', icon: Square, bgColor: 'bg-yellow-500', textColor: 'text-yellow-100' },
+  3: { text: 'Completed', variant: 'success', icon: MonitorPlay, bgColor: 'bg-green-500', textColor: 'text-green-100' },
+  4: { text: 'Failed', variant: 'danger', icon: Square, bgColor: 'bg-red-500', textColor: 'text-red-100' },
+  6: { text: 'Pending', variant: 'info', icon: Clock, bgColor: 'bg-cyan-500', textColor: 'text-cyan-100' },
 };
 
 export const RenderQueue = () => {
@@ -67,62 +62,57 @@ export const RenderQueue = () => {
 
   if (loading) {
     return (
-      <div
-        className="d-flex flex-column align-items-center justify-content-center"
-        style={{ minHeight: '400px' }}
-      >
-        <Spinner
-          animation="border"
-          role="status"
-          style={{ color: 'var(--accent-mint)' }}
-        >
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
-        <p className="mt-3 text-text-secondary">Loading render jobs...</p>
+      <div className="flex flex-col items-center justify-center min-h-96">
+        <Loader2 className="animate-spin text-emerald-400 mb-3" size={32} />
+        <p className="text-slate-400">Loading render jobs...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="alert alert-danger glass-effect">
-        <h5 className="d-flex align-items-center">
-          <Tv className="me-2" />
+      <div className="bg-red-900/20 border border-red-700/50 rounded-xl p-6">
+        <h5 className="flex items-center text-red-400 font-semibold mb-3">
+          <MonitorPlay className="mr-2" size={20} />
           Error Loading Render Queue
         </h5>
-        <p className="mb-3">{error}</p>
-        <Button variant="primary" onClick={fetchJobs}>
+        <p className="text-red-300 mb-4">{error}</p>
+        <button
+          onClick={fetchJobs}
+          className="bg-gradient-to-r from-emerald-400 to-green-500 text-slate-900 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-emerald-400/25 transition-all duration-300"
+        >
           Retry
-        </Button>
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="p-4">
-      <div className="mb-4">
-        <h2 className="gradient-text mb-2">Render Queue</h2>
-        <p className="text-text-secondary">
-          Monitor and manage your avatar rendering jobs
-        </p>
+    <div className="p-6">
+      <div className="mb-6">
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-green-500 bg-clip-text text-transparent mb-2">
+          Render Queue
+        </h2>
+        <p className="text-slate-400">Monitor and manage your avatar rendering jobs</p>
       </div>
 
-      <Card className="glass-effect">
-        <Card.Header>
-          <Card.Title className="d-flex align-items-center mb-0">
-            <Tv className="me-2" style={{ color: 'var(--accent-mint)' }} />
+      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden">
+        <div className="border-b border-slate-700/50 p-4">
+          <h3 className="flex items-center text-white font-semibold">
+            <MonitorPlay className="mr-2 text-emerald-400" size={20} />
             Active Render Jobs
-          </Card.Title>
-        </Card.Header>
-        <Card.Body className="p-0">
-          <Table hover className="table-dark mb-0">
+          </h3>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
             <thead>
-              <tr>
-                <th>#</th>
-                <th>Job Type</th>
-                <th>Status</th>
-                <th>Created</th>
-                <th>Actions</th>
+              <tr className="border-b border-slate-700/50">
+                <th className="text-left p-4 text-slate-300 font-medium">#</th>
+                <th className="text-left p-4 text-slate-300 font-medium">Job Type</th>
+                <th className="text-left p-4 text-slate-300 font-medium">Status</th>
+                <th className="text-left p-4 text-slate-300 font-medium">Created</th>
+                <th className="text-left p-4 text-slate-300 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -131,51 +121,43 @@ export const RenderQueue = () => {
                 const IconComponent = status.icon;
 
                 return (
-                  <tr key={job.id}>
-                    <td>
-                      <span className="fw-medium">#{index + 1}</span>
+                  <tr key={job.id} className="border-b border-slate-700/30 hover:bg-slate-700/20 transition-colors">
+                    <td className="p-4">
+                      <span className="font-medium text-white">#{index + 1}</span>
                     </td>
-                    <td>
-                      <div className="fw-semibold">{job.jobtype}</div>
+                    <td className="p-4">
+                      <div className="font-semibold text-white">{job.jobtype}</div>
                     </td>
-                    <td>
-                      <Badge
-                        bg={status.variant}
-                        className="d-flex align-items-center gap-1"
-                        style={{ width: 'fit-content' }}
+                    <td className="p-4">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${status.bgColor} ${status.textColor}`}
                       >
-                        <IconComponent size={14} />
+                        <IconComponent size={12} />
                         {status.text}
-                      </Badge>
+                      </span>
                     </td>
-                    <td>
-                      <small className="text-text-secondary">
-                        {new Date(job.created_at).toLocaleString()}
-                      </small>
+                    <td className="p-4">
+                      <span className="text-sm text-slate-400">{new Date(job.created_at).toLocaleString()}</span>
                     </td>
-                    <td>
+                    <td className="p-4">
                       {job.jobstatus < 3 ? (
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
+                        <button
                           onClick={() => handleCancel(job.id)}
                           disabled={job.jobstatus === 0}
-                          className="d-flex align-items-center gap-1"
+                          className="inline-flex items-center gap-1 px-3 py-1 text-sm border border-red-500 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <Stop size={14} />
+                          <Square size={12} />
                           Cancel
-                        </Button>
+                        </button>
                       ) : (
-                        <Button
-                          variant="outline-primary"
-                          size="sm"
+                        <button
                           onClick={() => handleRetry(job.id)}
                           disabled={job.jobstatus === 3}
-                          className="d-flex align-items-center gap-1"
+                          className="inline-flex items-center gap-1 px-3 py-1 text-sm border border-emerald-500 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <ArrowClockwise size={14} />
+                          <RotateCcw size={12} />
                           Retry
-                        </Button>
+                        </button>
                       )}
                     </td>
                   </tr>
@@ -183,22 +165,18 @@ export const RenderQueue = () => {
               })}
               {jobs.length === 0 && (
                 <tr>
-                  <td colSpan="5" className="text-center py-4">
-                    <div className="text-text-secondary">
-                      <Tv
-                        size={32}
-                        className="mb-2 d-block mx-auto opacity-50"
-                      />
-                      No render jobs found. Start creating content to see jobs
-                      here.
+                  <td colSpan="5" className="text-center py-8">
+                    <div className="text-slate-400">
+                      <MonitorPlay size={48} className="mb-3 mx-auto opacity-50" />
+                      <p>No render jobs found. Start creating content to see jobs here.</p>
                     </div>
                   </td>
                 </tr>
               )}
             </tbody>
-          </Table>
-        </Card.Body>
-      </Card>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };

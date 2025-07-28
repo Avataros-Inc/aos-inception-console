@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { JsonEditor } from 'json-edit-react'
+import { JsonEditor } from 'json-edit-react';
 import { updateCharacter, API_BASE_URL, getSessionToken, getSession } from './postgrestAPI';
 import { Form, Button, Card, Alert } from 'react-bootstrap';
 
@@ -16,8 +16,6 @@ const styles = {
   },
 };
 
-
-
 const CharCreator = () => {
   const [newChar, setNewChar] = useState({
     name: '',
@@ -25,7 +23,7 @@ const CharCreator = () => {
     llm_config: '{}',
     voice_config: '{}',
     a2f_config: '{}',
-    available: false
+    available: false,
   });
 
   const [error, setError] = useState(null);
@@ -33,7 +31,6 @@ const CharCreator = () => {
 
   const createCharacter = async (characterData) => {
     try {
-
       setError(null);
       setSuccess(null);
 
@@ -43,7 +40,6 @@ const CharCreator = () => {
         JSON.parse(characterData[field]); // Will throw if invalid
       }
 
-      
       characterData.creator_id = getSession().org_id;
       console.log(characterData);
 
@@ -51,10 +47,10 @@ const CharCreator = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getSessionToken()}`,
-          'Prefer': 'return=representation'
+          Authorization: `Bearer ${getSessionToken()}`,
+          Prefer: 'return=representation',
         },
-        body: JSON.stringify(characterData)
+        body: JSON.stringify(characterData),
       });
 
       if (!response.ok) {
@@ -88,7 +84,7 @@ const CharCreator = () => {
         llm_config: '{}',
         voice_config: '{}',
         a2f_config: '{}',
-        available: false
+        available: false,
       });
     } catch (error) {
       setError(error.message);
@@ -97,21 +93,19 @@ const CharCreator = () => {
 
   return (
     <div>
-
       <Card className="mt-4">
         <Card.Header>Create New Avatar</Card.Header>
         <Card.Body>
-
-        {error && (
-        <Alert variant="danger" onClose={() => setError(null)} dismissible>
-          {error}
-        </Alert>
-      )}
-      {success && (
-        <Alert variant="success" onClose={() => setSuccess(null)} dismissible>
-          {success}
-        </Alert>
-      )}
+          {error && (
+            <Alert variant="danger" onClose={() => setError(null)} dismissible>
+              {error}
+            </Alert>
+          )}
+          {success && (
+            <Alert variant="success" onClose={() => setSuccess(null)} dismissible>
+              {success}
+            </Alert>
+          )}
 
           <Form>
             <Form.Group className="mb-3">
@@ -155,120 +149,114 @@ const CharCreator = () => {
   );
 };
 
-
 const CharPage = ({ cachedCharacters = [] }) => {
   const [characters, setcharacters] = useState(null);
   useEffect(() => {
     async function fetchCharacters() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/characters`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getSessionToken()}`
+      try {
+        const response = await fetch(`${API_BASE_URL}/characters`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${getSessionToken()}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
         }
-      });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+        const data = await response.json();
+        setcharacters(data || []);
+      } catch (error) {
+        console.error(`Error getting characters:`, error);
       }
-
-      const data = await response.json();
-      setcharacters(data || []);
-
-    } catch (error) {
-      console.error(`Error getting characters:`, error);
     }
-  }
 
-  fetchCharacters();
-
+    fetchCharacters();
   }, []);
 
   const handleJsonUpdate = async (id, key, data) => {
     console.log('handleJsonUpdate', id, key);
     console.log('handleJsonUpdate', data.newData);
     try {
-    // TODO: catch errors
-    updateCharacter(id, key, data.newData);
+      // TODO: catch errors
+      updateCharacter(id, key, data.newData);
 
-    setcharacters(prevChars => 
-      prevChars.map(char => 
-        char.id === id ? { ...char, [key]: data.newData } : char
-      ));
-
+      setcharacters((prevChars) => prevChars.map((char) => (char.id === id ? { ...char, [key]: data.newData } : char)));
     } catch (error) {
       console.error('Error updating character:', error);
     }
-
   };
 
   return (
     <div>
       <h2>Avatar Editor</h2>
 
-      {Array.isArray(characters) && characters.map(character => (
-        <div
-          key={character.id}
-          className="border rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
-        >
-          <h3 className="text-lg font-semibold">{character.name}</h3>
-          <div className="mt-2">
-            <p className="text-gray-600 text-sm">ID: {character.id}</p>
+      <div className="flex flex-col gap-4">
+        {Array.isArray(characters) &&
+          characters.map((character) => (
+            <div
+              key={character.id}
+              className="border rounded-lg p-4 hover:shadow-md transition-shadow duration-200 w-full"
+            >
+              <h3 className="text-lg font-semibold">{character.name}</h3>
+              <div className="mt-2 flex flex-col gap-[5px]">
+                <p className="text-gray-600 text-sm">ID: {character.id}</p>
 
-            {/* Add more character details here as needed */}
-            {Object.entries(character)
-              .filter(([key]) => !['id'].includes(key))
-              .map(([key, value]) => {
-                const renderField = () => {
-                  switch (typeof value) {
-                    case 'object':
-                      return (
-                        <JsonEditor
-                          data={value}
-                          collapse={true}
-                          rootName={key}
-                          onUpdate={(data) => handleJsonUpdate(character.id, key, data)}
-                        />
-                      );
-                    case 'boolean':
-                      return (
-                        <Form.Check
-                          type="switch"
-                          id={`${character.id}-${key}`}
-                          label={key}
-                          checked={value}
-                          onChange={(e) => handleJsonUpdate(character.id, key, { newData: e.target.checked })}
-                          className="mb-2"
-                        />
-                      );
-                    default:
-                      return (
-                        <div>
-                          <span className="font-medium">{key}: </span>
-                          <span className="font-medium">
-                            <input
-                              style={styles.voiceSelector}
-                              type="text"
-                              value={value.toString()}
-                              onChange={(e) => handleJsonUpdate(character.id, key, { newData: e.target.value })}
+                {/* Add more character details here as needed */}
+                {Object.entries(character)
+                  .filter(([key]) => !['id'].includes(key))
+                  .map(([key, value]) => {
+                    const renderField = () => {
+                      switch (typeof value) {
+                        case 'object':
+                          return (
+                            <JsonEditor
+                              data={value}
+                              collapse={true}
+                              rootName={key}
+                              onUpdate={(data) => handleJsonUpdate(character.id, key, data)}
                             />
-                          </span>
-                        </div>
-                      );
-                  }
-                };
+                          );
+                        case 'boolean':
+                          return (
+                            <Form.Check
+                              type="switch"
+                              id={`${character.id}-${key}`}
+                              label={key}
+                              checked={value}
+                              onChange={(e) => handleJsonUpdate(character.id, key, { newData: e.target.checked })}
+                              className="mb-2"
+                            />
+                          );
+                        default:
+                          return (
+                            <div>
+                              <span className="font-medium">{key}: </span>
+                              <span className="font-medium">
+                                <input
+                                  style={styles.voiceSelector}
+                                  type="text"
+                                  value={value.toString()}
+                                  onChange={(e) => handleJsonUpdate(character.id, key, { newData: e.target.value })}
+                                />
+                              </span>
+                            </div>
+                          );
+                      }
+                    };
 
-                return (
-                  <div key={key} className="text-sm">
-                    {renderField()}
-                  </div>
-                );
-              })
-            }
-          </div>
-        </div>
-      ))}
+                    return (
+                      <div key={key} className="text-sm">
+                        {renderField()}
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          ))}
+      </div>
 
       <CharCreator />
     </div>

@@ -1,28 +1,26 @@
-import { Bell, Search, User } from 'lucide-react';
+import { Bell, Search, User, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function Header() {
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-bg-secondary/95 backdrop-blur-sm border-b border-border-subtle z-50">
-      <div className="flex items-center justify-between h-full px-6">
-        {/* Left side - could add breadcrumbs or search */}
-        <div className="flex items-center gap-4">
-          <div className="lg:hidden">{/* Space for mobile menu button */}</div>
-          <h1 className="text-lg font-semibold text-text-primary hidden lg:block">Welcome to AvatarOS Console</h1>
+    <header className="bg-card/80 backdrop-blur-md h-16 flex items-center px-4 lg:px-6 fixed top-0 left-0 right-0 z-50 header-gradient">
+      <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-3">
+          <img src="/avataros-logo.png" alt="AVATAROS Logo" className="w-8 h-8 object-contain" />
+          <h1 className="text-xl font-bold text-white avataros-title">AVATAROS</h1>
         </div>
+      </div>
 
-        {/* Right side - user actions */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm">
-            <Search size={18} />
-          </Button>
-          <Button variant="ghost" size="sm">
-            <Bell size={18} />
-          </Button>
-          <Button variant="ghost" size="sm">
-            <User size={18} />
-          </Button>
-        </div>
+      <div className="flex items-center space-x-4">
+        <Button variant="ghost" size="sm">
+          <Search size={18} />
+        </Button>
+        <Button variant="ghost" size="sm">
+          <Bell size={18} />
+        </Button>
+        <Button variant="ghost" size="sm">
+          <User size={18} />
+        </Button>
       </div>
     </header>
   );
