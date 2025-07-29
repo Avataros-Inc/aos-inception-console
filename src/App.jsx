@@ -13,8 +13,8 @@ import { Login, Register, ResetPassword } from './LoginRegister';
 import { jwtDecode } from 'jwt-decode';
 import ApiKeys from './ApiKeys';
 import LiveStreamPage from './LiveStream';
-import { Sidebar } from './components/Sidebar';
-import { Header } from './components/Header';
+import { Sidebar } from './Components/Sidebar';
+import { Header } from './Components/Header';
 
 import {
   Home,

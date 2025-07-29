@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, User, Camera, Play, Code, ChevronRight, Settings, CreditCard, HelpCircle, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 
 const navItems = [
   {

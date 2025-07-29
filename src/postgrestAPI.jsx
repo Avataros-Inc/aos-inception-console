@@ -1,45 +1,16 @@
-/**
- * DEVELOPMENT AUTHENTICATION BYPASS
- * ==================================
- * To enable: Set SKIP_AUTH_FOR_DEVELOPMENT = true
- * To disable: Set SKIP_AUTH_FOR_DEVELOPMENT = false
- *
- * This allows testing all pages without going through the login flow.
- * REMEMBER TO SET THIS TO FALSE BEFORE PRODUCTION DEPLOYMENT!
- */
-
-// TODO: Remove bypass
-
 // export const API_BASE_URL = 'http://192.168.4.118:8080';
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-// DEVELOPMENT MODE: Set to true to skip authentication (REVERSIBLE CHANGE)
-const SKIP_AUTH_FOR_DEVELOPMENT = true;
-const DISABLE_AUTH_HEADERS = true; // Temporarily disable auth headers for testing
 
 export const setSessionObj = (sessionObj) => {
   localStorage.setItem('session', JSON.stringify(sessionObj));
 };
 
 export const getSession = () => {
-  if (SKIP_AUTH_FOR_DEVELOPMENT) {
-    // Return mock session for development
-    return {
-      user_id: 'dev-user-123',
-      org_id: 'dev-org-456',
-      token: 'dev-mock-token-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZXYtdXNlciIsImV4cCI6OTk5OTk5OTk5OX0.mock',
-      email: 'dev@example.com',
-    };
-  }
   const sessionStr = localStorage.getItem('session');
   return sessionStr ? JSON.parse(sessionStr) : null;
 };
 
 export const getSessionToken = () => {
-  if (SKIP_AUTH_FOR_DEVELOPMENT) {
-    // Return mock JWT token for development with far future expiration
-    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZXYtdXNlciIsImV4cCI6OTk5OTk5OTk5OSwiaWF0IjoxNjAwMDAwMDAwfQ.mock-signature';
-  }
   const sessionObj = getSession();
   return sessionObj?.token || null;
 };
@@ -89,37 +60,16 @@ const fetchWithCache = async (resourcePath, options = {}) => {
   // Otherwise, fetch from API
   try {
     const endpoint = `${API_BASE_URL}/${resourcePath}${query}`;
-
-    // Temporarily try without authentication first for testing
-    let headers = {
-      'Content-Type': 'application/json',
-    };
-
-    if (!DISABLE_AUTH_HEADERS) {
-      headers.Authorization = `Bearer ${getSessionToken()}`;
-    }
-
-    let response = await fetch(endpoint, {
+    const response = await fetch(endpoint, {
       method: 'GET',
-      headers: headers,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getSessionToken()}`
+      }
     });
 
-    // If that fails, try with authentication
-    if (!response.ok && response.status === 401) {
-      console.log('Trying with authentication...');
-      response = await fetch(endpoint, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getSessionToken()}`,
-        },
-      });
-    }
-
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`API Error (${response.status}):`, errorText);
-      throw new Error(`HTTP error! Status: ${response.status} - ${errorText}`);
+      throw new Error(`HTTP error! Status: ${response.status}`);
     }
 
     const data = await response.json();
@@ -127,7 +77,7 @@ const fetchWithCache = async (resourcePath, options = {}) => {
     // Update cache
     cache[cacheKey] = {
       data,
-      timestamp: now,
+      timestamp: now
     };
 
     return data;
@@ -144,10 +94,10 @@ const fetchWithCache = async (resourcePath, options = {}) => {
 export const invalidateCache = (resourcePath = null) => {
   if (resourcePath === null) {
     // Clear entire cache
-    Object.keys(cache).forEach((key) => delete cache[key]);
+    Object.keys(cache).forEach(key => delete cache[key]);
   } else {
     // Clear specific resource and its queries
-    Object.keys(cache).forEach((key) => {
+    Object.keys(cache).forEach(key => {
       if (key.startsWith(resourcePath)) {
         delete cache[key];
       }
@@ -196,7 +146,7 @@ export const invalidateCharacterCache = () => {
 export const updateCharacter = async (id, key, value) => {
   // Prepare the update payload with just the field to be updated
   const updateData = {
-    [key]: value,
+    [key]: value
   };
 
   try {
@@ -204,10 +154,10 @@ export const updateCharacter = async (id, key, value) => {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${getSessionToken()}`,
-        Prefer: 'return=representation', // Ask PostgresREST to return the updated record
+        'Authorization': `Bearer ${getSessionToken()}`,
+        'Prefer': 'return=representation' // Ask PostgresREST to return the updated record
       },
-      body: JSON.stringify(updateData),
+      body: JSON.stringify(updateData)
     });
 
     if (!response.ok) {
@@ -234,8 +184,8 @@ export const updateCharacter = async (id, key, value) => {
 export const insertRenderJob = async (jobtype, config, id = null) => {
   // Prepare the update payload with just the field to be updated
   const insertData = {
-    jobtype: jobtype,
-    config: config,
+    "jobtype": jobtype,
+    "config": config,
   };
   if (id !== null) {
     insertData['id'] = id;
@@ -246,10 +196,10 @@ export const insertRenderJob = async (jobtype, config, id = null) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${getSessionToken()}`,
-        Prefer: 'return=representation', // Ask PostgresREST to return the updated record
+        'Authorization': `Bearer ${getSessionToken()}`,
+        'Prefer': 'return=representation' // Ask PostgresREST to return the updated record
       },
-      body: JSON.stringify(insertData),
+      body: JSON.stringify(insertData)
     });
 
     if (!response.ok) {
@@ -258,12 +208,13 @@ export const insertRenderJob = async (jobtype, config, id = null) => {
 
     const insertedRenderJob = await response.json();
 
-    return insertedRenderJob[0]['id'];
+    return insertedRenderJob[0]["id"];
   } catch (error) {
     console.error(`Error inserting render job:`, error);
     throw error;
   }
 };
+
 
 // TODO: limit to last 30 or do pagination
 export const getRenderJobs = async () => {
@@ -272,9 +223,9 @@ export const getRenderJobs = async () => {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${getSessionToken()}`,
-        Prefer: 'return=representation', // Ask PostgresREST to return the updated record
-      },
+        'Authorization': `Bearer ${getSessionToken()}`,
+        'Prefer': 'return=representation' // Ask PostgresREST to return the updated record
+      }
     });
 
     if (!response.ok) {
@@ -291,24 +242,24 @@ export const getRenderJobs = async () => {
 };
 
 export const getRenderJob = async (jobId) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/renderjobs?id=eq.${jobId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${getSessionToken()}`,
-        Prefer: 'return=representation',
-      },
-    });
-    if (!response.ok) {
+  try  {
+    const response = await fetch(`${API_BASE_URL}/renderjobs?id=eq.${jobId}`,  {
+      method:  'GET',
+      headers:  {
+         'Content-Type':  'application/json',
+         'Authorization': `Bearer ${getSessionToken()}`,
+         'Prefer': 'return=representation'
+         }
+       });
+    if  (!response.ok)  {
       throw new Error(`HTTP error: ${response.status}`);
-    }
-    const renderjobs = await response.json();
+     }
+    const renderjobs  = await response.json();
     return renderjobs[0];
   } catch (error) {
     console.error('Error fetching render job:', error);
     throw error;
-  }
+   }
 };
 
 export const updateRenderJob = async (jobId, updates) => {
@@ -317,10 +268,10 @@ export const updateRenderJob = async (jobId, updates) => {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${getSessionToken()}`,
-        Prefer: 'return=representation',
+        'Authorization': `Bearer ${getSessionToken()}`,
+        'Prefer': 'return=representation'
       },
-      body: JSON.stringify(updates),
+      body: JSON.stringify(updates)
     });
 
     if (!response.ok) {
@@ -336,25 +287,25 @@ export const updateRenderJob = async (jobId, updates) => {
 };
 
 // Convenience functions using the generic update function
-export const cancelRenderJob = (jobId) => updateRenderJob(jobId, { jobstatus: 2 }); // Suspended
+export const cancelRenderJob = (jobId) =>
+  updateRenderJob(jobId, { jobstatus: 2 }); // Suspended
 
-export const retryRenderJob = (jobId) => updateRenderJob(jobId, { jobstatus: 0 }); // Unknown (or 6 for Pending)
+export const retryRenderJob = (jobId) =>
+  updateRenderJob(jobId, { jobstatus: 0 }); // Unknown (or 6 for Pending)
+
 
 export const getApiKeys = async () => {
   try {
     // ?select=*,org_users!fk_user_id(name,email)&org_id=eq.${ORG_ID}
     // ?org_id=eq.${ORG_ID}
-    const response = await fetch(
-      `${API_BASE_URL}/apikeys?select=*,org_users!fk_user_id(name,email)&org_id=eq.${ORG_ID}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getSessionToken()}`,
-          Prefer: 'return=representation', // Ask PostgresREST to return the updated record
-        },
+    const response = await fetch(`${API_BASE_URL}/apikeys?select=*,org_users!fk_user_id(name,email)&org_id=eq.${ORG_ID}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getSessionToken()}`,
+        'Prefer': 'return=representation' // Ask PostgresREST to return the updated record
       }
-    );
+    });
 
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
@@ -375,14 +326,14 @@ export const createApiKey = async ({ name, expires_at }) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${getSessionToken()}`,
-        Prefer: 'return=representation',
+        'Authorization': `Bearer ${getSessionToken()}`,
+        'Prefer': 'return=representation'
       },
       body: JSON.stringify({
         name,
         expires_at,
-        org_id: ORG_ID,
-      }),
+        org_id: ORG_ID
+      })
     });
 
     if (!response.ok) {
@@ -402,8 +353,8 @@ export const getPresignedUrl = async ({ fileName, fileType }) => {
     const response = await fetch(`${API_BASE_URL}/presigned?filename=${fileName}&contentType=${fileType}`, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${getSessionToken()}`,
-      },
+        'Authorization': `Bearer ${getSessionToken()}`,
+      }
     });
 
     if (!response.ok) {
@@ -422,8 +373,8 @@ export const checkVideoStatus = async (renderJobID) => {
     const response = await fetch(`${API_BASE_URL}/video/${renderJobID}`, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${getSessionToken()}`,
-      },
+        'Authorization': `Bearer ${getSessionToken()}`,
+      }
     });
 
     if (!response.ok) {
@@ -434,7 +385,7 @@ export const checkVideoStatus = async (renderJobID) => {
         error: errorData.error || errorData.message || 'Failed to fetch video',
         retryAfter: parseInt(retryAfter, 10),
         status: response.status,
-        exists: errorData.exists || false,
+        exists: errorData.exists || false
       };
     }
 
@@ -444,7 +395,9 @@ export const checkVideoStatus = async (renderJobID) => {
     return {
       error: 'Network error occurred',
       retryAfter: 5,
-      exists: false,
+      exists: false
     };
   }
 };
+
+

@@ -1,5 +1,5 @@
 import { Bell, Search, User, Key } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 
 export function Header() {
   return (
@@ -10,6 +10,8 @@ export function Header() {
           <h1 className="text-xl font-bold text-white avataros-title">AVATAROS</h1>
         </div>
       </div>
+
+      <div className="flex-1"></div>
 
       <div className="flex items-center space-x-4">
         <Button variant="ghost" size="sm">
