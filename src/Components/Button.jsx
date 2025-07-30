@@ -6,7 +6,7 @@ export function Button({ children, variant = 'primary', size = 'md', className =
 
   const variants = {
     primary:
-      'bg-gradient-to-r from-accent-mint to-green-500 text-bg-primary hover:from-green-500 hover:to-accent-mint hover:shadow-lg hover:shadow-accent-mint/20',
+      'bg-gradient-to-r from-accent-mint to-emerald-600 text-bg-primary hover:from-emerald-600 hover:to-accent-mint hover:shadow-lg hover:shadow-accent-mint/20',
     secondary:
       'bg-bg-secondary text-text-primary border border-border-subtle hover:border-accent-mint hover:bg-bg-secondary/80',
     ghost: 'text-text-primary hover:bg-bg-secondary',

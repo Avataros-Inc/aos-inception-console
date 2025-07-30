@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Container, Spinner, Form, Table, Card, Button, Alert } from 'react-bootstrap';
+import { Spinner, Form, Alert } from 'react-bootstrap';
 import { API_BASE_URL, getSessionToken, getSession } from './postgrestAPI';
 import UpdatePassword from './Account/UpdatePassword';
 import OrgUsers from './Account/OrgUsers';
-import { PersonCircle, Shield, People } from 'react-bootstrap-icons';
+import { User, Shield, Users, Loader2 } from 'lucide-react';
+import { Button } from '@/Components/Button';
 
 const AccountSettings = () => {
   const [error, setError] = useState(null);
@@ -26,8 +27,9 @@ const AccountSettings = () => {
           setUserData(data[0]);
           setName(data[0].name);
         }
-      } catch (error) {
+      } catch (err) {
         setError('Failed to fetch user data');
+        console.error('Error fetching user data:', err);
       }
     };
     fetchUserData();
@@ -65,86 +67,85 @@ const AccountSettings = () => {
 
   if (!userData) {
     return (
-      <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '400px' }}>
-        <Spinner animation="border" role="status" style={{ color: 'var(--accent-mint)' }}>
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
-        <p className="mt-3 text-text-secondary">Loading account information...</p>
+      <div className="flex flex-col items-center justify-center min-h-96">
+        <Loader2 className="animate-spin text-emerald-600 mb-3" size={32} />
+        <p className="text-slate-400">Loading account information...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-4">
-      <div className="mb-4">
-        <h2 className="gradient-text mb-2">Account Settings</h2>
-        <p className="text-text-secondary">Manage your profile and organization settings</p>
+    <div>
+      <div className="mb-6">
+        <h2 className="gradient-text text-3xl font-bold mb-6">Account Settings</h2>
+        <p className="text-slate-400">Manage your profile and organization settings</p>
       </div>
 
       {/* Profile Section */}
-      <Card className="glass-effect mb-4">
-        <Card.Header>
-          <Card.Title className="d-flex align-items-center mb-0">
-            <PersonCircle className="me-2" style={{ color: 'var(--accent-mint)' }} />
+      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl mb-6">
+        <div className="border-b border-slate-700/50 p-4">
+          <h3 className="flex items-center text-emerald-400 font-semibold mb-0">
+            <User className="mr-2" size={20} />
             Profile Information
-          </Card.Title>
-        </Card.Header>
-        <Card.Body>
+          </h3>
+        </div>
+        <div className="p-6">
           {error && (
-            <Alert variant="danger" className="mb-3">
-              {error}
-            </Alert>
+            <div className="bg-red-900/20 border border-red-700/50 rounded-xl p-4 mb-4">
+              <p className="text-red-300 mb-0">{error}</p>
+            </div>
           )}
           {success && (
-            <Alert variant="success" className="mb-3">
-              {success}
-            </Alert>
+            <div className="bg-green-900/20 border border-green-700/50 rounded-xl p-4 mb-4">
+              <p className="text-green-300 mb-0">{success}</p>
+            </div>
           )}
 
           <Form onSubmit={handleProfileUpdate}>
-            <Form.Group className="mb-3">
-              <Form.Label>Display Name</Form.Label>
+            <Form.Group className="mb-4">
+              <Form.Label className="block text-slate-300 font-medium mb-2">Display Name</Form.Label>
               <Form.Control
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
                 placeholder="Enter your display name"
+                className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
               />
             </Form.Group>
-            <Button type="submit" variant="primary" disabled={isLoading} className="d-flex align-items-center gap-2">
-              {isLoading && <Spinner size="sm" />}
+            <Button type="submit" disabled={isLoading} className="flex items-center gap-2">
+              {isLoading && <Loader2 className="animate-spin" size={16} />}
               Update Profile
             </Button>
           </Form>
-        </Card.Body>
-      </Card>
+        </div>
+      </div>
 
       {/* Password Section */}
-      <Card className="glass-effect mb-4">
-        <Card.Header>
-          <Card.Title className="d-flex align-items-center mb-0">
-            <Shield className="me-2" style={{ color: 'var(--accent-mint)' }} />
+      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl mb-6">
+        <div className="border-b border-slate-700/50 p-4">
+          <h3 className="flex items-center text-emerald-400 font-semibold mb-0">
+            <Shield className="mr-2" size={20} />
             Security
-          </Card.Title>
-        </Card.Header>
-        <Card.Body>
+          </h3>
+        </div>
+        <div className="p-6">
           <UpdatePassword />
-        </Card.Body>
-      </Card>
+        </div>
+      </div>
 
       {/* Organization Users Section */}
-      <Card className="glass-effect">
-        <Card.Header>
-          <Card.Title className="d-flex align-items-center mb-0">
-            <People className="me-2" style={{ color: 'var(--accent-mint)' }} />
+      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl">
+        <div className="border-b border-slate-700/50 p-4">
+          <h3 className="flex items-center text-emerald-400 font-semibold mb-0">
+            <Users className="mr-2" size={20} />
             Organization Users
-          </Card.Title>
-        </Card.Header>
-        <Card.Body>
+          </h3>
+        </div>
+        <div className="p-6">
           <OrgUsers />
-        </Card.Body>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

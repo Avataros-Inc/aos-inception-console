@@ -1,5 +1,5 @@
 import { Bell, Search, User, Key } from 'lucide-react';
-import { Button } from '@/Components/ui/button';
+import { Button } from '@/Components/Button';
 
 export function Header() {
   return (
@@ -13,7 +13,7 @@ export function Header() {
 
       <div className="flex-1"></div>
 
-      <div className="flex items-center space-x-4">
+      {/* <div className="flex items-center space-x-4">
         <Button variant="ghost" size="sm">
           <Search size={18} />
         </Button>
@@ -23,7 +23,7 @@ export function Header() {
         <Button variant="ghost" size="sm">
           <User size={18} />
         </Button>
-      </div>
+      </div> */}
     </header>
   );
 }

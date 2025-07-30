@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Container, Card, Table, Button, Modal, Form, Alert, Spinner, Badge } from 'react-bootstrap';
+import { Container, Card, Table, Modal, Form, Alert, Spinner, Badge } from 'react-bootstrap';
 import { API_BASE_URL, getSessionToken, getSession } from './postgrestAPI';
+import { Button } from '@/Components/Button';
 
 const ApiKeys = () => {
   const [apiKeys, setApiKeys] = useState([]);
@@ -131,34 +132,39 @@ const ApiKeys = () => {
   };
 
   return (
-    <Container fluid className="p-4">
+    <Container fluid>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h1 className="gradient-text mb-2">API Keys</h1>
+          <h1 className="gradient-text text-3xl font-bold mb-6">API Keys</h1>
           <p className="text-light-gray mb-0">Manage your API keys for programmatic access to AVATAROS services</p>
         </div>
-        <Button variant="outline-light" className="btn-modern" onClick={() => setShowModal(true)} disabled={loading}>
+        <Button variant="secondary" className="btn-modern" onClick={() => setShowModal(true)} disabled={loading}>
           Create New Key
         </Button>
       </div>
 
       {error && (
-        <Alert variant="danger" className="glass-effect mb-4" onClose={() => setError(null)} dismissible>
+        <Alert variant="danger" className="glass-effect mb-4 p-2 rounded-sm" onClose={() => setError(null)} dismissible>
           {error}
         </Alert>
       )}
 
       {success && (
-        <Alert variant="success" className="glass-effect mb-4" onClose={() => setSuccess(null)} dismissible>
+        <Alert
+          variant="success"
+          className="glass-effect mb-4 p-2 rounded-sm"
+          onClose={() => setSuccess(null)}
+          dismissible
+        >
           {success}
         </Alert>
       )}
 
-      <Card className="glass-effect">
-        <Card.Header>
-          <Card.Title className="mb-0">Your API Keys</Card.Title>
+      <Card className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl">
+        <Card.Header className="p-4 border-b border-border-subtle">
+          <Card.Title className="mb-0 text-xl font-semibold">Your API Keys</Card.Title>
         </Card.Header>
-        <Card.Body>
+        <Card.Body className="p-4">
           {loading ? (
             <div className="text-center py-4">
               <Spinner animation="border" variant="light" />

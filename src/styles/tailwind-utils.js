@@ -8,12 +8,12 @@ export const styles = {
   content: 'ml-60 p-5 w-full min-h-screen bg-slate-900',
 
   // Cards
-  card: 'bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl transition-all duration-300 hover:border-emerald-400/50 hover:shadow-lg hover:shadow-emerald-400/10 hover:-translate-y-1',
+  card: 'bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl hover:border-emerald-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-400/10 hover:-translate-y-1',
   cardPadding: 'p-6',
 
   // Buttons
   btnPrimary:
-    'bg-gradient-to-r from-emerald-400 to-green-500 text-slate-900 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-emerald-400/25 transition-all duration-300',
+    'text-slate-900 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-emerald-400/25 transition-all duration-300',
   btnSecondary:
     'bg-slate-700 border border-slate-600 text-slate-200 px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:bg-slate-600 hover:border-emerald-500',
   btnOutline:
@@ -26,8 +26,8 @@ export const styles = {
   label: 'block text-sm font-medium text-slate-300 mb-2',
 
   // Text
-  heading1: 'text-4xl font-bold bg-gradient-to-r from-emerald-400 to-green-500 bg-clip-text text-transparent',
-  heading2: 'text-3xl font-bold bg-gradient-to-r from-emerald-400 to-green-500 bg-clip-text text-transparent',
+  heading1: 'text-4xl font-bold bg-clip-text text-transparent',
+  heading2: 'text-3xl font-bold bg-clip-text text-transparent',
   heading3: 'text-2xl font-bold text-white',
   textPrimary: 'text-white',
   textSecondary: 'text-slate-400',

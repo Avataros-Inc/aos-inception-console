@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { JsonEditor } from 'json-edit-react';
 import { updateCharacter, API_BASE_URL, getSessionToken, getSession } from './postgrestAPI';
-import { Form, Button, Card, Alert } from 'react-bootstrap';
+import { Form, Card, Alert } from 'react-bootstrap';
+import { Loader2, UserPlus } from 'lucide-react';
+import { Button } from '@/Components/Button';
 
 const styles = {
   voiceSelector: {
@@ -92,68 +94,82 @@ const CharCreator = () => {
   };
 
   return (
-    <div>
-      <Card className="mt-4">
-        <Card.Header>Create New Avatar</Card.Header>
-        <Card.Body>
+    <div className="mt-6">
+      <div className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl">
+        <div className="border-b border-border-subtle p-4">
+          <h3 className="flex items-center text-accent-mint font-semibold mb-0">
+            <UserPlus className="mr-2" size={20} />
+            Create New Avatar
+          </h3>
+        </div>
+        <div className="p-6">
           {error && (
-            <Alert variant="danger" onClose={() => setError(null)} dismissible>
-              {error}
-            </Alert>
+            <div className="bg-red-900/20 border border-red-700/50 rounded-xl p-4 mb-4">
+              <p className="text-red-300 mb-0">{error}</p>
+            </div>
           )}
           {success && (
-            <Alert variant="success" onClose={() => setSuccess(null)} dismissible>
-              {success}
-            </Alert>
+            <div className="bg-green-900/20 border border-green-700/50 rounded-xl p-4 mb-4">
+              <p className="text-green-300 mb-0">{success}</p>
+            </div>
           )}
 
           <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Name</Form.Label>
+            <Form.Group className="mb-4">
+              <Form.Label className="block text-text-secondary font-medium mb-2">Name</Form.Label>
               <Form.Control
                 type="text"
                 value={newChar.name}
                 onChange={(e) => setNewChar({ ...newChar, name: e.target.value })}
+                placeholder="Enter avatar name"
+                className="w-full px-3 py-2 bg-bg-secondary border border-border-subtle rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-mint focus:border-accent-mint"
               />
             </Form.Group>
 
             {['unreal_config', 'llm_config', 'voice_config', 'a2f_config'].map((configKey) => (
-              <Form.Group key={configKey} className="mb-3">
-                <Form.Label>{configKey.replace('_', ' ').toUpperCase()}</Form.Label>
+              <Form.Group key={configKey} className="mb-4">
+                <Form.Label className="block text-text-secondary font-medium mb-2">
+                  {configKey.replace('_', ' ').toUpperCase()}
+                </Form.Label>
                 <Form.Control
                   as="textarea"
                   rows={3}
                   value={newChar[configKey]}
                   onChange={(e) => setNewChar({ ...newChar, [configKey]: e.target.value })}
                   placeholder={`Enter valid JSON for ${configKey}`}
+                  className="w-full px-3 py-2 bg-bg-secondary border border-border-subtle rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-mint focus:border-accent-mint font-mono text-sm"
                 />
               </Form.Group>
             ))}
 
-            <Form.Check
-              type="switch"
-              id="available-switch"
-              label="Available"
-              checked={newChar.available}
-              onChange={(e) => setNewChar({ ...newChar, available: e.target.checked })}
-              className="mb-3"
-            />
+            <Form.Group className="mb-4">
+              <Form.Check
+                type="switch"
+                id="available-switch"
+                label="Available"
+                checked={newChar.available}
+                onChange={(e) => setNewChar({ ...newChar, available: e.target.checked })}
+                className="text-text-secondary"
+              />
+            </Form.Group>
 
             <Button variant="primary" onClick={handleCreateChar}>
               Create Avatar
             </Button>
           </Form>
-        </Card.Body>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
 
 const CharPage = ({ cachedCharacters = [] }) => {
   const [characters, setcharacters] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
     async function fetchCharacters() {
       try {
+        setIsLoading(true);
         const response = await fetch(`${API_BASE_URL}/characters`, {
           method: 'GET',
           headers: {
@@ -170,6 +186,8 @@ const CharPage = ({ cachedCharacters = [] }) => {
         setcharacters(data || []);
       } catch (error) {
         console.error(`Error getting characters:`, error);
+      } finally {
+        setIsLoading(false);
       }
     }
 
@@ -189,20 +207,29 @@ const CharPage = ({ cachedCharacters = [] }) => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-96">
+        <Loader2 className="animate-spin text-accent-mint mb-3" size={32} />
+        <p className="text-text-secondary">Loading avatars...</p>
+      </div>
+    );
+  }
+
   return (
     <div>
-      <h2>Avatar Editor</h2>
+      <h2 className="gradient-text text-3xl font-bold mb-6">Avatar Editor</h2>
 
       <div className="flex flex-col gap-4">
         {Array.isArray(characters) &&
           characters.map((character) => (
             <div
               key={character.id}
-              className="border rounded-lg p-4 hover:shadow-md transition-shadow duration-200 w-full"
+              className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl transition-all duration-300 hover:border-accent-mint/50 hover:shadow-lg hover:shadow-accent-mint/10 hover:-translate-y-1 p-4"
             >
-              <h3 className="text-lg font-semibold">{character.name}</h3>
+              <h3 className="text-lg font-semibold text-text-primary">{character.name}</h3>
               <div className="mt-2 flex flex-col gap-[5px]">
-                <p className="text-gray-600 text-sm">ID: {character.id}</p>
+                <p className="text-text-secondary text-sm">ID: {character.id}</p>
 
                 {/* Add more character details here as needed */}
                 {Object.entries(character)
@@ -227,7 +254,6 @@ const CharPage = ({ cachedCharacters = [] }) => {
                               label={key}
                               checked={value}
                               onChange={(e) => handleJsonUpdate(character.id, key, { newData: e.target.checked })}
-                              className="mb-2"
                             />
                           );
                         default:

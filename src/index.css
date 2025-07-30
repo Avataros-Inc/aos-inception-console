@@ -5,30 +5,69 @@
 @tailwind utilities;
 
 :root {
-  /* AVATAROS Brand Colors - Updated for better contrast */
-  --bg-primary: hsl(210, 40%, 8%); /* #0f1419 */
-  --bg-secondary: hsl(220, 26%, 14%); /* #1a1f2e */
-  --bg-sidebar: hsl(210, 45%, 4%); /* Much darker: #06090c */
+  /* AVATAROS Brand Colors */
+  --bg-primary: rgb(12, 20, 29); /* #0f1419 */
+  --bg-secondary: rgb(26, 33, 45); /* #1a1f2e */
+  --bg-sidebar: hsl(210, 45%, 6%); /* #0a0f14 */
   --accent-mint: hsl(162, 73%, 68%); /* #74ecc7 */
   --text-primary: hsl(0, 0%, 100%); /* #ffffff */
   --text-secondary: hsl(240, 5%, 64%); /* #a1a1aa */
   --border-subtle: hsl(215, 20%, 20%); /* #2a2f3a */
   --border-focus: hsl(162, 73%, 68%); /* #74ecc7 */
 
+  /* Standard theme variables for shadcn compatibility */
+  --background: var(--bg-primary);
+  --foreground: var(--text-primary);
+  --muted: hsl(220, 26%, 14%);
+  --muted-foreground: var(--text-secondary);
+  --popover: var(--bg-secondary);
+  --popover-foreground: var(--text-primary);
+  --card: var(--bg-secondary);
+  --card-foreground: var(--text-primary);
+  --border: var(--border-subtle);
+  --input: var(--border-subtle);
+  --primary: var(--accent-mint);
+  --primary-foreground: var(--bg-primary);
+  --secondary: hsl(220, 20%, 25%);
+  --secondary-foreground: var(--text-primary);
+  --accent: var(--bg-secondary);
+  --accent-foreground: var(--text-primary);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: var(--text-primary);
+  --ring: var(--accent-mint);
+  --radius: 0.75rem;
+
   /* Sidebar theme variables */
   --sidebar-background: var(--bg-sidebar);
   --sidebar-foreground: var(--text-primary);
   --sidebar-primary: var(--accent-mint);
+  --sidebar-primary-foreground: var(--bg-primary);
+  --sidebar-accent: var(--bg-secondary);
+  --sidebar-accent-foreground: var(--text-primary);
   --sidebar-border: var(--border-subtle);
+  --sidebar-ring: var(--accent-mint);
+}
 
-  /* Additional theme variables for shadcn compatibility */
+.dark {
   --background: var(--bg-primary);
   --foreground: var(--text-primary);
+  --muted: var(--bg-secondary);
+  --muted-foreground: var(--text-secondary);
+  --popover: var(--bg-secondary);
+  --popover-foreground: var(--text-primary);
   --card: var(--bg-secondary);
   --card-foreground: var(--text-primary);
   --border: var(--border-subtle);
-  --muted: var(--bg-secondary);
-  --muted-foreground: var(--text-secondary);
+  --input: var(--border-subtle);
+  --primary: var(--accent-mint);
+  --primary-foreground: var(--bg-primary);
+  --secondary: hsl(220, 20%, 25%);
+  --secondary-foreground: var(--text-primary);
+  --accent: var(--bg-secondary);
+  --accent-foreground: var(--text-primary);
+  --destructive: hsl(0, 62%, 30%);
+  --destructive-foreground: var(--text-primary);
+  --ring: var(--accent-mint);
 }
 
 @layer base {
@@ -53,72 +92,20 @@
 /* Custom Tailwind component classes */
 @layer components {
   .gradient-text {
-    @apply bg-gradient-to-r from-emerald-400 to-green-500 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-emerald-600 to-accent-mint bg-clip-text text-transparent;
   }
 
   .glass-effect {
     @apply bg-slate-800/50 backdrop-blur-sm border border-slate-700/50;
   }
 
-  .btn-primary {
-    @apply bg-gradient-to-r from-emerald-400 to-green-500 text-slate-900 px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:shadow-lg hover:shadow-emerald-400/25 hover:-translate-y-0.5;
-  }
-
-  .btn-secondary {
-    @apply bg-slate-700 border border-slate-600 text-slate-200 px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:bg-slate-600 hover:border-emerald-500;
-  }
-
-  .card {
-    @apply bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl transition-all duration-300 hover:border-emerald-400/50 hover:shadow-lg hover:shadow-emerald-400/10 hover:-translate-y-1;
-  }
-
-  .input-field {
-    @apply bg-slate-800 border border-slate-600 text-white px-4 py-2 rounded-lg transition-all duration-300 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25 focus:outline-none;
-  }
-
-  .sidebar-nav-link {
-    @apply flex items-center px-4 py-3 text-slate-300 hover:text-accent-mint hover:bg-accent-mint/10 transition-all duration-300 border-l-4 border-transparent hover:border-accent-mint rounded-xl;
-  }
-
-  .sidebar-nav-link.active {
-    @apply text-accent-mint bg-accent-mint/20 border-accent-mint;
-  }
-
-  /* Enhanced sidebar button styling */
-  .sidebar-button {
-    @apply w-full justify-start gap-3 text-left rounded-xl py-3 px-4 transition-all duration-300;
-    @apply hover:bg-accent-mint/10 hover:text-white;
-    @apply border-l-4 border-transparent;
-    background: linear-gradient(135deg, rgba(116, 236, 199, 0.02) 0%, transparent 50%);
-  }
-
-  .sidebar-button.active {
-    @apply bg-accent-mint/20 text-accent-mint border-l-accent-mint;
-    background: linear-gradient(135deg, rgba(116, 236, 199, 0.2) 0%, rgba(116, 236, 199, 0.1) 100%);
-    box-shadow: inset 0 1px 0 rgba(116, 236, 199, 0.1);
-  }
-
-  .sidebar-sub-button {
-    @apply w-full justify-start text-sm rounded-lg py-2 px-3 transition-all duration-300;
-    @apply hover:bg-accent-mint/10 hover:text-white;
-  }
-
-  .sidebar-sub-button.active {
-    @apply text-accent-mint bg-accent-mint/20;
-    background: linear-gradient(135deg, rgba(116, 236, 199, 0.15) 0%, rgba(116, 236, 199, 0.05) 100%);
-  }
-
   /* Sidebar glass effect */
   .sidebar-glass {
-    position: fixed;
-    backdrop-filter: blur(12px);
-    background: linear-gradient(135deg, rgba(6, 9, 12, 0.98) 0%, rgba(10, 15, 20, 0.95) 100%);
+    position: relative;
     border-radius: 0 12px 12px 0;
-    box-shadow: inset 1px 1px 2px rgba(116, 236, 199, 0.15), inset -1px -1px 2px rgba(0, 0, 0, 0.3),
-      2px 0 12px rgba(0, 0, 0, 0.4);
+    box-shadow: inset 1px 1px 2px rgba(116, 236, 199, 0.1), inset -1px -1px 2px rgba(0, 0, 0, 0.2),
+      2px 0 8px rgba(0, 0, 0, 0.3);
     border-right: 1px solid rgba(116, 236, 199, 0.2);
-    border-top: 1px solid rgba(116, 236, 199, 0.1);
-    border-bottom: 1px solid rgba(116, 236, 199, 0.1);
   }
 
   .sidebar-glass::before {
@@ -128,14 +115,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(116, 236, 199, 0.08) 0%, transparent 50%),
-      repeating-linear-gradient(
-        45deg,
-        rgba(116, 236, 199, 0.02) 0px,
-        rgba(116, 236, 199, 0.02) 1px,
-        transparent 1px,
-        transparent 10px
-      );
+    background: linear-gradient(135deg, rgba(116, 236, 199, 0.05) 0%, transparent 50%);
     pointer-events: none;
     border-radius: 0 12px 12px 0;
   }
@@ -162,24 +142,6 @@
     opacity: 0.1;
     pointer-events: none;
     z-index: -1;
-  }
-
-  /* Logo text shadow effect */
-  .logo-text-shadow {
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3), 0 0 20px rgba(255, 255, 255, 0.2), 0 0 30px rgba(255, 255, 255, 0.1);
-  }
-
-  /* Custom button hover effects */
-  .sidebar-nav-button {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .sidebar-nav-button:hover {
-    transform: translateX(2px);
-  }
-
-  .sidebar-nav-button.active {
-    box-shadow: 0 0 0 1px rgba(116, 236, 199, 0.2), inset 0 1px 0 rgba(116, 236, 199, 0.1);
   }
 }
 
@@ -341,13 +303,6 @@ html {
   border-top-color: var(--border-subtle) !important;
 }
 
-.avataros-title {
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4rem;
-}
-
 .gradient-text {
   background: linear-gradient(to right, #74ecc7, #10b981);
   -webkit-background-clip: text;
@@ -367,18 +322,6 @@ html {
   box-shadow: inset 1px 1px 2px rgba(116, 236, 199, 0.1), inset -1px -1px 2px rgba(0, 0, 0, 0.2),
     2px 0 8px rgba(0, 0, 0, 0.3);
   border-right: 1px solid rgba(116, 236, 199, 0.2);
-}
-
-.sidebar-glass::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(116, 236, 199, 0.05) 0%, transparent 50%);
-  pointer-events: none;
-  border-radius: 0 12px 12px 0;
 }
 
 .nav-item {
@@ -459,37 +402,6 @@ html {
   opacity: 0.5 !important;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border-subtle);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-mint);
-}
-
-@keyframes spin-slow {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin-slow {
-  animation: spin-slow 3s linear infinite;
-}
-
 @media (max-width: 768px) {
   .sidebar-mobile {
     position: fixed;
@@ -502,5 +414,28 @@ html {
 
   .sidebar-mobile.open {
     transform: translateX(0);
+  }
+}
+
+/* Custom border utilities to override Bootstrap defaults */
+@layer utilities {
+  .border-border-subtle {
+    border-color: var(--border-subtle) !important;
+  }
+
+  .border-t-border-subtle {
+    border-top-color: var(--border-subtle) !important;
+  }
+
+  .border-b-border-subtle {
+    border-bottom-color: var(--border-subtle) !important;
+  }
+
+  .border-l-border-subtle {
+    border-left-color: var(--border-subtle) !important;
+  }
+
+  .border-r-border-subtle {
+    border-right-color: var(--border-subtle) !important;
   }
 }

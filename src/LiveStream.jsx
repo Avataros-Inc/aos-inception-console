@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Container, Row, Col, Form, Button, Card, Spinner, Alert } from 'react-bootstrap';
+import React, { useState, useEffect, useRef } from 'react';
+import { Container, Row, Col, Form, Card, Spinner, Alert } from 'react-bootstrap';
 import { SendFill, Wifi, WifiOff, Broadcast } from 'react-bootstrap-icons';
 import { getRenderJob, insertRenderJob, getSessionToken, updateRenderJob, API_BASE_URL } from './postgrestAPI';
 import A2FConfigTab from './ConfigTabs/A2FConfigTab';
@@ -9,14 +9,14 @@ import LLMConfigTab from './ConfigTabs/LLMConfigTab';
 import { PixelStreamingWrapper } from './Components/PixelStreamingWrapper';
 // import { WebSocketService } from './websocketService';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
+import { Button } from '@/Components/Button';
 
 import MicrophoneStreamer from './Components/MicStreamer';
 import CameraControls from './Components/CameraControls';
 
-
 const handleEndSession = async (jobId) => {
   try {
-    await updateRenderJob(jobId, { jobstatus: 2, ended_at: "NOW()" });
+    await updateRenderJob(jobId, { jobstatus: 2, ended_at: 'NOW()' });
     localStorage.removeItem('current_livestream');
     window.location.reload();
   } catch (error) {
@@ -38,7 +38,6 @@ const LiveStream = ({ livestreamId }) => {
   // const socketUrl = 'ws://192.168.4.118:8082/ws';
   const socketUrl = `${API_BASE_URL.replace('https:', 'wss:').replace('http:', 'ws:')}/ws`;
 
-
   // const liveStreamUrl = `ws://192.168.4.118:8080/livestream/${livestreamId}`;
   const liveStreamUrl = `${API_BASE_URL.replace('https:', 'wss:').replace('http:', 'ws:')}/livestream/${livestreamId}`;
 
@@ -55,21 +54,17 @@ const LiveStream = ({ livestreamId }) => {
       }
       console.log('Message: ', data);
       if (data.type === 'textout') {
-        setMessages(prevMessages => [...prevMessages, { user: 'assistant', text: data.content }]);
-      }
-      else if (data.type === 'textin') {
-        setMessages(prevMessages => [...prevMessages, { user: 'You', text: data.content }]);
-      }
-      else if (data.type === 'avatarTalking') {
+        setMessages((prevMessages) => [...prevMessages, { user: 'assistant', text: data.content }]);
+      } else if (data.type === 'textin') {
+        setMessages((prevMessages) => [...prevMessages, { user: 'You', text: data.content }]);
+      } else if (data.type === 'avatarTalking') {
         setAvatarTalking(data.content);
         if (MicRef.current) {
           MicRef.current.handleAvatarTalking(data.content);
-        };
-      }
-      else {
+        }
+      } else {
         console.log('Unknown message type: ', data);
       }
-
     },
 
     shouldReconnect: (closeEvent) => true,
@@ -81,7 +76,6 @@ const LiveStream = ({ livestreamId }) => {
     },
   });
 
-
   const connectionStatus = {
     [ReadyState.CONNECTING]: 'Connecting',
     [ReadyState.OPEN]: 'Connected',
@@ -92,29 +86,27 @@ const LiveStream = ({ livestreamId }) => {
 
   const handleClickSendMessage = () => {
     sendMessage(JSON.stringify({ type: 'textin', content: messageInput }));
-    setMessages(prevState => [...prevState, { user: 'You', text: messageInput }]);
+    setMessages((prevState) => [...prevState, { user: 'You', text: messageInput }]);
     setMessageInput('');
   };
-
 
   // Auto-scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-
   return (
     <Container fluid className="vh-100 p-0 d-flex flex-column">
       {/* Video Stream */}
-      <Row className="flex-grow-1 m-0" style={{ position: 'relative', width:  '100%', minHeight: '50vh'  }}>
+      <Row className="flex-grow-1 m-0" style={{ position: 'relative', width: '100%', minHeight: '50vh' }}>
         <Col className="p-0 d-flex justify-content-center">
-          <div style={{
-            width: '100%',
-            // paddingTop: '56.25%', /* 16:9 Aspect Ratio */
-            position: 'relative'
-          }}>
-
-
+          <div
+            style={{
+              width: '100%',
+              // paddingTop: '56.25%', /* 16:9 Aspect Ratio */
+              position: 'relative',
+            }}
+          >
             <PixelStreamingWrapper
               initialSettings={{
                 ss: liveStreamUrl,
@@ -137,9 +129,6 @@ const LiveStream = ({ livestreamId }) => {
                 // height: '100%'
               }}
             />
-
-
-
           </div>
         </Col>
       </Row>
@@ -154,8 +143,7 @@ const LiveStream = ({ livestreamId }) => {
           <Card.Body className="flex-grow-1 overflow-auto p-2">
             {messages.map((msg, index) => (
               <div key={index} className="mb-1">
-                <small className="text-muted">{msg.user}:</small>{' '}
-                {msg.text}
+                <small className="text-muted">{msg.user}:</small> {msg.text}
               </div>
             ))}
             <div ref={messagesEndRef} />
@@ -170,19 +158,16 @@ const LiveStream = ({ livestreamId }) => {
                 onKeyPress={(e) => e.key === 'Enter' && handleClickSendMessage()}
                 placeholder="Type a message..."
               />
-              <Button
-                variant="primary"
-                onClick={handleClickSendMessage}
-                disabled={readyState !== ReadyState.OPEN}
-              >
+              <Button variant="primary" onClick={handleClickSendMessage} disabled={readyState !== ReadyState.OPEN}>
                 <SendFill />
               </Button>
-              <MicrophoneStreamer ref={MicRef} wsReadyState={readyState} sendMessage={sendMessage} ReadyState={ReadyState} />
+              <MicrophoneStreamer
+                ref={MicRef}
+                wsReadyState={readyState}
+                sendMessage={sendMessage}
+                ReadyState={ReadyState}
+              />
             </Form.Group>
-
-
-
-
 
             <div className="text-end mt-1">
               <small className={readyState !== ReadyState.OPEN ? 'text-success' : 'text-danger'}>
@@ -190,7 +175,9 @@ const LiveStream = ({ livestreamId }) => {
                 {connectionStatus}
               </small>
               &nbsp;
-              <Button onClick={() => handleEndSession(livestreamId)} variant="danger" size="sm">End Session</Button>
+              <Button onClick={() => handleEndSession(livestreamId)} variant="danger" size="sm">
+                End Session
+              </Button>
             </div>
           </Card.Footer>
         </Col>
@@ -199,27 +186,23 @@ const LiveStream = ({ livestreamId }) => {
   );
 };
 
-
 const styles = {
-
   rightSidebar: {
     position: 'fixed',
     top: 0,
     right: 0,
     width: '480px',
     height: '100vh',
-    backgroundColor: '#ffffff',
-    borderLeft: '1px solid #e9ecef',
+    backgroundColor: 'bg-bg-secondary',
+    borderLeft: '1px solid var(--border-subtle)',
     padding: '20px',
     overflowY: 'auto',
-    zIndex: 900
+    zIndex: 900,
   },
   mainContent: {
-
     // width:  '100%',
     paddingRight: '480px',
-
-  }
+  },
 };
 
 const LiveStreamPage = ({ characters }) => {
@@ -238,17 +221,16 @@ const LiveStreamPage = ({ characters }) => {
   });
   const [activeTab, setActiveTab] = useState('visual');
 
-
   const updateConfig = (key, value) => {
     if (key === 'avatar') {
       for (const character of characters) {
         if (character.id === value) {
-          setConfig(prevConfig => ({
+          setConfig((prevConfig) => ({
             ...prevConfig,
             [key]: value,
             a2f_config: character.a2f_config,
             voice_config: character.voice_config,
-            llm_config: character.llm_config
+            llm_config: character.llm_config,
           }));
           break;
         }
@@ -257,7 +239,7 @@ const LiveStreamPage = ({ characters }) => {
       if (key.includes('.')) {
         // Handle nested keys (like 'voice_config.voice_id.some_property')
         const keys = key.split('.');
-        setConfig(prev => {
+        setConfig((prev) => {
           const newConfig = { ...prev };
           let current = newConfig;
 
@@ -274,7 +256,7 @@ const LiveStreamPage = ({ characters }) => {
         });
       } else {
         // Handle flat keys
-        setConfig(prev => ({ ...prev, [key]: value }));
+        setConfig((prev) => ({ ...prev, [key]: value }));
       }
     }
   };
@@ -283,11 +265,15 @@ const LiveStreamPage = ({ characters }) => {
   useEffect(() => {
     const storedLivestream = localStorage.getItem('current_livestream');
 
-    if (storedLivestream && typeof storedLivestream === 'string' && storedLivestream !== 'undefined' && storedLivestream.includes('-')) {
+    if (
+      storedLivestream &&
+      typeof storedLivestream === 'string' &&
+      storedLivestream !== 'undefined' &&
+      storedLivestream.includes('-')
+    ) {
       setLivestreamId(storedLivestream);
       setStatus('checking_readiness');
       setLoadingMessage('Verifying livestream status...');
-
     } else {
       setStatus('needs_request');
       setLoadingMessage('No active livestream found');
@@ -306,11 +292,11 @@ const LiveStreamPage = ({ characters }) => {
           window.location.reload();
         } else if (renderjob.ended_at !== null) {
           localStorage.removeItem('current_livestream');
-          window.location
+          window.location;
         } else if (renderjob.jobstatus === 1) {
           setStatus('ready');
         } else if (renderjob.jobstatus >= 6) {
-          setLoadingMessage('Waiting streaming client')
+          setLoadingMessage('Waiting streaming client');
           setTimeout(checkLivestream, recheckTime);
         } else if (renderjob.jobstatus >= 4 && renderjob.jobstatus < 6) {
           setLoadingMessage('Streaming finished');
@@ -334,7 +320,7 @@ const LiveStreamPage = ({ characters }) => {
     setLoadingMessage('Requesting new livestream...');
 
     try {
-      const renderJob = await insertRenderJob('live', config)
+      const renderJob = await insertRenderJob('live', config);
 
       localStorage.setItem('current_livestream', renderJob);
       setLivestreamId(renderJob);
@@ -353,7 +339,7 @@ const LiveStreamPage = ({ characters }) => {
   }
 
   return (
-    <div >
+    <div>
       <div style={styles.mainContent}>
         {/* <Spinner animation="border" role="status" className="mb-3">
           <span className="visually-hidden">Loading...</span>
@@ -366,30 +352,24 @@ const LiveStreamPage = ({ characters }) => {
         {/* <pre>{JSON.stringify(config, null, 4)}</pre> */}
 
         {status === 'needs_request' && (
-          <button
-            className="btn btn-primary"
-            onClick={requestLivestream}
-            disabled={status === 'requesting'}
-          >
+          <Button variant="primary" onClick={requestLivestream} disabled={status === 'requesting'}>
             {status === 'requesting' ? 'Requesting...' : 'Create Livestream'}
-          </button>
+          </Button>
         )}
         {status !== 'needs_request' && (
-          <Button onClick={() => handleEndSession(livestreamId)} variant="danger" size="sm">End Session</Button>
+          <Button onClick={() => handleEndSession(livestreamId)} variant="danger" size="sm">
+            End Session
+          </Button>
         )}
 
         <h2>{livestreamId}</h2>
 
-        <pre>
-          {JSON.stringify(config, null, 2)}
-        </pre>
-
+        <pre>{JSON.stringify(config, null, 2)}</pre>
       </div>
 
       {/* Right Settings Sidebar */}
       <div style={styles.rightSidebar}>
         <div className="d-flex border-bottom pb-2 mb-3">
-
           <Button
             variant={activeTab === 'visual' ? 'primary' : 'light'}
             className="me-2 py-1 px-2"
@@ -423,35 +403,24 @@ const LiveStreamPage = ({ characters }) => {
           >
             LLM Config
           </Button>
-
         </div>
 
-        {activeTab === 'voice' && (
-          <VoiceConfigTab updateConfig={updateConfig} config={config} />
-        )}
+        {activeTab === 'voice' && <VoiceConfigTab updateConfig={updateConfig} config={config} />}
 
-        {activeTab === 'a2f' && (
-          <A2FConfigTab updateConfig={updateConfig} config={config} />
-        )}
+        {activeTab === 'a2f' && <A2FConfigTab updateConfig={updateConfig} config={config} />}
 
         {activeTab === 'visual' && (
           <VisualConfigTab characters={characters} updateConfig={updateConfig} config={config} />
         )}
 
-        {activeTab === 'llm' && (
-          <LLMConfigTab characters={characters} updateConfig={updateConfig} config={config} />
-        )}
+        {activeTab === 'llm' && <LLMConfigTab characters={characters} updateConfig={updateConfig} config={config} />}
       </div>
     </div>
-
   );
 };
 
-
 // const LiveStreamPage = () => {
 
-
 // };
-
 
 export default LiveStreamPage;

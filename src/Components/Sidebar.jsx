@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, User, Camera, Play, Code, ChevronRight, Settings, CreditCard, HelpCircle, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/Components/ui/button';
+import { Button } from '@/Components/Button';
 
 const navItems = [
   {
@@ -80,7 +80,7 @@ export const Sidebar = () => {
   };
 
   return (
-    <aside className="fixed left-0 top-16 bottom-0 w-64 bg-sidebar/80 backdrop-blur-md z-50 sidebar-glass">
+    <aside className="fixed left-0 top-16 bottom-0 w-64 z-50 sidebar-glass border-border-subtle bg-none">
       <div className="flex flex-col h-full">
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1">
