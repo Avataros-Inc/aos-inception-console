@@ -2,14 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Container, Row, Col, Form, Card, Spinner, Alert } from 'react-bootstrap';
 import { SendFill, Wifi, WifiOff, Broadcast } from 'react-bootstrap-icons';
 import { getRenderJob, insertRenderJob, getSessionToken, updateRenderJob, API_BASE_URL } from './postgrestAPI';
-import A2FConfigTab from './ConfigTabs/A2FConfigTab';
-import VisualConfigTab from './ConfigTabs/VisualConfigTab';
-import VoiceConfigTab from './ConfigTabs/VoiceConfigTab';
-import LLMConfigTab from './ConfigTabs/LLMConfigTab';
+import ConfigSidebar from '@/Components/ConfigSidebar';
+import { useConfig } from './contexts/ConfigContext';
 import { PixelStreamingWrapper } from './Components/PixelStreamingWrapper';
 // import { WebSocketService } from './websocketService';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { Button } from '@/Components/Button';
+import { githubDarkTheme, JsonEditor } from 'json-edit-react';
 
 import MicrophoneStreamer from './Components/MicStreamer';
 import CameraControls from './Components/CameraControls';
@@ -28,9 +27,7 @@ const LiveStream = ({ livestreamId }) => {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
   const [AvatarTalking, setAvatarTalking] = useState(false);
-  const [status, setStatus] = useState('disconnected');
   const messagesEndRef = useRef(null);
-  const wsRef = useRef(null);
 
   const MicRef = useRef();
 
@@ -41,7 +38,7 @@ const LiveStream = ({ livestreamId }) => {
   // const liveStreamUrl = `ws://192.168.4.118:8080/livestream/${livestreamId}`;
   const liveStreamUrl = `${API_BASE_URL.replace('https:', 'wss:').replace('http:', 'ws:')}/livestream/${livestreamId}`;
 
-  const { sendMessage, lastMessage, readyState } = useWebSocket(socketUrl, {
+  const { sendMessage, readyState } = useWebSocket(socketUrl, {
     // protocols: [`auth-${getSessionToken()}`, "test"],
     onOpen: () => {
       sendMessage(JSON.stringify({ type: 'connect', token: getSessionToken(), session: livestreamId }));
@@ -67,7 +64,7 @@ const LiveStream = ({ livestreamId }) => {
       }
     },
 
-    shouldReconnect: (closeEvent) => true,
+    shouldReconnect: () => true,
     heartbeat: {
       message: 'ping',
       returnMessage: 'pong',
@@ -186,80 +183,13 @@ const LiveStream = ({ livestreamId }) => {
   );
 };
 
-const styles = {
-  rightSidebar: {
-    position: 'fixed',
-    top: 0,
-    right: 0,
-    width: '480px',
-    height: '100vh',
-    backgroundColor: 'bg-bg-secondary',
-    borderLeft: '1px solid var(--border-subtle)',
-    padding: '20px',
-    overflowY: 'auto',
-    zIndex: 900,
-  },
-  mainContent: {
-    // width:  '100%',
-    paddingRight: '480px',
-  },
-};
-
-const LiveStreamPage = ({ characters }) => {
+const LiveStreamPage = () => {
+  const { config } = useConfig();
   const [status, setStatus] = useState('checking_storage');
   const [livestreamId, setLivestreamId] = useState(null);
   const [loadingMessage, setLoadingMessage] = useState('Checking for existing livestream...');
 
   const recheckTime = 500;
-
-  const [config, setConfig] = useState({
-    avatar: characters[0].id,
-    environment: 'Map_Env_Original_01', //TODO
-    a2f_config: characters[0].a2f_config,
-    voice_config: characters[0].voice_config,
-    llm_config: characters[0].llm_config,
-  });
-  const [activeTab, setActiveTab] = useState('visual');
-
-  const updateConfig = (key, value) => {
-    if (key === 'avatar') {
-      for (const character of characters) {
-        if (character.id === value) {
-          setConfig((prevConfig) => ({
-            ...prevConfig,
-            [key]: value,
-            a2f_config: character.a2f_config,
-            voice_config: character.voice_config,
-            llm_config: character.llm_config,
-          }));
-          break;
-        }
-      }
-    } else {
-      if (key.includes('.')) {
-        // Handle nested keys (like 'voice_config.voice_id.some_property')
-        const keys = key.split('.');
-        setConfig((prev) => {
-          const newConfig = { ...prev };
-          let current = newConfig;
-
-          for (let i = 0; i < keys.length - 1; i++) {
-            const currentKey = keys[i];
-            if (!current[currentKey]) {
-              current[currentKey] = {};
-            }
-            current = current[currentKey];
-          }
-
-          current[keys[keys.length - 1]] = value;
-          return newConfig;
-        });
-      } else {
-        // Handle flat keys
-        setConfig((prev) => ({ ...prev, [key]: value }));
-      }
-    }
-  };
 
   // Check for existing livestream on mount
   useEffect(() => {
@@ -339,8 +269,8 @@ const LiveStreamPage = ({ characters }) => {
   }
 
   return (
-    <div>
-      <div style={styles.mainContent}>
+    <div className="relative mr-[480px] overflow-hidden">
+      <div className="relative w-full overflow-y-auto">
         {/* <Spinner animation="border" role="status" className="mb-3">
           <span className="visually-hidden">Loading...</span>
         </Spinner> */}
@@ -362,59 +292,25 @@ const LiveStreamPage = ({ characters }) => {
           </Button>
         )}
 
-        <h2>{livestreamId}</h2>
+        <h2 className="text-slate-300 text-xl font-bold mb-2">{livestreamId}</h2>
 
-        <pre>{JSON.stringify(config, null, 2)}</pre>
-      </div>
-
-      {/* Right Settings Sidebar */}
-      <div style={styles.rightSidebar}>
-        <div className="d-flex border-bottom pb-2 mb-3">
-          <Button
-            variant={activeTab === 'visual' ? 'primary' : 'light'}
-            className="me-2 py-1 px-2"
-            onClick={() => setActiveTab('visual')}
-            size="sm"
-          >
-            Visual
-          </Button>
-
-          <Button
-            variant={activeTab === 'voice' ? 'primary' : 'light'}
-            className="me-2 py-1 px-2"
-            onClick={() => setActiveTab('voice')}
-            size="sm"
-          >
-            Voice
-          </Button>
-          <Button
-            variant={activeTab === 'a2f' ? 'primary' : 'light'}
-            className="me-2 py-1 px-2"
-            onClick={() => setActiveTab('a2f')}
-            size="sm"
-          >
-            A2F Config
-          </Button>
-          <Button
-            variant={activeTab === 'llm' ? 'primary' : 'light'}
-            className="me-2 py-1 px-2"
-            onClick={() => setActiveTab('llm')}
-            size="sm"
-          >
-            LLM Config
-          </Button>
+        <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 mb-4">
+          <h3 className="text-slate-300 text-xl font-bold mb-2">Configuration</h3>
+          <JsonEditor
+            data={config}
+            collapse={false}
+            rootName={false}
+            restrictEdit={true}
+            restrictDelete={true}
+            enableClipboard={false}
+            restrictAdd={true}
+            theme={githubDarkTheme}
+            maxWidth={'100%'}
+            className="w-full"
+          />
         </div>
-
-        {activeTab === 'voice' && <VoiceConfigTab updateConfig={updateConfig} config={config} />}
-
-        {activeTab === 'a2f' && <A2FConfigTab updateConfig={updateConfig} config={config} />}
-
-        {activeTab === 'visual' && (
-          <VisualConfigTab characters={characters} updateConfig={updateConfig} config={config} />
-        )}
-
-        {activeTab === 'llm' && <LLMConfigTab characters={characters} updateConfig={updateConfig} config={config} />}
       </div>
+      <ConfigSidebar visual voice a2f llm />
     </div>
   );
 };

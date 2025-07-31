@@ -1,83 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Form, Spinner, Alert } from 'react-bootstrap';
 import { Mic, Stop, Upload, Play, Trash } from 'react-bootstrap-icons';
-import A2FConfigTab from './ConfigTabs/A2FConfigTab';
-import VisualConfigTab from './ConfigTabs/VisualConfigTab';
+import ConfigSidebar from '@/Components/ConfigSidebar';
+import { useConfig } from './contexts/ConfigContext';
 import { insertRenderJob, API_BASE_URL, getSessionToken } from './postgrestAPI';
 import RenderJobVideo from './Components/RenderJobVideo';
 import { Button } from '@/Components/Button';
 
-const styles = {
-  rightSidebar: {
-    position: 'fixed',
-    top: 0,
-    right: 0,
-    width: '480px',
-    height: '100vh',
-    backgroundColor: 'bg-bg-secondary',
-    borderLeft: '1px solid var(--border-subtle)',
-    padding: '20px',
-    overflowY: 'auto',
-    zIndex: 900,
-  },
-  mainContent: {
-    paddingRight: '480px',
-  },
-  audioUploader: {
-    border: '2px dashed #ced4da',
-    borderRadius: '8px',
-    padding: '40px',
-    textAlign: 'center',
-    cursor: 'pointer',
-    marginBottom: '20px',
-    backgroundColor: '#f8f9fa',
-    transition: 'all 0.3s ease',
-  },
-  audioUploaderHover: {
-    backgroundColor: '#e9ecef',
-    borderColor: '#adb5bd',
-  },
-  recorderControls: {
-    display: 'flex',
-    justifyContent: 'center',
-    gap: '15px',
-    marginBottom: '20px',
-  },
-  audioPreview: {
-    marginTop: '20px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '15px',
-  },
-  waveform: {
-    flex: 1,
-    height: '60px',
-    backgroundColor: '#e9ecef',
-    borderRadius: '4px',
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  spinnerContainer: {
-    backgroundColor: 'white',
-    padding: '30px',
-    borderRadius: '8px',
-    textAlign: 'center',
-  },
-};
-
-const AudioToAvatar = ({ characters }) => {
+const AudioToAvatar = () => {
+  const { config } = useConfig();
   const [audioFile, setAudioFile] = useState(null);
   const [currentRenderJob, setCurrentRenderJob] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
@@ -92,30 +23,6 @@ const AudioToAvatar = ({ characters }) => {
   const audioRef = useRef(null);
   const timerRef = useRef(null);
   const fileInputRef = useRef(null);
-
-  const [config, setConfig] = useState({
-    avatar: characters[0].id,
-    environment: 'Map_Env_Basic_01',
-    a2f_config: characters[0].a2f_config,
-    voice_config: characters[0].voice_config,
-  });
-  const [activeTab, setActiveTab] = useState('visual');
-
-  const updateConfig = (key, value) => {
-    setConfig({ ...config, [key]: value });
-    if (key === 'avatar') {
-      for (const character of characters) {
-        if (character.id === value) {
-          setConfig((prev) => ({
-            ...prev,
-            a2f_config: character.a2f_config,
-            voice_config: character.voice_config,
-          }));
-          break;
-        }
-      }
-    }
-  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -285,11 +192,11 @@ const AudioToAvatar = ({ characters }) => {
   }, [audioUrl]);
 
   return (
-    <div>
+    <div className="relative mr-[480px] overflow-hidden">
       {/* Loading Overlay */}
       {isSubmitting && (
-        <div style={styles.overlay}>
-          <div style={styles.spinnerContainer}>
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[1000]">
+          <div className="bg-white p-8 rounded-lg text-center">
             <Spinner animation="border" role="status" className="mb-3">
               <span className="visually-hidden">Loading...</span>
             </Spinner>
@@ -306,12 +213,14 @@ const AudioToAvatar = ({ characters }) => {
         </Alert>
       )}
 
-      <div style={styles.mainContent}>
+      <div className="relative w-full overflow-y-auto">
         <h2 className="gradient-text text-3xl font-bold mb-6">Audio to Avatar</h2>
 
         {/* Audio Upload Area */}
         <div
-          style={{ ...styles.audioUploader, ...(isHovering ? styles.audioUploaderHover : {}) }}
+          className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer mb-5 transition-all duration-300 ${
+            isHovering ? 'bg-slate-200 border-slate-400' : 'bg-slate-100 border-slate-300'
+          }`}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -335,7 +244,7 @@ const AudioToAvatar = ({ characters }) => {
         </div>
 
         {/* Recording Controls */}
-        <div style={styles.recorderControls}>
+        <div className="flex justify-center gap-4 mb-5">
           {isRecording ? (
             <>
               <Button variant="danger" onClick={stopRecording}>
@@ -353,8 +262,8 @@ const AudioToAvatar = ({ characters }) => {
 
         {/* Audio Preview */}
         {audioUrl && (
-          <div style={styles.audioPreview}>
-            <div style={styles.waveform}>
+          <div className="mt-5 flex items-center gap-4">
+            <div className="flex-1 h-15 bg-slate-200 rounded relative overflow-hidden">
               {/* In a real app, you would render a waveform here using a library like wavesurfer.js */}
             </div>
             <span>{formatTime(audioDuration)}</span>
@@ -385,34 +294,7 @@ const AudioToAvatar = ({ characters }) => {
           <RenderJobVideo renderJobID={currentRenderJob} />
         </div>
       </div>
-
-      {/* Right Settings Sidebar */}
-      <div style={styles.rightSidebar}>
-        <div className="d-flex border-bottom pb-2 mb-3">
-          <Button
-            variant={activeTab === 'visual' ? 'primary' : 'light'}
-            className="me-2 py-1 px-2"
-            onClick={() => setActiveTab('visual')}
-            size="sm"
-          >
-            Visual
-          </Button>
-          <Button
-            variant={activeTab === 'a2f' ? 'primary' : 'light'}
-            className="me-2 py-1 px-2"
-            onClick={() => setActiveTab('a2f')}
-            size="sm"
-          >
-            A2F Config
-          </Button>
-        </div>
-
-        {activeTab === 'a2f' && <A2FConfigTab updateConfig={updateConfig} config={config} />}
-
-        {activeTab === 'visual' && (
-          <VisualConfigTab characters={characters} updateConfig={updateConfig} config={config} />
-        )}
-      </div>
+      <ConfigSidebar visual a2f />
     </div>
   );
 };

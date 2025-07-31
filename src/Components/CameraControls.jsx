@@ -101,16 +101,16 @@ const CameraControls = ({ sendMessage }) => {
           </Button>
         </Col>
         <Col className="d-flex justify-content-center mb-3 align-items-center">
-          <Button variant="outline-secondary" size="sm" onClick={() => handleButtonDown('Preset1')}>
+          <Button variant="secondary" size="sm" onClick={() => handleButtonDown('Preset1')}>
             Preset1
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleButtonDown('Preset2')}>
+          <Button variant="secondary" size="sm" onClick={() => handleButtonDown('Preset2')}>
             Preset2
           </Button>
           <Button variant="secondary" size="sm" onClick={() => handleButtonDown('Preset3')}>
             Preset3
           </Button>
-          <Button variant="outline-secondary" size="sm" onClick={() => handleButtonDown('Preset4')}>
+          <Button variant="secondary" size="sm" onClick={() => handleButtonDown('Preset4')}>
             Preset4
           </Button>
         </Col>

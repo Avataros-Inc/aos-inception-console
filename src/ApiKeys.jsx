@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Container, Card, Table, Modal, Form, Alert, Spinner, Badge } from 'react-bootstrap';
-import { API_BASE_URL, getSessionToken, getSession } from './postgrestAPI';
+import { API_BASE_URL, getSession, authenticatedFetch } from './postgrestAPI';
 import { Button } from '@/Components/Button';
 
 const ApiKeys = () => {
@@ -19,9 +19,8 @@ const ApiKeys = () => {
   const fetchApiKeys = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api_keys`, {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api_keys`, {
         headers: {
-          Authorization: `Bearer ${getSessionToken()}`,
           'Content-Type': 'application/json',
         },
       });
@@ -51,10 +50,9 @@ const ApiKeys = () => {
       setCreatingKey(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/api_keys`, {
+      const response = await authenticatedFetch(`${API_BASE_URL}/api_keys`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${getSessionToken()}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

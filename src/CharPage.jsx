@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { JsonEditor } from 'json-edit-react';
+import { githubDarkTheme, JsonEditor } from 'json-edit-react';
 import { updateCharacter, API_BASE_URL, getSessionToken, getSession } from './postgrestAPI';
 import { Form, Card, Alert } from 'react-bootstrap';
 import { Loader2, UserPlus } from 'lucide-react';
@@ -243,6 +243,7 @@ const CharPage = ({ cachedCharacters = [] }) => {
                               data={value}
                               collapse={true}
                               rootName={key}
+                              theme={githubDarkTheme}
                               onUpdate={(data) => handleJsonUpdate(character.id, key, data)}
                             />
                           );

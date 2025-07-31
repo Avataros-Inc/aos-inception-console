@@ -198,6 +198,19 @@ html {
   color: var(--text-primary) !important;
 }
 
+.form-select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2374ecc7' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  background-size: 16px 12px !important;
+  padding-right: 2.5rem !important;
+}
+
+.form-select option {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
 .form-control:focus,
 .form-select:focus {
   background-color: var(--bg-secondary) !important;
@@ -324,6 +337,14 @@ html {
   border-right: 1px solid rgba(116, 236, 199, 0.2);
 }
 
+.sidebar-glass-right {
+  position: fixed;
+  border-radius: 12px 0 0 12px;
+  box-shadow: inset 1px 1px 2px rgba(116, 236, 199, 0.1), inset -1px -1px 2px rgba(0, 0, 0, 0.2),
+    2px 0 8px rgba(0, 0, 0, 0.3);
+  border-left: 1px solid rgba(116, 236, 199, 0.2);
+}
+
 .nav-item {
   transition: all 0.3s ease-out;
 }
@@ -415,6 +436,158 @@ html {
   .sidebar-mobile.open {
     transform: translateX(0);
   }
+}
+
+/* Custom Range Slider Styling */
+.form-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  width: 100%;
+  background: linear-gradient(90deg, var(--bg-secondary) 0%, var(--border-subtle) 100%);
+  border-radius: 3px;
+  outline: none;
+  border: none;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.form-range::-webkit-slider-track {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: linear-gradient(90deg, var(--bg-secondary) 0%, var(--border-subtle) 100%);
+  border-radius: 3px;
+  border: none;
+  outline: none;
+}
+
+.form-range::-moz-range-track {
+  height: 6px;
+  background: linear-gradient(90deg, var(--bg-secondary) 0%, var(--border-subtle) 100%);
+  border-radius: 3px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+}
+
+.form-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(135deg, var(--accent-mint) 0%, #10b981 100%);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 6px rgba(116, 236, 199, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.form-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(135deg, var(--accent-mint) 0%, #10b981 100%);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 6px rgba(116, 236, 199, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.form-range:hover::-webkit-slider-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(116, 236, 199, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.2),
+    0 0 0 3px rgba(116, 236, 199, 0.15);
+}
+
+.form-range:hover::-moz-range-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(116, 236, 199, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.2),
+    0 0 0 3px rgba(116, 236, 199, 0.15);
+}
+
+.form-range:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(116, 236, 199, 0.3);
+}
+
+.form-range:focus::-webkit-slider-thumb {
+  box-shadow: 0 4px 8px rgba(116, 236, 199, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.2),
+    0 0 0 3px rgba(116, 236, 199, 0.25);
+}
+
+.form-range:focus::-moz-range-thumb {
+  box-shadow: 0 4px 8px rgba(116, 236, 199, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.2),
+    0 0 0 3px rgba(116, 236, 199, 0.25);
+}
+
+/* Custom slider container styling */
+.custom-slider-container {
+  padding: 16px;
+  margin: 8px 0;
+  border-radius: 8px;
+  background: rgba(26, 33, 45, 0.5);
+  border: 1px solid var(--border-subtle);
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.custom-slider-container:hover {
+  border-color: rgba(116, 236, 199, 0.3);
+  background: rgba(26, 33, 45, 0.7);
+}
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.slider-value {
+  color: var(--accent-mint);
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 50px;
+  text-align: right;
+}
+
+.slider-range-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* Custom switch styling to match the theme */
+.form-check-input[type='checkbox']:checked {
+  background-color: var(--accent-mint) !important;
+  border-color: var(--accent-mint) !important;
+}
+
+.form-check-input[type='checkbox']:focus {
+  box-shadow: 0 0 0 0.2rem rgba(116, 236, 199, 0.25) !important;
+  border-color: var(--accent-mint) !important;
+}
+
+.form-check-input[type='checkbox'] {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+.form-check-label {
+  color: var(--text-primary) !important;
+  font-weight: 500;
 }
 
 /* Custom border utilities to override Bootstrap defaults */

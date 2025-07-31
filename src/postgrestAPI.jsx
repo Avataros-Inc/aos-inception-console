@@ -1,6 +1,9 @@
 // export const API_BASE_URL = 'http://192.168.4.118:8080';
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Event dispatcher for authentication errors
+const authEventDispatcher = new EventTarget();
+
 export const setSessionObj = (sessionObj) => {
   localStorage.setItem('session', JSON.stringify(sessionObj));
 };
@@ -22,6 +25,55 @@ export const removeSession = () => {
 export const getOrgId = () => {
   const sessionObj = getSession();
   return sessionObj?.org_id || null;
+};
+
+// Custom fetch wrapper that handles 401 responses
+export const authenticatedFetch = async (url, options = {}) => {
+  const token = getSessionToken();
+
+  const defaultHeaders = {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+  };
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...defaultHeaders,
+      ...options.headers,
+    },
+  });
+
+  // Handle 401 Unauthorized responses
+  if (response.status === 401) {
+    // Clear the invalid session
+    removeSession();
+
+    // Dispatch auth error event
+    authEventDispatcher.dispatchEvent(
+      new CustomEvent('authError', {
+        detail: { status: 401, message: 'Session expired. Please log in again.' },
+      })
+    );
+
+    // Redirect to login
+    window.location.hash = '/login';
+
+    // Throw error to prevent further processing
+    throw new Error('Authentication failed. Please log in again.');
+  }
+
+  return response;
+};
+
+// Function to listen for authentication errors
+export const onAuthError = (callback) => {
+  authEventDispatcher.addEventListener('authError', callback);
+
+  // Return cleanup function
+  return () => {
+    authEventDispatcher.removeEventListener('authError', callback);
+  };
 };
 
 // Hardcoded authorization token (will be replaced with cookie-based auth later)
@@ -60,12 +112,8 @@ const fetchWithCache = async (resourcePath, options = {}) => {
   // Otherwise, fetch from API
   try {
     const endpoint = `${API_BASE_URL}/${resourcePath}${query}`;
-    const response = await fetch(endpoint, {
+    const response = await authenticatedFetch(endpoint, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getSessionToken()}`
-      }
     });
 
     if (!response.ok) {
@@ -77,7 +125,7 @@ const fetchWithCache = async (resourcePath, options = {}) => {
     // Update cache
     cache[cacheKey] = {
       data,
-      timestamp: now
+      timestamp: now,
     };
 
     return data;
@@ -94,10 +142,10 @@ const fetchWithCache = async (resourcePath, options = {}) => {
 export const invalidateCache = (resourcePath = null) => {
   if (resourcePath === null) {
     // Clear entire cache
-    Object.keys(cache).forEach(key => delete cache[key]);
+    Object.keys(cache).forEach((key) => delete cache[key]);
   } else {
     // Clear specific resource and its queries
-    Object.keys(cache).forEach(key => {
+    Object.keys(cache).forEach((key) => {
       if (key.startsWith(resourcePath)) {
         delete cache[key];
       }
@@ -146,18 +194,16 @@ export const invalidateCharacterCache = () => {
 export const updateCharacter = async (id, key, value) => {
   // Prepare the update payload with just the field to be updated
   const updateData = {
-    [key]: value
+    [key]: value,
   };
 
   try {
-    const response = await fetch(`${API_BASE_URL}/characters?id=eq.${id}`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/characters?id=eq.${id}`, {
       method: 'PATCH',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getSessionToken()}`,
-        'Prefer': 'return=representation' // Ask PostgresREST to return the updated record
+        Prefer: 'return=representation', // Ask PostgresREST to return the updated record
       },
-      body: JSON.stringify(updateData)
+      body: JSON.stringify(updateData),
     });
 
     if (!response.ok) {
@@ -184,22 +230,20 @@ export const updateCharacter = async (id, key, value) => {
 export const insertRenderJob = async (jobtype, config, id = null) => {
   // Prepare the update payload with just the field to be updated
   const insertData = {
-    "jobtype": jobtype,
-    "config": config,
+    jobtype: jobtype,
+    config: config,
   };
   if (id !== null) {
     insertData['id'] = id;
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/renderjobs`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/renderjobs`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getSessionToken()}`,
-        'Prefer': 'return=representation' // Ask PostgresREST to return the updated record
+        Prefer: 'return=representation', // Ask PostgresREST to return the updated record
       },
-      body: JSON.stringify(insertData)
+      body: JSON.stringify(insertData),
     });
 
     if (!response.ok) {
@@ -208,24 +252,21 @@ export const insertRenderJob = async (jobtype, config, id = null) => {
 
     const insertedRenderJob = await response.json();
 
-    return insertedRenderJob[0]["id"];
+    return insertedRenderJob[0]['id'];
   } catch (error) {
     console.error(`Error inserting render job:`, error);
     throw error;
   }
 };
 
-
 // TODO: limit to last 30 or do pagination
 export const getRenderJobs = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/renderjobs?org_id=eq.${ORG_ID}&order=created_at.desc`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/renderjobs?org_id=eq.${ORG_ID}&order=created_at.desc`, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getSessionToken()}`,
-        'Prefer': 'return=representation' // Ask PostgresREST to return the updated record
-      }
+        Prefer: 'return=representation', // Ask PostgresREST to return the updated record
+      },
     });
 
     if (!response.ok) {
@@ -242,24 +283,24 @@ export const getRenderJobs = async () => {
 };
 
 export const getRenderJob = async (jobId) => {
-  try  {
-    const response = await fetch(`${API_BASE_URL}/renderjobs?id=eq.${jobId}`,  {
-      method:  'GET',
-      headers:  {
-         'Content-Type':  'application/json',
-         'Authorization': `Bearer ${getSessionToken()}`,
-         'Prefer': 'return=representation'
-         }
-       });
-    if  (!response.ok)  {
+  try {
+    const response = await fetch(`${API_BASE_URL}/renderjobs?id=eq.${jobId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getSessionToken()}`,
+        Prefer: 'return=representation',
+      },
+    });
+    if (!response.ok) {
       throw new Error(`HTTP error: ${response.status}`);
-     }
-    const renderjobs  = await response.json();
+    }
+    const renderjobs = await response.json();
     return renderjobs[0];
   } catch (error) {
     console.error('Error fetching render job:', error);
     throw error;
-   }
+  }
 };
 
 export const updateRenderJob = async (jobId, updates) => {
@@ -268,10 +309,10 @@ export const updateRenderJob = async (jobId, updates) => {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getSessionToken()}`,
-        'Prefer': 'return=representation'
+        Authorization: `Bearer ${getSessionToken()}`,
+        Prefer: 'return=representation',
       },
-      body: JSON.stringify(updates)
+      body: JSON.stringify(updates),
     });
 
     if (!response.ok) {
@@ -287,25 +328,23 @@ export const updateRenderJob = async (jobId, updates) => {
 };
 
 // Convenience functions using the generic update function
-export const cancelRenderJob = (jobId) =>
-  updateRenderJob(jobId, { jobstatus: 2 }); // Suspended
+export const cancelRenderJob = (jobId) => updateRenderJob(jobId, { jobstatus: 2 }); // Suspended
 
-export const retryRenderJob = (jobId) =>
-  updateRenderJob(jobId, { jobstatus: 0 }); // Unknown (or 6 for Pending)
-
+export const retryRenderJob = (jobId) => updateRenderJob(jobId, { jobstatus: 0 }); // Unknown (or 6 for Pending)
 
 export const getApiKeys = async () => {
   try {
     // ?select=*,org_users!fk_user_id(name,email)&org_id=eq.${ORG_ID}
     // ?org_id=eq.${ORG_ID}
-    const response = await fetch(`${API_BASE_URL}/apikeys?select=*,org_users!fk_user_id(name,email)&org_id=eq.${ORG_ID}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getSessionToken()}`,
-        'Prefer': 'return=representation' // Ask PostgresREST to return the updated record
+    const response = await authenticatedFetch(
+      `${API_BASE_URL}/apikeys?select=*,org_users!fk_user_id(name,email)&org_id=eq.${ORG_ID}`,
+      {
+        method: 'GET',
+        headers: {
+          Prefer: 'return=representation', // Ask PostgresREST to return the updated record
+        },
       }
-    });
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
@@ -322,18 +361,16 @@ export const getApiKeys = async () => {
 
 export const createApiKey = async ({ name, expires_at }) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/apikeys`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/apikeys`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getSessionToken()}`,
-        'Prefer': 'return=representation'
+        Prefer: 'return=representation',
       },
       body: JSON.stringify({
         name,
         expires_at,
-        org_id: ORG_ID
-      })
+        org_id: ORG_ID,
+      }),
     });
 
     if (!response.ok) {
@@ -350,12 +387,12 @@ export const createApiKey = async ({ name, expires_at }) => {
 
 export const getPresignedUrl = async ({ fileName, fileType }) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/presigned?filename=${fileName}&contentType=${fileType}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${getSessionToken()}`,
+    const response = await authenticatedFetch(
+      `${API_BASE_URL}/presigned?filename=${fileName}&contentType=${fileType}`,
+      {
+        method: 'GET',
       }
-    });
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
@@ -370,11 +407,8 @@ export const getPresignedUrl = async ({ fileName, fileType }) => {
 
 export const checkVideoStatus = async (renderJobID) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/video/${renderJobID}`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/video/${renderJobID}`, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${getSessionToken()}`,
-      }
     });
 
     if (!response.ok) {
@@ -385,19 +419,17 @@ export const checkVideoStatus = async (renderJobID) => {
         error: errorData.error || errorData.message || 'Failed to fetch video',
         retryAfter: parseInt(retryAfter, 10),
         status: response.status,
-        exists: errorData.exists || false
+        exists: errorData.exists || false,
       };
     }
 
     const data = await response.json();
     return { url: data.url, exists: true };
-  } catch (err) {
+  } catch (error) {
     return {
       error: 'Network error occurred',
       retryAfter: 5,
-      exists: false
+      exists: false,
     };
   }
 };
-
-
