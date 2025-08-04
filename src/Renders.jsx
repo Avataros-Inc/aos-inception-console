@@ -21,8 +21,37 @@ export const RenderQueue = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getRenderJobs();
-      setJobs(data);
+
+      // TODO: REMOVE BYPASS - Mock render jobs data for UI testing
+      const mockJobs = [
+        {
+          id: 1,
+          jobtype: 'text-to-avatar',
+          jobstatus: 3,
+          created_at: new Date().toISOString(),
+          config: { character: 'Alex Thompson', text: 'Hello world!' },
+        },
+        {
+          id: 2,
+          jobtype: 'audio-to-avatar',
+          jobstatus: 1,
+          created_at: new Date(Date.now() - 3600000).toISOString(),
+          config: { character: 'Sarah Chen', audio_duration: 30 },
+        },
+        {
+          id: 3,
+          jobtype: 'text-to-avatar',
+          jobstatus: 4,
+          created_at: new Date(Date.now() - 7200000).toISOString(),
+          config: { character: 'Marcus Rodriguez', text: 'Testing failed job' },
+        },
+      ];
+      setJobs(mockJobs);
+      return;
+      // END BYPASS - Uncomment below when API is available
+
+      // const data = await getRenderJobs();
+      // setJobs(data);
     } catch (err) {
       console.error('Failed to fetch jobs:', err);
       setError(err.message || 'Failed to load jobs');
@@ -38,9 +67,17 @@ export const RenderQueue = () => {
   const handleCancel = async (jobId) => {
     try {
       console.log('cancel', jobId);
-      await cancelRenderJob(jobId);
-      // Refresh the job list after successful cancellation
-      await fetchJobs();
+
+      // TODO: REMOVE BYPASS - Mock cancel operation for UI testing
+      console.log(`Mocking cancel for job ${jobId}`);
+      // Update the job status locally to simulate the operation
+      setJobs((prevJobs) => prevJobs.map((job) => (job.id === jobId ? { ...job, jobstatus: 2 } : job)));
+      return;
+      // END BYPASS - Uncomment below when API is available
+
+      // await cancelRenderJob(jobId);
+      // // Refresh the job list after successful cancellation
+      // await fetchJobs();
       // Optional: Show success notification
     } catch (error) {
       // Optional: Show error notification
@@ -50,9 +87,16 @@ export const RenderQueue = () => {
 
   const handleRetry = async (jobId) => {
     try {
-      await retryRenderJob(jobId);
-      // Refresh the job list after successful retry
-      await fetchJobs();
+      // TODO: REMOVE BYPASS - Mock retry operation for UI testing
+      console.log(`Mocking retry for job ${jobId}`);
+      // Update the job status locally to simulate the operation
+      setJobs((prevJobs) => prevJobs.map((job) => (job.id === jobId ? { ...job, jobstatus: 6 } : job)));
+      return;
+      // END BYPASS - Uncomment below when API is available
+
+      // await retryRenderJob(jobId);
+      // // Refresh the job list after successful retry
+      // await fetchJobs();
       // Optional: Show success notification
     } catch (error) {
       // Optional: Show error notification

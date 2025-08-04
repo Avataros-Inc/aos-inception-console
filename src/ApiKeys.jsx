@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Container, Card, Table, Modal, Form, Alert, Spinner, Badge } from 'react-bootstrap';
-import { API_BASE_URL, getSession, authenticatedFetch } from './postgrestAPI';
+import { API_BASE_URL, getSession, authenticatedFetch, getSessionToken } from './postgrestAPI';
 import { Button } from '@/Components/Button';
 
 const ApiKeys = () => {
@@ -19,19 +19,52 @@ const ApiKeys = () => {
   const fetchApiKeys = async () => {
     try {
       setLoading(true);
-      const response = await authenticatedFetch(`${API_BASE_URL}/api_keys`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
 
-      if (response.ok) {
-        const data = await response.json();
-        setApiKeys(data);
-        setError(null);
-      } else {
-        throw new Error(`Failed to fetch API keys: ${response.status}`);
-      }
+      // TODO: REMOVE BYPASS - Mock API keys data for UI testing
+      const mockApiKeys = [
+        {
+          id: 1,
+          name: 'Development Key',
+          key: 'ak_test_1234567890abcdef1234567890abcdef',
+          is_active: true,
+          created_at: new Date(Date.now() - 86400000).toISOString(),
+          last_used: new Date(Date.now() - 3600000).toISOString(),
+        },
+        {
+          id: 2,
+          name: 'Production Key',
+          key: 'ak_prod_abcdef1234567890abcdef1234567890',
+          is_active: true,
+          created_at: new Date(Date.now() - 604800000).toISOString(),
+          last_used: null,
+        },
+        {
+          id: 3,
+          name: 'Staging Key',
+          key: 'ak_stage_9876543210fedcba9876543210fedcba',
+          is_active: false,
+          created_at: new Date(Date.now() - 1209600000).toISOString(),
+          last_used: new Date(Date.now() - 86400000).toISOString(),
+        },
+      ];
+      setApiKeys(mockApiKeys);
+      setError(null);
+      return;
+      // END BYPASS - Uncomment below when API is available
+
+      // const response = await authenticatedFetch(`${API_BASE_URL}/api_keys`, {
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      // });
+
+      // if (response.ok) {
+      //   const data = await response.json();
+      //   setApiKeys(data);
+      //   setError(null);
+      // } else {
+      //   throw new Error(`Failed to fetch API keys: ${response.status}`);
+      // }
     } catch (err) {
       console.error('Error fetching API keys:', err);
       setError('Failed to load API keys. Please try again.');

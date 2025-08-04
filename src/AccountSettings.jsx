@@ -17,16 +17,29 @@ const AccountSettings = () => {
     const fetchUserData = async () => {
       console.log(`${API_BASE_URL}/org_users?user_id=eq.${getSession().user_id}`);
       try {
-        const response = await fetch(`${API_BASE_URL}/org_users?user_id=eq.${getSession().user_id}`, {
-          headers: {
-            Authorization: `Bearer ${getSessionToken()}`,
-          },
-        });
-        const data = await response.json();
-        if (data && data.length > 0) {
-          setUserData(data[0]);
-          setName(data[0].name);
-        }
+        // TODO: REMOVE BYPASS - Mock user data for UI testing
+        const mockUserData = {
+          user_id: 1,
+          name: 'Test User',
+          email: 'test@example.com',
+          org_id: 'test-org',
+          created_at: new Date().toISOString(),
+        };
+        setUserData(mockUserData);
+        setName(mockUserData.name);
+        return;
+        // END BYPASS - Uncomment below when API is available
+
+        // const response = await fetch(`${API_BASE_URL}/org_users?user_id=eq.${getSession().user_id}`, {
+        //   headers: {
+        //     Authorization: `Bearer ${getSessionToken()}`,
+        //   },
+        // });
+        // const data = await response.json();
+        // if (data && data.length > 0) {
+        //   setUserData(data[0]);
+        //   setName(data[0].name);
+        // }
       } catch (err) {
         setError('Failed to fetch user data');
         console.error('Error fetching user data:', err);

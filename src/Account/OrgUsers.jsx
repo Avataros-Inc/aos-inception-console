@@ -132,15 +132,44 @@ const OrgUsers = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await fetch(`${API_BASE_URL}/org_users`, {
-          headers: {
-            Authorization: `Bearer ${getSessionToken()}`,
+
+        // TODO: REMOVE BYPASS - Mock org users data for UI testing
+        const mockUsers = [
+          {
+            id: 1,
+            name: 'Test User',
+            email: 'test@example.com',
+            created_at: new Date().toISOString(),
+            user_id: 1,
           },
-        });
-        const data = await response.json();
-        if (data && data.length > 0) {
-          setKeys(data);
-        }
+          {
+            id: 2,
+            name: 'John Doe',
+            email: 'john@example.com',
+            created_at: new Date(Date.now() - 86400000).toISOString(),
+            user_id: 2,
+          },
+          {
+            id: 3,
+            name: 'Jane Smith',
+            email: 'jane@example.com',
+            created_at: new Date(Date.now() - 172800000).toISOString(),
+            user_id: 3,
+          },
+        ];
+        setKeys(mockUsers);
+        return;
+        // END BYPASS - Uncomment below when API is available
+
+        // const response = await fetch(`${API_BASE_URL}/org_users`, {
+        //   headers: {
+        //     Authorization: `Bearer ${getSessionToken()}`,
+        //   },
+        // });
+        // const data = await response.json();
+        // if (data && data.length > 0) {
+        //   setKeys(data);
+        // }
       } catch (err) {
         setError('Failed to fetch user data');
         console.error('Error fetching user data:', err);

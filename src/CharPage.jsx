@@ -170,20 +170,56 @@ const CharPage = ({ cachedCharacters = [] }) => {
     async function fetchCharacters() {
       try {
         setIsLoading(true);
-        const response = await fetch(`${API_BASE_URL}/characters`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${getSessionToken()}`,
+
+        // TODO: REMOVE BYPASS - Mock characters data for UI testing
+        const mockCharacters = [
+          {
+            id: 1,
+            name: 'Alex Thompson',
+            available: true,
+            unreal_config: { lighting: 'default', quality: 'high' },
+            llm_config: { model: 'gpt-4', temperature: 0.7 },
+            voice_config: { voice_id: 'alex_voice', speed: 1.0 },
+            a2f_config: { emotion_intensity: 0.8, lip_sync: true },
           },
-        });
+          {
+            id: 2,
+            name: 'Sarah Chen',
+            available: true,
+            unreal_config: { lighting: 'warm', quality: 'medium' },
+            llm_config: { model: 'gpt-3.5', temperature: 0.5 },
+            voice_config: { voice_id: 'sarah_voice', speed: 0.9 },
+            a2f_config: { emotion_intensity: 0.6, lip_sync: true },
+          },
+          {
+            id: 3,
+            name: 'Marcus Rodriguez',
+            available: false,
+            unreal_config: { lighting: 'dramatic', quality: 'ultra' },
+            llm_config: { model: 'gpt-4', temperature: 0.9 },
+            voice_config: { voice_id: 'marcus_voice', speed: 1.1 },
+            a2f_config: { emotion_intensity: 0.9, lip_sync: false },
+          },
+        ];
+        setcharacters(mockCharacters);
+        setIsLoading(false);
+        return;
+        // END BYPASS - Uncomment below when API is available
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
+        // const response = await fetch(`${API_BASE_URL}/characters`, {
+        //   method: 'GET',
+        //   headers: {
+        //     'Content-Type': 'application/json',
+        //     Authorization: `Bearer ${getSessionToken()}`,
+        //   },
+        // });
 
-        const data = await response.json();
-        setcharacters(data || []);
+        // if (!response.ok) {
+        //   throw new Error(`HTTP error! Status: ${response.status}`);
+        // }
+
+        // const data = await response.json();
+        // setcharacters(data || []);
       } catch (error) {
         console.error(`Error getting characters:`, error);
       } finally {

@@ -21,18 +21,53 @@ const Videos = ({ characters }) => {
   useEffect(() => {
     const fetchVideos = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/renderjobs?jobtype=neq.live&jobstatus=eq.3`, {
-          headers: {
-            Authorization: `Bearer ${getSessionToken()}`,
+        // TODO: REMOVE BYPASS - Mock videos data for UI testing
+        const mockVideos = [
+          {
+            id: 1,
+            jobtype: 'text-to-avatar',
+            jobstatus: 3,
+            created_at: new Date().toISOString(),
+            config: { character: 'Alex Thompson', text: 'Hello world!' },
+            org_id: 'test-org',
+            job_id: '1',
           },
-          method: 'GET',
-        });
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        const data = await response.json();
-        setVideos(data);
+          {
+            id: 2,
+            jobtype: 'audio-to-avatar',
+            jobstatus: 3,
+            created_at: new Date(Date.now() - 3600000).toISOString(),
+            config: { character: 'Sarah Chen', audio_duration: 30 },
+            org_id: 'test-org',
+            job_id: '2',
+          },
+          {
+            id: 3,
+            jobtype: 'text-to-avatar',
+            jobstatus: 3,
+            created_at: new Date(Date.now() - 7200000).toISOString(),
+            config: { character: 'Marcus Rodriguez', text: 'Another test video' },
+            org_id: 'test-org',
+            job_id: '3',
+          },
+        ];
+        setVideos(mockVideos);
         setLoading(false);
+        return;
+        // END BYPASS - Uncomment below when API is available
+
+        // const response = await fetch(`${API_BASE_URL}/renderjobs?jobtype=neq.live&jobstatus=eq.3`, {
+        //   headers: {
+        //     Authorization: `Bearer ${getSessionToken()}`,
+        //   },
+        //   method: 'GET',
+        // });
+        // if (!response.ok) {
+        //   throw new Error('Network response was not ok');
+        // }
+        // const data = await response.json();
+        // setVideos(data);
+        // setLoading(false);
       } catch (err) {
         setError(err);
         setLoading(false);
