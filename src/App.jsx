@@ -73,7 +73,9 @@ const HomePage = () => {
             <Users className="mr-3 text-accent-mint" size={24} />
             <h3 className="text-xl font-semibold text-white">Avatar Creation</h3>
           </div>
-          <p className="text-slate-400 mb-4 flex-grow">Create and customize lifelike 3D avatars with our advanced editor</p>
+          <p className="text-slate-400 mb-4 flex-grow">
+            Create and customize lifelike 3D avatars with our advanced editor
+          </p>
           <Link to="/console/characters">
             <button className="bg-accent-mint text-slate-900 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-emerald-400/25 transition-all duration-300">
               Get Started
