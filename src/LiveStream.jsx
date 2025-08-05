@@ -97,35 +97,31 @@ const LiveStream = ({ livestreamId }) => {
       {/* Video Stream */}
       <Row className="flex-grow-1 m-0" style={{ position: 'relative', width: '100%', minHeight: '50vh' }}>
         <Col className="p-0 d-flex justify-content-center">
-          <div
-            style={{
-              width: '100%',
-              // paddingTop: '56.25%', /* 16:9 Aspect Ratio */
-              position: 'relative',
-            }}
-          >
-            <PixelStreamingWrapper
-              initialSettings={{
-                ss: liveStreamUrl,
-                AutoPlayVideo: true,
-                AutoConnect: true,
-                HoveringMouse: false,
-                StartVideoMuted: false,
-                WaitForStreamer: true,
-                KeyboardInput: true,
-                MouseInput: true,
-                TouchInput: false,
-                MatchViewportResolution: true,
-                // ForceTurn: true
-              }}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                // height: '100%'
-              }}
-            />
+          <div className="w-full relative mb-6" style={{ aspectRatio: '16/9' }}>
+            <div className="bg-slate-800/20 backdrop-blur-sm border border-slate-700/50 rounded-xl relative overflow-hidden w-full h-full">
+              <PixelStreamingWrapper
+                initialSettings={{
+                  ss: liveStreamUrl,
+                  AutoPlayVideo: true,
+                  AutoConnect: true,
+                  HoveringMouse: false,
+                  StartVideoMuted: false,
+                  WaitForStreamer: true,
+                  KeyboardInput: true,
+                  MouseInput: true,
+                  TouchInput: false,
+                  MatchViewportRes: true,
+                  // ForceTURN: true
+                }}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                }}
+              />
+            </div>
           </div>
         </Col>
       </Row>
