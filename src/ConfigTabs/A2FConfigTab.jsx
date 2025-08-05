@@ -176,7 +176,7 @@ const A2FConfigEditor = ({ initialConfig, onConfigChange }) => {
   return (
     <div className="a2f-config-editor">
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h5 className="text-slate-300 text-xl font-bold mb-2">A2F Configuration</h5>
+        <h5 className="text-slate-300 text-xl font-bold mb-2">Configuration</h5>
         <Button variant="secondary" size="sm" onClick={handleReset}>
           Reset to Default
         </Button>

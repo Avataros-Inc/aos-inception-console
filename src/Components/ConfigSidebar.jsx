@@ -15,7 +15,7 @@ const ConfigSidebar = ({ visual = false, voice = false, a2f = false, llm = false
     const tabs = [];
     if (visual) tabs.push({ key: 'visual', label: 'Visual', component: VisualConfigTab });
     if (voice) tabs.push({ key: 'voice', label: 'Voice', component: VoiceConfigTab });
-    if (a2f) tabs.push({ key: 'a2f', label: 'A2F Config', component: A2FConfigTab });
+    if (a2f) tabs.push({ key: 'a2f', label: 'Config', component: A2FConfigTab });
     if (llm) tabs.push({ key: 'llm', label: 'LLM Config', component: LLMConfigTab });
     return tabs;
   }, [visual, voice, a2f, llm]);

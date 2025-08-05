@@ -143,6 +143,21 @@
     pointer-events: none;
     z-index: -1;
   }
+
+  /* Spinner animation */
+  .spinner {
+    animation: spin 1s linear infinite;
+    color: var(--accent-mint);
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
 }
 
 /* Custom scrollbar for webkit browsers */
@@ -610,5 +625,57 @@ html {
 
   .border-r-border-subtle {
     border-right-color: var(--border-subtle) !important;
+  }
+}
+
+/* Dark theme text utilities */
+.text-text-primary {
+  color: var(--text-primary) !important;
+}
+
+.text-text-secondary {
+  color: var(--text-secondary) !important;
+}
+
+/* Background utilities for dark theme */
+.bg-bg-secondary {
+  background-color: var(--bg-secondary) !important;
+}
+
+.bg-bg-secondary\/50 {
+  background-color: rgba(26, 33, 45, 0.5) !important;
+}
+
+.border-accent-mint {
+  border-color: var(--accent-mint) !important;
+}
+
+.border-border-subtle {
+  border-color: var(--border-subtle) !important;
+}
+
+/* React Bootstrap Spinner dark theme overrides */
+.spinner-border {
+  border-color: var(--text-secondary) !important;
+  border-right-color: transparent !important;
+}
+
+.spinner-border.text-accent-mint {
+  border-color: var(--accent-mint) !important;
+  border-right-color: transparent !important;
+}
+
+/* Spinner animation */
+.spinner {
+  animation: spin 1s linear infinite;
+  color: var(--accent-mint);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }

@@ -271,28 +271,39 @@ const LiveStreamPage = () => {
   return (
     <div className="relative mr-[480px] overflow-hidden">
       <div className="relative w-full overflow-y-auto">
-        {/* <Spinner animation="border" role="status" className="mb-3">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner> */}
-        <p>
-          <Broadcast className="me-2" />
-          {loadingMessage}
-        </p>
+        <h2 className="gradient-text text-3xl font-bold mb-6">Interactive Agent</h2>
 
-        {/* <pre>{JSON.stringify(config, null, 4)}</pre> */}
-
-        {status === 'needs_request' && (
-          <Button variant="primary" onClick={requestLivestream} disabled={status === 'requesting'}>
-            {status === 'requesting' ? 'Requesting...' : 'Create Livestream'}
-          </Button>
-        )}
-        {status !== 'needs_request' && (
-          <Button onClick={() => handleEndSession(livestreamId)} variant="danger" size="sm">
-            End Session
-          </Button>
-        )}
-
-        <h2 className="text-slate-300 text-xl font-bold mb-2">{livestreamId}</h2>
+        {/* Empty window placeholder for livestream */}
+        <div className="w-full relative mb-6">
+          <div
+            className="bg-slate-800/20 backdrop-blur-sm border border-slate-700/50 rounded-xl relative overflow-hidden"
+            style={{ paddingBottom: '56.25%' }} // 16:9 Aspect Ratio
+          >
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-slate-400 flex items-center gap-6">
+                <Broadcast size={48} />
+                <div className="text-left">
+                  <p className="text-lg mb-2">{loadingMessage}</p>
+                  <div className="flex items-center gap-3">
+                    {status === 'needs_request' && (
+                      <Button variant="primary" onClick={requestLivestream} disabled={status === 'requesting'}>
+                        {status === 'requesting' ? 'Requesting...' : 'Create Livestream'}
+                      </Button>
+                    )}
+                    {status !== 'needs_request' && (
+                      <>
+                        <p className="text-sm text-slate-500 mb-0">Session: {livestreamId}</p>
+                        <Button onClick={() => handleEndSession(livestreamId)} variant="danger" size="sm">
+                          End Session
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 mb-4">
           <h3 className="text-slate-300 text-xl font-bold mb-2">Configuration</h3>

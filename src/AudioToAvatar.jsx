@@ -196,12 +196,12 @@ const AudioToAvatar = () => {
       {/* Loading Overlay */}
       {isSubmitting && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-[1000]">
-          <div className="bg-white p-8 rounded-lg text-center">
-            <Spinner animation="border" role="status" className="mb-3">
+          <div className="bg-bg-secondary p-8 rounded-lg text-center border border-border-subtle">
+            <Spinner animation="border" role="status" className="mb-3 text-accent-mint">
               <span className="visually-hidden">Loading...</span>
             </Spinner>
-            <h5>Uploading audio and starting video generation...</h5>
-            <p>Please don't close this window</p>
+            <h5 className="text-text-primary">Uploading audio and starting video generation...</h5>
+            <p className="text-text-secondary">Please don't close this window</p>
           </div>
         </div>
       )}
@@ -219,16 +219,16 @@ const AudioToAvatar = () => {
         {/* Audio Upload Area */}
         <div
           className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer mb-5 transition-all duration-300 ${
-            isHovering ? 'bg-slate-200 border-slate-400' : 'bg-slate-100 border-slate-300'
+            isHovering ? 'bg-bg-secondary border-accent-mint' : 'bg-bg-secondary/50 border-border-subtle'
           }`}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onClick={() => fileInputRef.current.click()}
         >
-          <Upload size={48} className="mb-3" style={{ color: '#6c757d' }} />
-          <h5>Drag & drop an audio file here, or click to browse</h5>
-          <p className="text-muted">Supports MP3, WAV, OGG (Max 50MB)</p>
+          <Upload size={48} className="mb-3 text-text-secondary" />
+          <h5 className="text-text-primary mb-2">Drag & drop an audio file here, or click to browse</h5>
+          <p className="text-text-secondary">Supports MP3, WAV, OGG (Max 50MB)</p>
           <Form.Control
             type="file"
             ref={fileInputRef}
@@ -240,7 +240,7 @@ const AudioToAvatar = () => {
 
         {/* Or Divider */}
         <div className="text-center my-3">
-          <span className="text-muted">OR</span>
+          <span className="text-text-secondary">OR</span>
         </div>
 
         {/* Recording Controls */}
@@ -263,10 +263,10 @@ const AudioToAvatar = () => {
         {/* Audio Preview */}
         {audioUrl && (
           <div className="mt-5 flex items-center gap-4">
-            <div className="flex-1 h-15 bg-slate-200 rounded relative overflow-hidden">
+            <div className="flex-1 h-15 bg-bg-secondary rounded relative overflow-hidden border border-border-subtle">
               {/* In a real app, you would render a waveform here using a library like wavesurfer.js */}
             </div>
-            <span>{formatTime(audioDuration)}</span>
+            <span className="text-text-primary">{formatTime(audioDuration)}</span>
             <Button variant="outline-primary" size="sm" onClick={playAudio}>
               <Play />
             </Button>
@@ -281,12 +281,12 @@ const AudioToAvatar = () => {
         <div className="d-flex justify-content-between align-items-center mt-4">
           <div>
             {audioFile && (
-              <span className="text-muted">
+              <span className="text-text-secondary">
                 {audioFile.name} • {Math.round(audioFile.size / 1024)} KB • {formatTime(audioDuration)}
               </span>
             )}
           </div>
-          <Button variant="secondary" className="px-4" onClick={generateVideo} disabled={!audioFile}>
+          <Button className="px-4" onClick={generateVideo} disabled={!audioFile}>
             Generate Video
           </Button>
         </div>

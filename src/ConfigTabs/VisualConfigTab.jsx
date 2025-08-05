@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Form } from 'react-bootstrap';
 import { cn } from '@/lib/utils';
 
@@ -40,117 +40,281 @@ const environments = [
 ];
 
 const VisualConfigTab = ({ characters, updateConfig, config }) => {
+  const [expandedSections, setExpandedSections] = useState({
+    avatar: true,
+    environment: true,
+    camera: true,
+  });
+
+  const toggleSection = (section) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
   const cameraPreset = config.camera?.preset || 'Preset1';
   const selectedEnvironment = config.environment || 'Map_Env_ltOliverDefault_v01';
+  const selectedCharacter = characters.find((char) => char.id === config.avatar);
 
   return (
     <div className="space-y-6">
       {/* Avatar Selection */}
       <div style={styles.settingGroup}>
-        <h6 className="text-slate-300 text-xl font-bold mb-2">Avatar</h6>
-        <div>
-          <Form.Select
-            aria-label="Select Avatar"
-            onChange={(e) => updateConfig('avatar', e.target.value)}
-            value={config.avatar}
-            style={styles.avatarSelect}
+        <div className="flex items-center justify-between cursor-pointer mb-2" onClick={() => toggleSection('avatar')}>
+          <h6 className="text-slate-300 text-xl font-bold">Avatar</h6>
+          <svg
+            className={cn(
+              'w-5 h-5 text-slate-300 transition-transform duration-200',
+              expandedSections.avatar ? 'rotate-180' : ''
+            )}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            {characters.map((character) => (
-              <option key={character.id} value={character.id}>
-                {character.name.capitalize()}
-              </option>
-            ))}
-          </Form.Select>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
         </div>
+
+        {expandedSections.avatar ? (
+          <div className="grid grid-cols-3 gap-3">
+            {characters.map((character) => (
+              <div
+                key={character.id}
+                className={cn(
+                  'relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-200 hover:scale-105',
+                  config.avatar === character.id
+                    ? 'border-accent-mint shadow-lg shadow-accent-mint/20'
+                    : 'border-slate-600 hover:border-slate-400'
+                )}
+                onClick={() => updateConfig('avatar', character.id)}
+              >
+                <div className="aspect-square relative">
+                  <img
+                    src="/thumbnails/presets/Preset1.png"
+                    alt={character.name.capitalize()}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                  <div className="hidden w-full h-full bg-slate-800 items-center justify-center text-slate-400 text-xs">
+                    No Preview
+                  </div>
+                </div>
+                <div className="absolute inset-0 bg-black/40 flex items-end p-2">
+                  <span className="text-white text-xs font-medium">{character.name.capitalize()}</span>
+                </div>
+                {config.avatar === character.id && (
+                  <div className="absolute top-2 right-2">
+                    <div className="w-3 h-3 bg-accent-mint rounded-full border-2 border-white"></div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div
+            className="flex items-center space-x-3 p-3 bg-slate-800 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-700 transition-colors"
+            onClick={() => toggleSection('avatar')}
+          >
+            <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-600">
+              <img
+                src="/thumbnails/presets/Preset1.png"
+                alt={selectedCharacter?.name?.capitalize() || 'Avatar'}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <div className="hidden w-full h-full bg-slate-700 items-center justify-center text-slate-400 text-xs">
+                No Preview
+              </div>
+            </div>
+            <span className="text-slate-300 text-sm flex-1">
+              {selectedCharacter?.name?.capitalize() || 'Select Avatar'}
+            </span>
+            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        )}
       </div>
 
       {/* Environment Selection */}
       <div style={styles.settingGroup}>
-        <h6 className="text-slate-300 text-xl font-bold mb-2">Environment</h6>
-        <div className="grid grid-cols-3 gap-3">
-          {environments.map((env) => (
-            <div
-              key={env.id}
-              className={cn(
-                'relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-200 hover:scale-105',
-                selectedEnvironment === env.id
-                  ? 'border-accent-mint shadow-lg shadow-accent-mint/20'
-                  : 'border-slate-600 hover:border-slate-400'
-              )}
-              onClick={() => updateConfig('environment', env.id)}
-            >
-              <div className="aspect-square relative">
-                <img
-                  src={`/thumbnails/environment/${env.id}.png`}
-                  alt={env.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
-                  }}
-                />
-                <div className="hidden w-full h-full bg-slate-800 items-center justify-center text-slate-400 text-xs">
-                  No Preview
-                </div>
-              </div>
-              <div className="absolute inset-0 bg-black/40 flex items-end p-2">
-                <span className="text-white text-xs font-medium">{env.name}</span>
-              </div>
-              {selectedEnvironment === env.id && (
-                <div className="absolute top-2 right-2">
-                  <div className="w-3 h-3 bg-accent-mint rounded-full border-2 border-white"></div>
-                </div>
-              )}
-            </div>
-          ))}
+        <div
+          className="flex items-center justify-between cursor-pointer mb-2"
+          onClick={() => toggleSection('environment')}
+        >
+          <h6 className="text-slate-300 text-xl font-bold">Environment</h6>
+          <svg
+            className={cn(
+              'w-5 h-5 text-slate-300 transition-transform duration-200',
+              expandedSections.environment ? 'rotate-180' : ''
+            )}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
         </div>
+
+        {expandedSections.environment ? (
+          <div className="grid grid-cols-3 gap-3">
+            {environments.map((env) => (
+              <div
+                key={env.id}
+                className={cn(
+                  'relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-200 hover:scale-105',
+                  selectedEnvironment === env.id
+                    ? 'border-accent-mint shadow-lg shadow-accent-mint/20'
+                    : 'border-slate-600 hover:border-slate-400'
+                )}
+                onClick={() => updateConfig('environment', env.id)}
+              >
+                <div className="aspect-square relative">
+                  <img
+                    src={`/thumbnails/environment/${env.id}.png`}
+                    alt={env.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                  <div className="hidden w-full h-full bg-slate-800 items-center justify-center text-slate-400 text-xs">
+                    No Preview
+                  </div>
+                </div>
+                <div className="absolute inset-0 bg-black/40 flex items-end p-2">
+                  <span className="text-white text-xs font-medium">{env.name}</span>
+                </div>
+                {selectedEnvironment === env.id && (
+                  <div className="absolute top-2 right-2">
+                    <div className="w-3 h-3 bg-accent-mint rounded-full border-2 border-white"></div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div
+            className="flex items-center space-x-3 p-3 bg-slate-800 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-700 transition-colors"
+            onClick={() => toggleSection('environment')}
+          >
+            <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-600">
+              <img
+                src={`/thumbnails/environment/${selectedEnvironment}.png`}
+                alt={environments.find((env) => env.id === selectedEnvironment)?.name || 'Environment'}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <div className="hidden w-full h-full bg-slate-700 items-center justify-center text-slate-400 text-xs">
+                No Preview
+              </div>
+            </div>
+            <span className="text-slate-300 text-sm flex-1">
+              {environments.find((env) => env.id === selectedEnvironment)?.name || 'Select Environment'}
+            </span>
+            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        )}
       </div>
 
       {/* Camera Section */}
       <div style={styles.settingGroup}>
-        <h6 className="text-slate-300 text-xl font-bold mb-2">Camera</h6>
-        <div className="grid grid-cols-3 gap-3">
-          {Array(9)
-            .fill(0)
-            .map((_, index) => {
-              const presetId = `Preset${index + 1}`;
-              return (
-                <div
-                  key={presetId}
-                  className={cn(
-                    'relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-200 hover:scale-105',
-                    cameraPreset === presetId
-                      ? 'border-accent-mint shadow-lg shadow-accent-mint/20'
-                      : 'border-slate-600 hover:border-slate-400'
-                  )}
-                  onClick={() => updateConfig('camera', { preset: presetId })}
-                >
-                  <div className="aspect-square relative">
-                    <img
-                      src={`/thumbnails/presets/Preset${index + 1}.png`}
-                      alt={`Preset ${index + 1}`}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
-                      }}
-                    />
-                    <div className="hidden w-full h-full bg-slate-800 items-center justify-center text-slate-400 text-xs">
-                      No Preview
-                    </div>
-                  </div>
-                  <div className="absolute inset-0 bg-black/40 flex items-end p-2">
-                    <span className="text-white text-xs font-medium">Preset {index + 1}</span>
-                  </div>
-                  {cameraPreset === presetId && (
-                    <div className="absolute top-2 right-2">
-                      <div className="w-3 h-3 bg-accent-mint rounded-full border-2 border-white"></div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+        <div className="flex items-center justify-between cursor-pointer mb-2" onClick={() => toggleSection('camera')}>
+          <h6 className="text-slate-300 text-xl font-bold">Camera</h6>
+          <svg
+            className={cn(
+              'w-5 h-5 text-slate-300 transition-transform duration-200',
+              expandedSections.camera ? 'rotate-180' : ''
+            )}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
         </div>
+
+        {expandedSections.camera ? (
+          <div className="grid grid-cols-3 gap-3">
+            {Array(9)
+              .fill(0)
+              .map((_, index) => {
+                const presetId = `Preset${index + 1}`;
+                return (
+                  <div
+                    key={presetId}
+                    className={cn(
+                      'relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-200 hover:scale-105',
+                      cameraPreset === presetId
+                        ? 'border-accent-mint shadow-lg shadow-accent-mint/20'
+                        : 'border-slate-600 hover:border-slate-400'
+                    )}
+                    onClick={() => updateConfig('camera', { preset: presetId })}
+                  >
+                    <div className="aspect-square relative">
+                      <img
+                        src={`/thumbnails/presets/Preset${index + 1}.png`}
+                        alt={`Preset ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                      <div className="hidden w-full h-full bg-slate-800 items-center justify-center text-slate-400 text-xs">
+                        No Preview
+                      </div>
+                    </div>
+                    <div className="absolute inset-0 bg-black/40 flex items-end p-2">
+                      <span className="text-white text-xs font-medium">Preset {index + 1}</span>
+                    </div>
+                    {cameraPreset === presetId && (
+                      <div className="absolute top-2 right-2">
+                        <div className="w-3 h-3 bg-accent-mint rounded-full border-2 border-white"></div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        ) : (
+          <div
+            className="flex items-center space-x-3 p-3 bg-slate-800 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-700 transition-colors"
+            onClick={() => toggleSection('camera')}
+          >
+            <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-600">
+              <img
+                src={`/thumbnails/presets/${cameraPreset}.png`}
+                alt={cameraPreset}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <div className="hidden w-full h-full bg-slate-700 items-center justify-center text-slate-400 text-xs">
+                No Preview
+              </div>
+            </div>
+            <span className="text-slate-300 text-sm flex-1">{cameraPreset.replace('Preset', 'Preset ')}</span>
+            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        )}
       </div>
 
       {/* HD Export Section */}

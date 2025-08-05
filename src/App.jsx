@@ -6,10 +6,8 @@ import AccountSettings from './AccountSettings';
 import Videos from './Videos';
 import CharPage from './CharPage';
 import AssetFetcher from './AssetFetcher';
-// TODO: REMOVE BYPASS - Uncomment imports when API is available
-// import { getCharacters, getSessionToken, API_BASE_URL, onAuthError, removeSession } from './postgrestAPI';
-import { API_BASE_URL } from './postgrestAPI'; // Keep only API_BASE_URL for now
-// import { jwtDecode } from 'jwt-decode';
+import { getCharacters, getSessionToken, API_BASE_URL, onAuthError, removeSession } from './postgrestAPI';
+import { jwtDecode } from 'jwt-decode';
 import { RenderQueue } from './Renders';
 import { ComingSoonCard, AlphaCard } from './Components/ComingSoon';
 import { Login, Register, ResetPassword } from './LoginRegister';
@@ -43,19 +41,13 @@ const HomePage = () => {
   useEffect(() => {
     const checkApiHealth = async () => {
       try {
-        // TODO: REMOVE BYPASS - Mock API status for UI testing
-        setApiStatus({ status: 'healthy', message: 'Mock API running' });
-        setLoading(false);
-        return;
-        // END BYPASS - Uncomment below when API is available
-
-        // const response = await fetch(API_BASE_URL);
-        // if (response.ok) {
-        //   const data = await response.json();
-        //   setApiStatus(data);
-        // } else {
-        //   setApiStatus({ status: 'unhealthy' });
-        // }
+        const response = await fetch(API_BASE_URL);
+        if (response.ok) {
+          const data = await response.json();
+          setApiStatus(data);
+        } else {
+          setApiStatus({ status: 'unhealthy' });
+        }
       } catch (error) {
         setApiStatus({ status: 'error', message: error.message });
       } finally {
@@ -166,43 +158,8 @@ const Console = () => {
   useEffect(() => {
     const loadCharacters = async () => {
       try {
-        // TODO: REMOVE BYPASS - Mock characters data for UI testing
-        const mockCharacters = [
-          {
-            id: 1,
-            name: 'Alex Thompson',
-            available: true,
-            unreal_config: { lighting: 'default', quality: 'high' },
-            llm_config: { model: 'gpt-4', temperature: 0.7 },
-            voice_config: { voice_id: 'alex_voice', speed: 1.0 },
-            a2f_config: { emotion_intensity: 0.8, lip_sync: true },
-          },
-          {
-            id: 2,
-            name: 'Sarah Chen',
-            available: true,
-            unreal_config: { lighting: 'warm', quality: 'medium' },
-            llm_config: { model: 'gpt-3.5', temperature: 0.5 },
-            voice_config: { voice_id: 'sarah_voice', speed: 0.9 },
-            a2f_config: { emotion_intensity: 0.6, lip_sync: true },
-          },
-          {
-            id: 3,
-            name: 'Marcus Rodriguez',
-            available: false,
-            unreal_config: { lighting: 'dramatic', quality: 'ultra' },
-            llm_config: { model: 'gpt-4', temperature: 0.9 },
-            voice_config: { voice_id: 'marcus_voice', speed: 1.1 },
-            a2f_config: { emotion_intensity: 0.9, lip_sync: false },
-          },
-        ];
-        setCharacters(mockCharacters);
-        setLoading(false);
-        return;
-        // END BYPASS - Uncomment below when API is available
-
-        // const data = await getCharacters();
-        // setCharacters(data);
+        const data = await getCharacters();
+        setCharacters(data);
       } catch (error) {
         console.error('Failed to load characters:', error);
       } finally {
@@ -287,53 +244,37 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: REMOVE BYPASS - Mock session for UI testing
-    const mockSession = {
-      id: 1,
-      org_id: 'test-org',
-      email: 'test@example.com',
-      exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
-    };
-    setSession(mockSession);
+    const sessionToken = getSessionToken();
+    if (sessionToken) {
+      try {
+        const decoded = jwtDecode(sessionToken);
+        // Check if token is expired
+        if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+          setSession(null);
+          removeSession();
+        } else {
+          setSession(decoded);
+        }
+      } catch (error) {
+        console.error('Invalid token:', error);
+        setSession(null);
+        removeSession();
+      }
+    } else {
+      setSession(null);
+    }
     setLoading(false);
-    return;
-    // END BYPASS - Uncomment below when auth is needed
-
-    // const sessionToken = getSessionToken();
-    // if (sessionToken) {
-    //   try {
-    //     const decoded = jwtDecode(sessionToken);
-    //     // Check if token is expired
-    //     if (decoded.exp && decoded.exp * 1000 < Date.now()) {
-    //       setSession(null);
-    //       removeSession();
-    //     } else {
-    //       setSession(decoded);
-    //     }
-    //   } catch (error) {
-    //     console.error('Invalid token:', error);
-    //     setSession(null);
-    //     removeSession();
-    //   }
-    // } else {
-    //   setSession(null);
-    // }
-    // setLoading(false);
   }, []);
 
   useEffect(() => {
-    // TODO: REMOVE BYPASS - Skip auth error handling for UI testing
-    return () => {}; // No-op cleanup function
-    // END BYPASS - Uncomment below when auth is needed
-
     // Listen for authentication errors from API calls
-    // const unsubscribe = onAuthError((event) => {
-    //   console.log('Authentication error detected:', event.detail);
-    //   setSession(null);
-    //   // The redirect to login is already handled in the authenticatedFetch function
-    // });
+    const unsubscribe = onAuthError((event) => {
+      console.log('Authentication error detected:', event.detail);
+      setSession(null);
+      // The redirect to login is already handled in the authenticatedFetch function
+    });
 
-    // return unsubscribe;
+    return unsubscribe;
   }, []);
 
   if (loading) {
