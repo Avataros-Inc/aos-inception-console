@@ -20,7 +20,7 @@ const ApiKeys = () => {
     try {
       setLoading(true);
 
-      const response = await authenticatedFetch(`${API_BASE_URL}/api_keys`, {
+      const response = await authenticatedFetch(`${API_BASE_URL}/apikeys`, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -51,7 +51,7 @@ const ApiKeys = () => {
       setCreatingKey(true);
       setError(null);
 
-      const response = await authenticatedFetch(`${API_BASE_URL}/api_keys`, {
+      const response = await authenticatedFetch(`${API_BASE_URL}/apikeys`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -86,7 +86,7 @@ const ApiKeys = () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api_keys?id=eq.${keyId}`, {
+      const response = await fetch(`${API_BASE_URL}/apikeys?id=eq.${keyId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${getSessionToken()}`,
