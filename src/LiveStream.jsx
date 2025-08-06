@@ -224,7 +224,7 @@ const LiveStreamPage = () => {
         } else if (renderjob.jobstatus >= 6) {
           setLoadingMessage('Waiting streaming client');
           setTimeout(checkLivestream, recheckTime);
-        } else if (renderjob.jobstatus >= 4 && renderjob.jobstatus < 6) {
+        } else if (renderjob.jobstatus === 2 || renderjob.jobstatus === 4) {
           setLoadingMessage('Streaming finished');
           localStorage.removeItem('current_livestream');
           setStatus('needs_request');
