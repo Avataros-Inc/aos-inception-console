@@ -236,28 +236,28 @@ const AudioToAvatar = () => {
             accept="audio/*"
             style={{ display: 'none' }}
           />
-        </div>
 
-        {/* Or Divider */}
-        <div className="text-center my-3">
-          <span className="text-text-secondary">OR</span>
-        </div>
+          {/* Or Divider */}
+          <div className="text-center my-4">
+            <span className="text-text-secondary">OR</span>
+          </div>
 
-        {/* Recording Controls */}
-        <div className="flex justify-center gap-4 mb-5">
-          {isRecording ? (
-            <>
-              <Button variant="danger" onClick={stopRecording}>
-                <Stop className="me-2" />
-                Stop Recording ({formatTime(recordingTime)})
+          {/* Recording Controls */}
+          <div className="flex justify-center gap-4">
+            {isRecording ? (
+              <>
+                <Button variant="danger" onClick={stopRecording}>
+                  <Stop className="me-2" />
+                  Stop Recording ({formatTime(recordingTime)})
+                </Button>
+              </>
+            ) : (
+              <Button variant="primary" onClick={startRecording}>
+                <Mic className="me-2" />
+                Record with Microphone
               </Button>
-            </>
-          ) : (
-            <Button variant="primary" onClick={startRecording}>
-              <Mic className="me-2" />
-              Record with Microphone
-            </Button>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Audio Preview */}
@@ -279,6 +279,9 @@ const AudioToAvatar = () => {
 
         {/* Generate Button */}
         <div className="d-flex justify-content-between align-items-center mt-4">
+          <Button className="px-4" onClick={generateVideo} disabled={!audioFile}>
+            Generate Video
+          </Button>
           <div>
             {audioFile && (
               <span className="text-text-secondary">
@@ -286,9 +289,6 @@ const AudioToAvatar = () => {
               </span>
             )}
           </div>
-          <Button className="px-4" onClick={generateVideo} disabled={!audioFile}>
-            Generate Video
-          </Button>
         </div>
         <div className="d-flex justify-content-between align-items-center mt-4">
           <RenderJobVideo renderJobID={currentRenderJob} />

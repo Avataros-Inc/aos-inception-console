@@ -37,14 +37,14 @@ const TextToAvatar = () => {
             className="w-full border-border-subtle rounded-xl p-3"
             as="textarea"
             size="lg"
-            rows={10}
+            style={{ height: '300px' }}
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
         </Form.Group>
-        <div className="w-100% flex gap-10 items-center justify-left">
-          <span>{text.length} / 5,000 characters</span>
+        <div className="w-100% flex justify-between items-center mt-4">
           <Button onClick={generateVideo}>Generate Video</Button>
+          <span>{text.length} / 5,000 characters</span>
         </div>
 
         <div className="d-flex justify-content-between align-items-center mt-4">
