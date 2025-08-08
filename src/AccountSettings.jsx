@@ -68,7 +68,7 @@ const AccountSettings = () => {
   if (!userData) {
     return (
       <div className="flex flex-col items-center justify-center min-h-96">
-        <Loader2 className="animate-spin text-emerald-600 mb-3" size={32} />
+        <Loader2 className="animate-spin text-accent-mint mb-3" size={32} />
         <p className="text-slate-400">Loading account information...</p>
       </div>
     );
@@ -84,7 +84,7 @@ const AccountSettings = () => {
       {/* Profile Section */}
       <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl mb-6">
         <div className="border-b border-slate-700/50 p-4">
-          <h3 className="flex items-center text-emerald-400 font-semibold mb-0">
+          <h3 className="flex items-center text-accent-mint font-semibold mb-0">
             <User className="mr-2" size={20} />
             Profile Information
           </h3>
@@ -96,8 +96,8 @@ const AccountSettings = () => {
             </div>
           )}
           {success && (
-            <div className="bg-green-900/20 border border-green-700/50 rounded-xl p-4 mb-4">
-              <p className="text-green-300 mb-0">{success}</p>
+            <div className="bg-brand-900/20 border border-brand-700/50 rounded-xl p-4 mb-4">
+              <p className="text-brand-300 mb-0">{success}</p>
             </div>
           )}
 
@@ -110,7 +110,7 @@ const AccountSettings = () => {
                 onChange={(e) => setName(e.target.value)}
                 required
                 placeholder="Enter your display name"
-                className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
+                className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-accent-mint focus:border-accent-mint"
               />
             </Form.Group>
             <Button type="submit" disabled={isLoading} className="flex items-center gap-2">
@@ -124,7 +124,7 @@ const AccountSettings = () => {
       {/* Password Section */}
       <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl mb-6">
         <div className="border-b border-slate-700/50 p-4">
-          <h3 className="flex items-center text-emerald-400 font-semibold mb-0">
+          <h3 className="flex items-center text-accent-mint font-semibold mb-0">
             <Shield className="mr-2" size={20} />
             Security
           </h3>
@@ -137,7 +137,7 @@ const AccountSettings = () => {
       {/* Organization Users Section */}
       <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl">
         <div className="border-b border-slate-700/50 p-4">
-          <h3 className="flex items-center text-emerald-400 font-semibold mb-0">
+          <h3 className="flex items-center text-accent-mint font-semibold mb-0">
             <Users className="mr-2" size={20} />
             Organization Users
           </h3>

@@ -7,7 +7,7 @@ const JOB_STATUS = {
   0: { text: 'Unknown', variant: 'secondary', icon: Clock, bgColor: 'bg-slate-500', textColor: 'text-slate-100' },
   1: { text: 'Active', variant: 'primary', icon: Play, bgColor: 'bg-blue-500', textColor: 'text-blue-100' },
   2: { text: 'Suspended', variant: 'warning', icon: Square, bgColor: 'bg-yellow-500', textColor: 'text-yellow-100' },
-  3: { text: 'Completed', variant: 'success', icon: MonitorPlay, bgColor: 'bg-green-500', textColor: 'text-green-100' },
+  3: { text: 'Completed', variant: 'success', icon: MonitorPlay, bgColor: 'bg-brand-500', textColor: 'text-brand-100' },
   4: { text: 'Failed', variant: 'danger', icon: Square, bgColor: 'bg-red-500', textColor: 'text-red-100' },
   6: { text: 'Pending', variant: 'info', icon: Clock, bgColor: 'bg-cyan-500', textColor: 'text-cyan-100' },
 };
@@ -65,7 +65,7 @@ export const RenderQueue = () => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-96">
-        <Loader2 className="animate-spin text-emerald-400 mb-3" size={32} />
+        <Loader2 className="animate-spin text-accent-mint mb-3" size={32} />
         <p className="text-slate-400">Loading render jobs...</p>
       </div>
     );
@@ -81,7 +81,7 @@ export const RenderQueue = () => {
         <p className="text-red-300 mb-4">{error}</p>
         <button
           onClick={fetchJobs}
-          className="bg-gradient-to-r from-emerald-400 to-green-500 text-slate-900 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-emerald-400/25 transition-all duration-300"
+          className="bg-gradient-to-r from-brand-400 to-accent-mint text-slate-900 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-accent-mint/25 transition-all duration-300"
         >
           Retry
         </button>

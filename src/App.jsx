@@ -68,7 +68,7 @@ const HomePage = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <div className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl p-6 hover:border-emerald-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-400/10 hover:-translate-y-1 flex flex-col">
+        <div className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl p-6 hover:border-accent-mint/50 transition-all duration-300 hover:shadow-lg hover:shadow-accent-mint/10 hover:-translate-y-1 flex flex-col">
           <div className="flex items-center mb-4">
             <Users className="mr-3 text-accent-mint" size={24} />
             <h3 className="text-xl font-semibold text-white">Avatar Creation</h3>
@@ -77,33 +77,33 @@ const HomePage = () => {
             Create and customize lifelike 3D avatars with our advanced editor
           </p>
           <Link to="/console/characters">
-            <button className="bg-accent-mint text-slate-900 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-emerald-400/25 transition-all duration-300">
+            <button className="bg-accent-mint text-slate-900 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-accent-mint/25 transition-all duration-300">
               Get Started
             </button>
           </Link>
         </div>
 
-        <div className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl p-6 hover:border-emerald-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-400/10 hover:-translate-y-1 flex flex-col">
+        <div className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl p-6 hover:border-accent-mint/50 transition-all duration-300 hover:shadow-lg hover:shadow-accent-mint/10 hover:-translate-y-1 flex flex-col">
           <div className="flex items-center mb-4">
             <Mic className="mr-3 text-accent-mint" size={24} />
             <h3 className="text-xl font-semibold text-white">AI Generation</h3>
           </div>
           <p className="text-slate-400 mb-4 flex-grow">Transform text and audio into expressive avatar content</p>
           <Link to="/console/text-to-avatar">
-            <button className="bg-accent-mint text-slate-900 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-emerald-400/25 transition-all duration-300">
+            <button className="bg-accent-mint text-slate-900 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-accent-mint/25 transition-all duration-300">
               Explore Tools
             </button>
           </Link>
         </div>
 
-        <div className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl p-6 hover:border-emerald-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-400/10 hover:-translate-y-1 flex flex-col">
+        <div className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl p-6 hover:border-accent-mint/50 transition-all duration-300 hover:shadow-lg hover:shadow-accent-mint/10 hover:-translate-y-1 flex flex-col">
           <div className="flex items-center mb-4">
             <MessageSquare className="mr-3 text-accent-mint" size={24} />
             <h3 className="text-xl font-semibold text-white">Interactive Agents</h3>
           </div>
           <p className="text-slate-400 mb-4 flex-grow">Deploy conversational AI avatars across any platform</p>
           <Link to="/console/conversational-ai">
-            <button className="bg-accent-mint text-slate-900 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-emerald-400/25 transition-all duration-300">
+            <button className="bg-accent-mint text-slate-900 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-accent-mint/25 transition-all duration-300">
               Deploy Now
             </button>
           </Link>
@@ -130,7 +130,7 @@ const HomePage = () => {
                 <div
                   className={`px-2 py-1 rounded text-xs font-medium mr-2 ${
                     apiStatus?.status === 'healthy' || apiStatus
-                      ? 'bg-green-500 text-green-900'
+                      ? 'bg-brand-500 text-brand-950'
                       : 'bg-red-500 text-red-900'
                   }`}
                 >

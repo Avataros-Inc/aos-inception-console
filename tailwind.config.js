@@ -9,7 +9,6 @@ export default {
         montserrat: ['Montserrat', 'sans-serif'],
       },
       colors: {
-        // AVATAROS Brand Colors
         'bg-primary': '#0f1419',
         'bg-secondary': '#1a1f2e',
         'bg-sidebar': '#0a0f14',
@@ -18,6 +17,19 @@ export default {
         'text-secondary': '#a1a1aa',
         'border-subtle': '#2a2f3a',
         'border-focus': '#74ecc7',
+        brand: {
+          50: '#f0fcf9',
+          100: '#ccf7e8',
+          200: '#99eed1',
+          300: '#74ecc7', // Primary color
+          400: '#4de0b1',
+          500: '#26d49b',
+          600: '#1bb885',
+          700: '#179c6f',
+          800: '#147d59',
+          900: '#116147',
+          950: '#0a3d2c',
+        },
       },
       borderRadius: {
         lg: '0.75rem',

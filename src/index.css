@@ -92,7 +92,7 @@
 /* Custom Tailwind component classes */
 @layer components {
   .gradient-text {
-    @apply bg-gradient-to-r from-emerald-600 to-accent-mint bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-brand-800 to-accent-mint bg-clip-text text-transparent;
   }
 
   .glass-effect {
@@ -175,7 +175,7 @@
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-emerald-400;
+  @apply bg-accent-mint;
 }
 
 /* Smooth scroll behavior */
@@ -185,7 +185,7 @@ html {
 
 /* Focus styles for accessibility */
 *:focus-visible {
-  @apply outline-2 outline-offset-2 outline-emerald-400;
+  @apply outline-2 outline-offset-2 outline-accent-mint;
 }
 
 /* Animation for slow spin */
