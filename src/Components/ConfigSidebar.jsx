@@ -4,21 +4,37 @@ import A2FConfigTab from '../ConfigTabs/A2FConfigTab';
 import VisualConfigTab from '../ConfigTabs/VisualConfigTab';
 import VoiceConfigTab from '../ConfigTabs/VoiceConfigTab';
 import LLMConfigTab from '../ConfigTabs/LLMConfigTab';
+import LiveControlsTab from '../ConfigTabs/LiveControlsTab';
 import { Button } from '@/Components/Button';
 
-const ConfigSidebar = ({ visual = false, voice = false, a2f = false, llm = false }) => {
+const ConfigSidebar = ({
+  visual = false,
+  voice = false,
+  a2f = false,
+  llm = false,
+  sendMessage = null,
+  isLiveSession = false,
+}) => {
   const { characters, config, updateConfig } = useConfig();
   const [activeTab, setActiveTab] = useState('visual');
 
-  // Build tab configuration based on boolean props
+  // Build tab configuration based on boolean props and session state
   const tabConfig = useMemo(() => {
     const tabs = [];
-    if (visual) tabs.push({ key: 'visual', label: 'Visual', component: VisualConfigTab });
-    if (voice) tabs.push({ key: 'voice', label: 'Voice', component: VoiceConfigTab });
-    if (a2f) tabs.push({ key: 'a2f', label: 'Config', component: A2FConfigTab });
-    if (llm) tabs.push({ key: 'llm', label: 'LLM Config', component: LLMConfigTab });
+
+    if (isLiveSession) {
+      // During live session, only show live controls
+      tabs.push({ key: 'live', label: 'Live Controls', component: LiveControlsTab });
+    } else {
+      // Before session, show all requested tabs
+      if (visual) tabs.push({ key: 'visual', label: 'Visual', component: VisualConfigTab });
+      if (voice) tabs.push({ key: 'voice', label: 'Voice', component: VoiceConfigTab });
+      if (a2f) tabs.push({ key: 'a2f', label: 'Config', component: A2FConfigTab });
+      if (llm) tabs.push({ key: 'llm', label: 'LLM Config', component: LLMConfigTab });
+    }
+
     return tabs;
-  }, [visual, voice, a2f, llm]);
+  }, [visual, voice, a2f, llm, isLiveSession]);
 
   // Ensure the default tab is valid for the current page
   useEffect(() => {
@@ -26,6 +42,13 @@ const ConfigSidebar = ({ visual = false, voice = false, a2f = false, llm = false
       setActiveTab(tabConfig[0].key);
     }
   }, [tabConfig, activeTab]);
+
+  // Reset to first tab when switching between live and non-live sessions
+  useEffect(() => {
+    if (tabConfig.length > 0) {
+      setActiveTab(tabConfig[0].key);
+    }
+  }, [isLiveSession, tabConfig]);
 
   // Find the active tab component
   const activeTabConfig = tabConfig.find((tab) => tab.key === activeTab);
@@ -56,7 +79,12 @@ const ConfigSidebar = ({ visual = false, voice = false, a2f = false, llm = false
       {/* Tab Content */}
       <div className="min-h-[400px]">
         {ActiveTabComponent && (
-          <ActiveTabComponent characters={characters} updateConfig={updateConfig} config={config} />
+          <ActiveTabComponent
+            characters={characters}
+            updateConfig={updateConfig}
+            config={config}
+            sendMessage={sendMessage}
+          />
         )}
       </div>
     </div>

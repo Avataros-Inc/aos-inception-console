@@ -1,5 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
 
+/* Pixel Streaming video element adjustments */
+#video-parent video {
+  object-fit: cover !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

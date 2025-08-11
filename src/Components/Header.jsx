@@ -2,16 +2,10 @@ import { Bell, Search, User, Key, Play } from 'lucide-react';
 import { Button } from '@/Components/Button';
 import { useAvatarSession } from '../contexts/AvatarSessionContext';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
 
 export function Header() {
   const { activeSession } = useAvatarSession();
   const navigate = useNavigate();
-
-  // Debug logging for session changes
-  useEffect(() => {
-    console.log('Header: activeSession changed:', activeSession?.avatar?.name || 'No active session');
-  }, [activeSession]);
 
   const handleSessionClick = () => {
     if (activeSession) {

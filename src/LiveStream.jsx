@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Container, Row, Col, Form, Card, Spinner, Alert, Modal } from 'react-bootstrap';
 import { SendFill, Wifi, WifiOff, Broadcast } from 'react-bootstrap-icons';
-import { getRenderJob, insertRenderJob, getSessionToken, API_BASE_URL } from './postgrestAPI';
+import { getRenderJob, insertRenderJob, getSessionToken, API_BASE_URL, updateRenderJob } from './postgrestAPI';
 import ConfigSidebar from '@/Components/ConfigSidebar';
 import { useConfig } from './contexts/ConfigContext';
 import { useAvatarSession } from './contexts/AvatarSessionContext';
@@ -15,15 +15,14 @@ import { Loader2 } from 'lucide-react';
 import MicrophoneStreamer from './Components/MicStreamer';
 import CameraControls from './Components/CameraControls';
 
-const LiveStream = ({ livestreamId }) => {
+const LiveStream = ({ livestreamId, onSendMessage, onEndSession }) => {
   // State variables
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
   const [isAgentReady, setIsAgentReady] = useState(false);
-  const [avatarTalking, setAvatarTalking] = useState('');
+  const [_avatarTalking, setAvatarTalking] = useState('');
   const messagesEndRef = useRef(null);
   const MicRef = useRef(null);
-  const { endSession } = useAvatarSession();
 
   // Auto-hide loading after a timeout as fallback
   useEffect(() => {
@@ -47,6 +46,10 @@ const LiveStream = ({ livestreamId }) => {
     onOpen: () => {
       console.log('WebSocket connected to:', socketUrl);
       sendMessage(JSON.stringify({ type: 'connect', token: getSessionToken(), session: livestreamId }));
+      // Pass sendMessage to parent component
+      if (onSendMessage) {
+        onSendMessage(sendMessage);
+      }
     },
     onClose: (event) => {
       console.log('WebSocket closed:', event.code, event.reason);
@@ -177,8 +180,11 @@ const LiveStream = ({ livestreamId }) => {
       {/* Video Stream */}
       <Row className="flex-grow-1 m-0" style={{ position: 'relative', width: '100%', minHeight: '50vh' }}>
         <Col className="p-0 d-flex justify-content-center">
-          <div className="w-full relative mb-6" style={{ aspectRatio: '16/9' }}>
-            <div className="bg-slate-800/20 backdrop-blur-sm border border-slate-700/50 rounded-xl relative overflow-hidden w-full h-full">
+          <div className="w-full relative mb-6 h-full">
+            <div
+              className="bg-slate-800/20 backdrop-blur-sm border border-slate-700/50 rounded-xl relative overflow-hidden w-full h-full"
+              style={{ minHeight: '60vh', aspectRatio: '16/9' }}
+            >
               {/* Connection Status Indicator */}
               <div className="absolute top-4 right-4 z-20">
                 <div
@@ -223,7 +229,6 @@ const LiveStream = ({ livestreamId }) => {
       </Row>
       <Row className="" style={{ position: 'relative' }}>
         <h2>{livestreamId}</h2>
-        <CameraControls sendMessage={sendMessage} />
       </Row>
 
       {/* Chat Area */}
@@ -269,7 +274,7 @@ const LiveStream = ({ livestreamId }) => {
                   <span>{connectionStatus}</span>
                 </small>
                 &nbsp;
-                <Button onClick={() => endSession()} variant="secondary" size="sm">
+                <Button onClick={() => onEndSession()} variant="secondary" size="sm">
                   End Session
                 </Button>
               </div>
@@ -281,15 +286,51 @@ const LiveStream = ({ livestreamId }) => {
   );
 };
 
+const LiveStreamWithSidebar = ({ livestreamId, onEndSession }) => {
+  const [sendMessageRef, setSendMessageRef] = useState(null);
+
+  return (
+    <div className="relative mr-[480px] overflow-hidden">
+      <div className="relative w-full overflow-y-auto">
+        <LiveStream livestreamId={livestreamId} onSendMessage={setSendMessageRef} onEndSession={onEndSession} />
+      </div>
+      <ConfigSidebar visual voice a2f llm sendMessage={sendMessageRef} isLiveSession={true} />
+    </div>
+  );
+};
+
 const LiveStreamPage = () => {
-  const { config } = useConfig();
-  const { activeSession, endSession } = useAvatarSession();
+  const { config, characters } = useConfig();
+  const { activeSession, endSession, createSession } = useAvatarSession();
   const selectedAvatar = activeSession?.avatar;
   const [status, setStatus] = useState('checking_storage');
   const [livestreamId, setLivestreamId] = useState(null);
   const [loadingMessage, setLoadingMessage] = useState('Checking for existing livestream...');
 
   const recheckTime = 500;
+
+  // Custom cleanup function that handles both avatar session and livestream cleanup
+  const handleEndSession = async () => {
+    try {
+      // Always try to clean up the livestream first
+      const storedLivestream = localStorage.getItem('current_livestream');
+      if (storedLivestream && storedLivestream !== 'undefined') {
+        console.log('Cleaning up livestream:', storedLivestream);
+        await updateRenderJob(storedLivestream, { jobstatus: 2, ended_at: 'NOW()' });
+        localStorage.removeItem('current_livestream');
+        console.log('Livestream cleanup completed');
+      }
+
+      // Then try to end the avatar session if it exists
+      if (activeSession) {
+        await endSession();
+      } else {
+        console.log('No active avatar session to end');
+      }
+    } catch (error) {
+      console.error('Error during session cleanup:', error);
+    }
+  };
 
   // Check for existing livestream on mount
   useEffect(() => {
@@ -350,6 +391,16 @@ const LiveStreamPage = () => {
     setLoadingMessage('Requesting new livestream...');
 
     try {
+      // Ensure there's an active avatar session before creating livestream
+      if (!activeSession && config.avatar && characters) {
+        console.log('Creating avatar session for livestream with avatar:', config.avatar);
+        const selectedAvatarData = characters.find((char) => char.id === config.avatar);
+        if (selectedAvatarData) {
+          createSession(selectedAvatarData, 'interactive');
+          console.log('Avatar session created for:', selectedAvatarData.name);
+        }
+      }
+
       const renderJob = await insertRenderJob('live', config);
 
       localStorage.setItem('current_livestream', renderJob);
@@ -365,7 +416,7 @@ const LiveStreamPage = () => {
 
   if (status === 'ready') {
     // return <Alert variant="success">Ready!</Alert>;
-    return <LiveStream livestreamId={livestreamId} />;
+    return <LiveStreamWithSidebar livestreamId={livestreamId} onEndSession={handleEndSession} />;
   }
 
   return (
@@ -397,7 +448,7 @@ const LiveStreamPage = () => {
                 onClick={async () => {
                   if (confirm('Are you sure you want to end the current session?')) {
                     try {
-                      await endSession();
+                      await handleEndSession();
                     } catch (error) {
                       console.error('Failed to end session:', error);
                       alert('Failed to end session. Please try again.');
@@ -431,7 +482,7 @@ const LiveStreamPage = () => {
                     {status !== 'needs_request' && (
                       <>
                         <p className="text-sm text-slate-500 mb-0">Session: {livestreamId}</p>
-                        <Button onClick={() => endSession()} variant="secondary" size="sm">
+                        <Button onClick={() => handleEndSession()} variant="secondary" size="sm">
                           End Session
                         </Button>
                       </>
@@ -459,7 +510,7 @@ const LiveStreamPage = () => {
           />
         </div>
       </div>
-      <ConfigSidebar visual voice a2f llm />
+      <ConfigSidebar visual voice a2f llm isLiveSession={false} />
     </div>
   );
 };

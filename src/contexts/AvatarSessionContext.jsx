@@ -100,8 +100,8 @@ export const AvatarSessionProvider = ({ children }) => {
   // End the current session
   const endSession = async () => {
     if (!activeSession) {
-      console.log('AvatarSessionContext: No active session to end');
-      return;
+      console.log('AvatarSessionContext: No active session to end - this is expected in some cases');
+      return Promise.resolve(); // Return resolved promise for consistent behavior
     }
 
     console.log('AvatarSessionContext: Ending session:', activeSession.sessionId);
