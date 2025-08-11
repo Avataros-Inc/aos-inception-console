@@ -37,6 +37,14 @@ export const PixelStreamingWrapper = ({ initialSettings }) => {
         });
       });
 
+      // Disable all input handlers at the library level
+      if (streaming.inputController) {
+        streaming.inputController.unregisterKeyboardEvents();
+        streaming.inputController.unregisterMouseEvents();
+        streaming.inputController.unregisterTouchEvents();
+        streaming.inputController.unregisterGamepadEvents();
+      }
+
       // Save the library instance into component state so that it can be accessed later:
       setPixelStreaming(streaming);
 

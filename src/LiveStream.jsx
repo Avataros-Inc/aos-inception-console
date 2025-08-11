@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Container, Row, Col, Form, Card, Spinner, Alert } from 'react-bootstrap';
 import { SendFill, Wifi, WifiOff, Broadcast } from 'react-bootstrap-icons';
 import { getRenderJob, insertRenderJob, getSessionToken, updateRenderJob, API_BASE_URL } from './postgrestAPI';
@@ -9,6 +9,7 @@ import { PixelStreamingWrapper } from './Components/PixelStreamingWrapper';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { Button } from '@/Components/Button';
 import { githubDarkTheme, JsonEditor } from 'json-edit-react';
+import { Loader2 } from 'lucide-react';
 
 import MicrophoneStreamer from './Components/MicStreamer';
 import CameraControls from './Components/CameraControls';
@@ -27,9 +28,20 @@ const LiveStream = ({ livestreamId }) => {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
   const [AvatarTalking, setAvatarTalking] = useState(false);
+  const [isAgentReady, setIsAgentReady] = useState(false);
   const messagesEndRef = useRef(null);
 
   const MicRef = useRef();
+
+  // Auto-hide loading after a timeout as fallback
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      console.log('Agent ready timeout - hiding loading screen');
+      setIsAgentReady(true);
+    }, 10000); // 10 seconds timeout
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // const socketUrl = 'http://192.168.4.118:8080/ws/'+livestreamId;
   // const socketUrl = 'ws://192.168.4.118:8082/ws';
@@ -50,6 +62,13 @@ const LiveStream = ({ livestreamId }) => {
         return;
       }
       console.log('Message: ', data);
+
+      // Set agent as ready on first meaningful message from server
+      if (!isAgentReady && data.type !== 'error') {
+        console.log('Agent ready - first message received:', data.type);
+        setIsAgentReady(true);
+      }
+
       if (data.type === 'textout') {
         setMessages((prevMessages) => [...prevMessages, { user: 'assistant', text: data.content }]);
       } else if (data.type === 'textin') {
@@ -81,6 +100,19 @@ const LiveStream = ({ livestreamId }) => {
     [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
   }[readyState];
 
+  // Also set agent ready when websocket connection is stable
+  useEffect(() => {
+    if (readyState === ReadyState.OPEN && !isAgentReady) {
+      // Wait a short moment for potential messages, then show as ready
+      const timer = setTimeout(() => {
+        console.log('Agent ready - WebSocket connection stable');
+        setIsAgentReady(true);
+      }, 3000); // 3 seconds after connection opens
+
+      return () => clearTimeout(timer);
+    }
+  }, [readyState, isAgentReady]);
+
   const handleClickSendMessage = () => {
     sendMessage(JSON.stringify({ type: 'textin', content: messageInput }));
     setMessages((prevState) => [...prevState, { user: 'You', text: messageInput }]);
@@ -92,6 +124,34 @@ const LiveStream = ({ livestreamId }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Memoize the initialSettings to prevent unnecessary re-renders of PixelStreamingWrapper
+  const pixelStreamingSettings = useMemo(
+    () => ({
+      ss: liveStreamUrl,
+      AutoPlayVideo: true,
+      AutoConnect: true,
+      HoveringMouse: false,
+      StartVideoMuted: false,
+      WaitForStreamer: false,
+      KeyboardInput: false,
+      MouseInput: false,
+      TouchInput: false,
+      GamepadInput: false,
+      XRControllerInput: false,
+      MatchViewportRes: true,
+      PreferredCodec: 'H264',
+      WebRTCMinBitrate: 1000,
+      WebRTCMaxBitrate: 20000,
+      WebRTCFPS: 60,
+      SuppressBrowserKeys: true,
+      UseMic: false,
+      OfferToReceive: false,
+      HideUI: true,
+      // ForceTURN: true
+    }),
+    [liveStreamUrl]
+  );
+
   return (
     <Container fluid className="vh-100 p-0 d-flex flex-column">
       {/* Video Stream */}
@@ -100,29 +160,7 @@ const LiveStream = ({ livestreamId }) => {
           <div className="w-full relative mb-6" style={{ aspectRatio: '16/9' }}>
             <div className="bg-slate-800/20 backdrop-blur-sm border border-slate-700/50 rounded-xl relative overflow-hidden w-full h-full">
               <PixelStreamingWrapper
-                initialSettings={{
-                  ss: liveStreamUrl,
-                  AutoPlayVideo: true,
-                  AutoConnect: true,
-                  HoveringMouse: false,
-                  StartVideoMuted: false,
-                  WaitForStreamer: false,
-                  KeyboardInput: false,
-                  MouseInput: false,
-                  TouchInput: false,
-                  GamepadInput: false,
-                  XRControllerInput: false,
-                  MatchViewportRes: true,
-                  PreferredCodec: 'H264',
-                  WebRTCMinBitrate: 1000,
-                  WebRTCMaxBitrate: 20000,
-                  WebRTCFPS: 60,
-                  SuppressBrowserKeys: false,
-                  UseMic: false,
-                  OfferToReceive: false,
-                  HideUI: true,
-                  // ForceTURN: true
-                }}
+                initialSettings={pixelStreamingSettings}
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -131,6 +169,15 @@ const LiveStream = ({ livestreamId }) => {
                   height: '100%',
                 }}
               />
+              {!isAgentReady && (
+                <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-10">
+                  <div className="text-center text-slate-300">
+                    <Loader2 className="animate-spin text-accent-mint mb-3 mx-auto" size={32} />
+                    <p className="text-lg font-medium">Initializing Interactive Agent...</p>
+                    <p className="text-sm text-slate-400">Waiting for agent connection</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </Col>
@@ -153,34 +200,36 @@ const LiveStream = ({ livestreamId }) => {
           </Card.Body>
 
           <Card.Footer className="p-2">
-            <Form.Group className="d-flex gap-2">
-              <Form.Control
-                type="text"
-                value={messageInput}
-                onChange={(e) => setMessageInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleClickSendMessage()}
-                placeholder="Type a message..."
-              />
-              <Button variant="primary" onClick={handleClickSendMessage} disabled={readyState !== ReadyState.OPEN}>
-                <SendFill />
-              </Button>
-              <MicrophoneStreamer
-                ref={MicRef}
-                wsReadyState={readyState}
-                sendMessage={sendMessage}
-                ReadyState={ReadyState}
-              />
-            </Form.Group>
+            <div onKeyDown={(e) => e.stopPropagation()} onKeyUp={(e) => e.stopPropagation()}>
+              <Form.Group className="d-flex gap-2">
+                <Form.Control
+                  type="text"
+                  value={messageInput}
+                  onChange={(e) => setMessageInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleClickSendMessage()}
+                  placeholder="Type a message..."
+                />
+                <Button variant="primary" onClick={handleClickSendMessage} disabled={readyState !== ReadyState.OPEN}>
+                  <SendFill />
+                </Button>
+                <MicrophoneStreamer
+                  ref={MicRef}
+                  wsReadyState={readyState}
+                  sendMessage={sendMessage}
+                  ReadyState={ReadyState}
+                />
+              </Form.Group>
 
-            <div className="text-end mt-1">
-              <small className={readyState !== ReadyState.OPEN ? 'text-success' : 'text-danger'}>
-                {ReadyState.OPEN ? <Wifi /> : <WifiOff />}
-                {connectionStatus}
-              </small>
-              &nbsp;
-              <Button onClick={() => handleEndSession(livestreamId)} variant="danger" size="sm">
-                End Session
-              </Button>
+              <div className="text-end mt-1">
+                <small className={readyState !== ReadyState.OPEN ? 'text-success' : 'text-danger'}>
+                  {ReadyState.OPEN ? <Wifi /> : <WifiOff />}
+                  {connectionStatus}
+                </small>
+                &nbsp;
+                <Button onClick={() => handleEndSession(livestreamId)} variant="danger" size="sm">
+                  End Session
+                </Button>
+              </div>
             </div>
           </Card.Footer>
         </Col>
