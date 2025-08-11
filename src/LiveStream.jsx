@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Container, Row, Col, Form, Card, Spinner, Alert } from 'react-bootstrap';
+import { Container, Row, Col, Form, Card, Spinner, Alert, Modal } from 'react-bootstrap';
 import { SendFill, Wifi, WifiOff, Broadcast } from 'react-bootstrap-icons';
-import { getRenderJob, insertRenderJob, getSessionToken, updateRenderJob, API_BASE_URL } from './postgrestAPI';
+import { getRenderJob, insertRenderJob, getSessionToken, API_BASE_URL } from './postgrestAPI';
 import ConfigSidebar from '@/Components/ConfigSidebar';
 import { useConfig } from './contexts/ConfigContext';
+import { useAvatarSession } from './contexts/AvatarSessionContext';
 import { PixelStreamingWrapper } from './Components/PixelStreamingWrapper';
 // import { WebSocketService } from './websocketService';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
@@ -14,24 +15,15 @@ import { Loader2 } from 'lucide-react';
 import MicrophoneStreamer from './Components/MicStreamer';
 import CameraControls from './Components/CameraControls';
 
-const handleEndSession = async (jobId) => {
-  try {
-    await updateRenderJob(jobId, { jobstatus: 2, ended_at: 'NOW()' });
-    localStorage.removeItem('current_livestream');
-    window.location.reload();
-  } catch (error) {
-    alert(`Failed to end session: ${error.message}`);
-  }
-};
-
 const LiveStream = ({ livestreamId }) => {
+  // State variables
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
-  const [AvatarTalking, setAvatarTalking] = useState(false);
   const [isAgentReady, setIsAgentReady] = useState(false);
+  const [avatarTalking, setAvatarTalking] = useState('');
   const messagesEndRef = useRef(null);
-
-  const MicRef = useRef();
+  const MicRef = useRef(null);
+  const { endSession } = useAvatarSession();
 
   // Auto-hide loading after a timeout as fallback
   useEffect(() => {
@@ -277,7 +269,7 @@ const LiveStream = ({ livestreamId }) => {
                   <span>{connectionStatus}</span>
                 </small>
                 &nbsp;
-                <Button onClick={() => handleEndSession(livestreamId)} variant="secondary" size="sm">
+                <Button onClick={() => endSession()} variant="secondary" size="sm">
                   End Session
                 </Button>
               </div>
@@ -291,6 +283,8 @@ const LiveStream = ({ livestreamId }) => {
 
 const LiveStreamPage = () => {
   const { config } = useConfig();
+  const { activeSession, endSession } = useAvatarSession();
+  const selectedAvatar = activeSession?.avatar;
   const [status, setStatus] = useState('checking_storage');
   const [livestreamId, setLivestreamId] = useState(null);
   const [loadingMessage, setLoadingMessage] = useState('Checking for existing livestream...');
@@ -377,7 +371,45 @@ const LiveStreamPage = () => {
   return (
     <div className="relative mr-[480px] overflow-hidden">
       <div className="relative w-full overflow-y-auto">
-        <h2 className="gradient-text text-3xl font-bold mb-6">Interactive Agent</h2>
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="gradient-text text-3xl font-bold">Interactive Agent</h2>
+              {selectedAvatar && (
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="w-3 h-3 bg-accent-mint rounded-full animate-pulse"></div>
+                  <div>
+                    <p className="text-text-secondary">
+                      Active Session: <span className="text-accent-mint font-medium">{selectedAvatar.name}</span>
+                    </p>
+                    {activeSession && (
+                      <p className="text-slate-400 text-xs">
+                        Started: {new Date(activeSession.startTime).toLocaleTimeString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            {activeSession && (
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  if (confirm('Are you sure you want to end the current session?')) {
+                    try {
+                      await endSession();
+                    } catch (error) {
+                      console.error('Failed to end session:', error);
+                      alert('Failed to end session. Please try again.');
+                    }
+                  }
+                }}
+              >
+                End Session
+              </Button>
+            )}
+          </div>
+        </div>
 
         {/* Empty window placeholder for livestream */}
         <div className="w-full relative mb-6">
@@ -399,7 +431,7 @@ const LiveStreamPage = () => {
                     {status !== 'needs_request' && (
                       <>
                         <p className="text-sm text-slate-500 mb-0">Session: {livestreamId}</p>
-                        <Button onClick={() => handleEndSession(livestreamId)} variant="secondary" size="sm">
+                        <Button onClick={() => endSession()} variant="secondary" size="sm">
                           End Session
                         </Button>
                       </>

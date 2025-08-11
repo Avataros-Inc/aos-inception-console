@@ -12,6 +12,23 @@ export const ConfigProvider = ({ children, characters }) => {
     llm_config: characters[0]?.llm_config || {},
   });
 
+  // Function to apply avatar session configuration
+  const applyAvatarSession = useCallback((sessionAvatar) => {
+    if (sessionAvatar) {
+      console.log('Updating config for active session avatar:', sessionAvatar.name);
+
+      setConfig((prevConfig) => ({
+        ...prevConfig,
+        avatar: sessionAvatar.id,
+        a2f_config: sessionAvatar.a2f_config || {},
+        voice_config: sessionAvatar.voice_config || {},
+        llm_config: sessionAvatar.llm_config || {},
+        unreal_config: sessionAvatar.unreal_config || {},
+        // Keep existing environment and camera settings unless specified in avatar
+      }));
+    }
+  }, []);
+
   const updateConfig = useCallback(
     (key, value) => {
       if (key === 'avatar') {
@@ -60,8 +77,9 @@ export const ConfigProvider = ({ children, characters }) => {
       characters,
       config,
       updateConfig,
+      applyAvatarSession,
     }),
-    [characters, config, updateConfig]
+    [characters, config, updateConfig, applyAvatarSession]
   );
 
   return <ConfigContext.Provider value={value}>{children}</ConfigContext.Provider>;

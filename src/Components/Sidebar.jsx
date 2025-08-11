@@ -1,20 +1,15 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, User, Camera, Play, Code, ChevronRight, Settings, CreditCard, HelpCircle, LogOut } from 'lucide-react';
+import { User, Camera, Code, ChevronRight, Settings, CreditCard, LogOut, Video, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/Button';
 
 const navItems = [
   {
-    key: 'home',
-    label: 'Home',
-    icon: Home,
-    path: '/console',
-  },
-  {
     key: 'characters',
     label: 'Characters',
     icon: User,
+    path: '/console/conversational-ai', // Direct path to editor
     subsections: [
       { key: 'my-avatars', label: 'Avatar Editor', path: '/console/characters' },
       { key: 'avatar-trainer', label: 'Avatar Trainer', path: '/console/trainer' },
@@ -30,24 +25,19 @@ const navItems = [
     ],
   },
   {
-    key: 'playground',
-    label: 'Playground',
-    icon: Play,
+    key: 'developer',
+    label: 'Developer',
+    icon: Code,
     subsections: [
-      { key: 'text-to-avatar', label: 'Text to Avatar', path: '/console/text-to-avatar' },
-      { key: 'audio-to-avatar', label: 'Audio to Avatar', path: '/console/audio-to-avatar' },
-      { key: 'interactive-agent', label: 'Interactive Agent', path: '/console/conversational-ai' },
+      { key: 'render-queue', label: 'Render Queue', path: '/console/renders' },
+      { key: 'videos', label: 'Videos', path: '/console/videos' },
+      { key: 'api-keys', label: 'API Keys', path: '/console/apikeys' },
+      { key: 'billing', label: 'Billing', path: '/console/billing' },
     ],
   },
 ];
 
-const settingsItems = [
-  { key: 'renders', label: 'Render Queue', icon: Settings, path: '/console/renders' },
-  { key: 'videos', label: 'Videos', icon: CreditCard, path: '/console/videos' },
-  { key: 'apikeys', label: 'API Keys', icon: Code, path: '/console/apikeys' },
-  { key: 'billing', label: 'Billing', icon: CreditCard, path: '/console/billing' },
-  { key: 'account', label: 'Account', icon: LogOut, path: '/console/account' },
-];
+const settingsItems = [{ key: 'account', label: 'Account', icon: LogOut, path: '/console/account' }];
 
 export const Sidebar = () => {
   const [expandedSections, setExpandedSections] = useState({});
@@ -55,14 +45,17 @@ export const Sidebar = () => {
   const navigate = useNavigate();
 
   const handleSectionClick = (item) => {
+    // If item has a direct path, navigate to it
+    if (item.path) {
+      navigate(item.path);
+    }
+
+    // If item has subsections, toggle expansion
     if (item.subsections) {
-      // Toggle expansion for sections with subsections
       setExpandedSections((prev) => ({
         ...prev,
         [item.key]: !prev[item.key],
       }));
-    } else {
-      navigate(item.path);
     }
   };
 
