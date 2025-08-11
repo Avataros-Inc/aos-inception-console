@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Container, Card, Table, Modal, Form, Alert, Spinner, Badge } from 'react-bootstrap';
+import { Container, Card, Table, Modal, Form, Alert, Spinner } from 'react-bootstrap';
 import { API_BASE_URL, getSession, authenticatedFetch, getSessionToken } from './postgrestAPI';
 import { Button } from '@/Components/Button';
 
@@ -11,6 +11,7 @@ const ApiKeys = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [creatingKey, setCreatingKey] = useState(false);
+  const [updatingKey, setUpdatingKey] = useState(null);
 
   useEffect(() => {
     fetchApiKeys();
@@ -107,6 +108,37 @@ const ApiKeys = () => {
     }
   };
 
+  const toggleApiKeyStatus = async (keyId, currentStatus) => {
+    try {
+      setUpdatingKey(keyId);
+      setError(null);
+
+      const response = await authenticatedFetch(`${API_BASE_URL}/apikeys?id=eq.${keyId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          is_disabled: currentStatus, // If currently active (true), set is_disabled to true
+        }),
+      });
+
+      if (response.ok) {
+        // Update the local state
+        setApiKeys(apiKeys.map((key) => (key.id === keyId ? { ...key, is_disabled: currentStatus } : key)));
+        setSuccess(`API key ${currentStatus ? 'disabled' : 'enabled'} successfully!`);
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        throw new Error(`Failed to update API key: ${response.status}`);
+      }
+    } catch (err) {
+      console.error('Error updating API key:', err);
+      setError('Failed to update API key status. Please try again.');
+    } finally {
+      setUpdatingKey(null);
+    }
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -178,24 +210,24 @@ const ApiKeys = () => {
             </div>
           ) : (
             <div className="table-responsive">
-              <Table variant="dark" hover className="mb-0">
+              <Table variant="dark" hover className="mb-0 api-keys-table">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Key</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th>Last Used</th>
-                    <th>Actions</th>
+                    <th style={{ width: '20%', minWidth: '120px' }}>Name</th>
+                    <th style={{ width: '25%', minWidth: '150px' }}>Key</th>
+                    <th style={{ width: '15%', minWidth: '100px' }}>Status</th>
+                    <th style={{ width: '15%', minWidth: '100px' }}>Created</th>
+                    <th style={{ width: '15%', minWidth: '100px' }}>Last Used</th>
+                    <th style={{ width: '10%', minWidth: '80px' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {apiKeys.map((key) => (
                     <tr key={key.id}>
-                      <td>
+                      <td style={{ width: '20%', minWidth: '120px' }}>
                         <strong className="text-white">{key.name}</strong>
                       </td>
-                      <td>
+                      <td style={{ width: '25%', minWidth: '150px' }}>
                         <div className="d-flex align-items-center">
                           <code className="text-accent me-2">
                             {key.key
@@ -215,14 +247,35 @@ const ApiKeys = () => {
                           )}
                         </div>
                       </td>
-                      <td>
-                        <Badge bg={key.is_active ? 'success' : 'secondary'}>
-                          {key.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
+                      <td style={{ width: '15%', minWidth: '100px' }}>
+                        <div className="d-flex align-items-center">
+                          <Form.Check
+                            type="checkbox"
+                            checked={!key.is_disabled}
+                            onChange={() => toggleApiKeyStatus(key.id, !key.is_disabled)}
+                            disabled={updatingKey === key.id}
+                            className="me-2"
+                          />
+                          {updatingKey === key.id ? (
+                            <Spinner animation="border" size="sm" className="me-2" />
+                          ) : (
+                            <span
+                              className={`px-2 py-1 rounded-sm text-sm font-medium ${
+                                !key.is_disabled ? 'text-accent-mint' : 'text-light-gray'
+                              }`}
+                            >
+                              {!key.is_disabled ? 'Active' : 'Inactive'}
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="text-light-gray">{formatDate(key.created_at)}</td>
-                      <td className="text-light-gray">{key.last_used ? formatDate(key.last_used) : 'Never'}</td>
-                      <td>
+                      <td style={{ width: '15%', minWidth: '100px' }} className="text-light-gray">
+                        {formatDate(key.created_at)}
+                      </td>
+                      <td style={{ width: '15%', minWidth: '100px' }} className="text-light-gray">
+                        {key.last_used ? formatDate(key.last_used) : 'Never'}
+                      </td>
+                      <td style={{ width: '10%', minWidth: '80px' }}>
                         <Button
                           variant="outline-danger"
                           size="sm"

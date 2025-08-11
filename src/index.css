@@ -679,3 +679,54 @@ html {
     transform: rotate(360deg);
   }
 }
+
+/* API Keys Table Styling */
+.api-keys-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.api-keys-table th,
+.api-keys-table td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  text-align: left;
+}
+
+.api-keys-table th {
+  font-weight: 600;
+  border-bottom: 2px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-secondary);
+}
+
+.api-keys-table tbody tr {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.api-keys-table tbody tr:hover {
+  background-color: rgba(116, 236, 199, 0.05);
+}
+
+/* Custom checkbox styling for API keys */
+.api-keys-table .form-check-input:checked {
+  background-color: var(--accent-mint);
+  border-color: var(--accent-mint);
+}
+
+.api-keys-table .form-check-input:focus {
+  border-color: var(--accent-mint);
+  box-shadow: 0 0 0 0.25rem rgba(116, 236, 199, 0.25);
+}
+
+/* Brand green badge styling */
+.text-accent-mint {
+  color: var(--accent-mint) !important;
+}
+
+.text-light-gray {
+  color: var(--text-secondary) !important;
+}
