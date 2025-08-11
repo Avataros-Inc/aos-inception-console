@@ -53,37 +53,62 @@ const LiveStream = ({ livestreamId }) => {
   const { sendMessage, readyState } = useWebSocket(socketUrl, {
     // protocols: [`auth-${getSessionToken()}`, "test"],
     onOpen: () => {
+      console.log('WebSocket connected to:', socketUrl);
       sendMessage(JSON.stringify({ type: 'connect', token: getSessionToken(), session: livestreamId }));
     },
+    onClose: (event) => {
+      console.log('WebSocket closed:', event.code, event.reason);
+      if (event.code !== 1000) {
+        console.warn('WebSocket closed unexpectedly. Code:', event.code, 'Reason:', event.reason);
+      }
+    },
+    onError: (event) => {
+      console.error('WebSocket error:', event);
+    },
     onMessage: (message) => {
-      const data = JSON.parse(message.data);
-      if (data.type === 'error') {
-        console.log('Error: ', data.content);
-        return;
-      }
-      console.log('Message: ', data);
+      try {
+        const data = JSON.parse(message.data);
 
-      // Set agent as ready on first meaningful message from server
-      if (!isAgentReady && data.type !== 'error') {
-        console.log('Agent ready - first message received:', data.type);
-        setIsAgentReady(true);
-      }
-
-      if (data.type === 'textout') {
-        setMessages((prevMessages) => [...prevMessages, { user: 'assistant', text: data.content }]);
-      } else if (data.type === 'textin') {
-        setMessages((prevMessages) => [...prevMessages, { user: 'You', text: data.content }]);
-      } else if (data.type === 'avatarTalking') {
-        setAvatarTalking(data.content);
-        if (MicRef.current) {
-          MicRef.current.handleAvatarTalking(data.content);
+        if (data.type === 'error') {
+          console.log('Error: ', data.content);
+          return;
         }
-      } else {
-        console.log('Unknown message type: ', data);
+
+        // Set agent as ready on first meaningful message from server
+        if (!isAgentReady && data.type !== 'error') {
+          setIsAgentReady(true);
+        }
+
+        if (data.type === 'textout') {
+          setMessages((prevMessages) => [...prevMessages, { user: 'assistant', text: data.content }]);
+        } else if (data.type === 'textin') {
+          setMessages((prevMessages) => [...prevMessages, { user: 'You', text: data.content }]);
+        } else if (data.type === 'audioout') {
+          // Handle audio output from server (avatar speech)
+          // This might contain audio data for the avatar to speak
+          // You might need to play this audio or trigger avatar animation
+        } else if (data.type === 'audioin_processed') {
+          // Handle processed audio input (speech-to-text result)
+          setMessages((prevMessages) => [...prevMessages, { user: 'You (voice)', text: data.content }]);
+        } else if (data.type === 'avatarTalking') {
+          setAvatarTalking(data.content);
+          if (MicRef.current) {
+            MicRef.current.handleAvatarTalking(data.content);
+          }
+        } else {
+          console.log('Unknown message type: ', data);
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error, 'Raw message:', message.data);
       }
     },
 
-    shouldReconnect: () => true,
+    shouldReconnect: (closeEvent) => {
+      // Only reconnect if it wasn't a normal closure
+      return closeEvent.code !== 1000;
+    },
+    reconnectAttempts: 5,
+    reconnectInterval: (attemptNumber) => Math.min(Math.pow(2, attemptNumber) * 1000, 30000), // Exponential backoff, max 30s
     heartbeat: {
       message: 'ping',
       returnMessage: 'pong',
@@ -105,7 +130,6 @@ const LiveStream = ({ livestreamId }) => {
     if (readyState === ReadyState.OPEN && !isAgentReady) {
       // Wait a short moment for potential messages, then show as ready
       const timer = setTimeout(() => {
-        console.log('Agent ready - WebSocket connection stable');
         setIsAgentReady(true);
       }, 3000); // 3 seconds after connection opens
 
@@ -125,8 +149,8 @@ const LiveStream = ({ livestreamId }) => {
   }, [messages]);
 
   // Memoize the initialSettings to prevent unnecessary re-renders of PixelStreamingWrapper
-  const pixelStreamingSettings = useMemo(
-    () => ({
+  const pixelStreamingSettings = useMemo(() => {
+    return {
       ss: liveStreamUrl,
       AutoPlayVideo: true,
       AutoConnect: true,
@@ -139,7 +163,8 @@ const LiveStream = ({ livestreamId }) => {
       GamepadInput: false,
       XRControllerInput: false,
       MatchViewportRes: true,
-      PreferredCodec: 'H264',
+      // Let PixelStreamingWrapper handle codec selection
+      PreferredCodec: 'VP8', // Default to VP8 for compatibility
       WebRTCMinBitrate: 1000,
       WebRTCMaxBitrate: 20000,
       WebRTCFPS: 60,
@@ -147,10 +172,13 @@ const LiveStream = ({ livestreamId }) => {
       UseMic: false,
       OfferToReceive: false,
       HideUI: true,
-      // ForceTURN: true
-    }),
-    [liveStreamUrl]
-  );
+      // Force TURN usage if direct connection fails
+      ForceTURN: false, // Start with false, can enable if needed
+      // Additional WebRTC configuration
+      WebRTCIceTimeout: 10000, // 10 second timeout for ICE
+      WebRTCDisconnectionTimeout: 5000, // 5 second timeout for disconnection
+    };
+  }, [liveStreamUrl]);
 
   return (
     <Container fluid className="vh-100 p-0 d-flex flex-column">
@@ -159,6 +187,22 @@ const LiveStream = ({ livestreamId }) => {
         <Col className="p-0 d-flex justify-content-center">
           <div className="w-full relative mb-6" style={{ aspectRatio: '16/9' }}>
             <div className="bg-slate-800/20 backdrop-blur-sm border border-slate-700/50 rounded-xl relative overflow-hidden w-full h-full">
+              {/* Connection Status Indicator */}
+              <div className="absolute top-4 right-4 z-20">
+                <div
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
+                    readyState === ReadyState.OPEN
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                      : readyState === ReadyState.CONNECTING
+                      ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                      : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                  }`}
+                >
+                  {readyState === ReadyState.OPEN ? <Wifi size={16} /> : <WifiOff size={16} />}
+                  <span>{connectionStatus}</span>
+                </div>
+              </div>
+
               <PixelStreamingWrapper
                 initialSettings={pixelStreamingSettings}
                 style={{
@@ -175,6 +219,9 @@ const LiveStream = ({ livestreamId }) => {
                     <Loader2 className="animate-spin text-accent-mint mb-3 mx-auto" size={32} />
                     <p className="text-lg font-medium">Initializing Interactive Agent...</p>
                     <p className="text-sm text-slate-400">Waiting for agent connection</p>
+                    {readyState !== ReadyState.OPEN && (
+                      <p className="text-xs text-red-400 mt-2">Connection Status: {connectionStatus}</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -221,12 +268,16 @@ const LiveStream = ({ livestreamId }) => {
               </Form.Group>
 
               <div className="text-end mt-1">
-                <small className={readyState !== ReadyState.OPEN ? 'text-success' : 'text-danger'}>
-                  {ReadyState.OPEN ? <Wifi /> : <WifiOff />}
-                  {connectionStatus}
+                <small
+                  className={`flex items-center gap-1 justify-end ${
+                    readyState === ReadyState.OPEN ? 'text-success' : 'text-danger'
+                  }`}
+                >
+                  {readyState === ReadyState.OPEN ? <Wifi size={14} /> : <WifiOff size={14} />}
+                  <span>{connectionStatus}</span>
                 </small>
                 &nbsp;
-                <Button onClick={() => handleEndSession(livestreamId)} variant="danger" size="sm">
+                <Button onClick={() => handleEndSession(livestreamId)} variant="secondary" size="sm">
                   End Session
                 </Button>
               </div>
@@ -348,7 +399,7 @@ const LiveStreamPage = () => {
                     {status !== 'needs_request' && (
                       <>
                         <p className="text-sm text-slate-500 mb-0">Session: {livestreamId}</p>
-                        <Button onClick={() => handleEndSession(livestreamId)} variant="danger" size="sm">
+                        <Button onClick={() => handleEndSession(livestreamId)} variant="secondary" size="sm">
                           End Session
                         </Button>
                       </>
