@@ -9,9 +9,9 @@ const navItems = [
     key: 'characters',
     label: 'Characters',
     icon: User,
-    path: '/console/conversational-ai', // Direct path to editor
+    path: '/console/characters', // Now shows My Avatars
     subsections: [
-      { key: 'my-avatars', label: 'Avatar Editor', path: '/console/characters' },
+      { key: 'agent-window', label: 'Avatar Editor', path: '/console/conversational-ai' }, // Now shows interactive agent window
       { key: 'avatar-trainer', label: 'Avatar Trainer', path: '/console/trainer' },
     ],
   },
