@@ -14,6 +14,9 @@ const ApiKeys = () => {
   const [updatingKey, setUpdatingKey] = useState(null);
   const [expirationOption, setExpirationOption] = useState('30d');
   const [customDate, setCustomDate] = useState('');
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [createdKeyValue, setCreatedKeyValue] = useState(null);
+  const [createdKeyExpires, setCreatedKeyExpires] = useState(null);
 
   useEffect(() => {
     fetchApiKeys();
@@ -77,12 +80,15 @@ const ApiKeys = () => {
       });
 
       if (response.ok) {
-        const newKey = await response.json();
-        setApiKeys([...apiKeys, newKey]);
+        const newKeyArr = await response.json();
+        // Handle both array and object response
+        const newKey = Array.isArray(newKeyArr) ? newKeyArr[0] : newKeyArr;
+        await fetchApiKeys();
         setShowModal(false);
+        setCreatedKeyValue(newKey.apikey || '');
+        setCreatedKeyExpires(expires_at || null);
+        setShowKeyModal(true);
         setNewKeyName('');
-        setSuccess('API key created successfully!');
-        setTimeout(() => setSuccess(null), 3000);
       } else {
         throw new Error(`Failed to create API key: ${response.status}`);
       }
@@ -369,6 +375,67 @@ const ApiKeys = () => {
                   'Create API Key'
                 )}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Show created API Key modal (only once) */}
+      {showKeyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="bg-bg-secondary rounded-xl shadow-lg w-full max-w-md mx-4">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-border-subtle">
+              <h5 className="text-white text-xl font-semibold">New API Key Generated</h5>
+              <button
+                onClick={() => {
+                  setShowKeyModal(false);
+                  setCreatedKeyValue(null);
+                  setCreatedKeyExpires(null);
+                }}
+                className="text-light-gray hover:text-white focus:outline-none text-2xl leading-none"
+                aria-label="Close modal"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="px-6 py-6">
+              <p className="mb-3 text-light-gray">
+                Here is your new API key. Make sure to copy it now as you won't be able to see it again:
+              </p>
+              <div className="flex items-center gap-2 mb-3">
+                <input
+                  type="text"
+                  value={createdKeyValue || ''}
+                  readOnly
+                  className="w-full bg-slate-800 text-accent px-3 py-2 rounded border border-border-subtle"
+                  style={{ fontFamily: 'monospace', fontSize: '1rem' }}
+                />
+                <Button
+                  variant="outline-light"
+                  size="sm"
+                  onClick={() => copyToClipboard(createdKeyValue)}
+                  title="Copy to clipboard"
+                >
+                  Copy
+                </Button>
+              </div>
+              {createdKeyExpires && (
+                <div className="mb-4 text-light-gray text-sm">
+                  This key will expire on {createdKeyExpires ? formatDate(createdKeyExpires) : 'Never'}.
+                </div>
+              )}
+              <div className="flex justify-end">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setShowKeyModal(false);
+                    setCreatedKeyValue(null);
+                    setCreatedKeyExpires(null);
+                  }}
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
         </div>
