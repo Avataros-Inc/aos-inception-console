@@ -5,7 +5,7 @@ import { Config, PixelStreaming } from '@epicgames-ps/lib-pixelstreamingfrontend
 import { getBestSupportedCodec } from '../utils/codecUtils';
 import { diagnoseWebRTCConnectivity } from '../utils/networkDiagnostics';
 
-export const PixelStreamingWrapper = ({ initialSettings }) => {
+export const PixelStreamingWrapper = ({ initialSettings, onPixelStreamingReady }) => {
   // A reference to parent div element that the Pixel Streaming library attaches into:
   const videoParent = useRef(null);
 
@@ -133,6 +133,11 @@ export const PixelStreamingWrapper = ({ initialSettings }) => {
 
           // Save the library instance into component state so that it can be accessed later:
           setPixelStreaming(streaming);
+
+          // Notify parent component that PixelStreaming is ready
+          if (onPixelStreamingReady) {
+            onPixelStreamingReady(streaming);
+          }
         } catch (error) {
           console.error('Error initializing Pixel Streaming:', error);
           setClickToPlayVisible(true);

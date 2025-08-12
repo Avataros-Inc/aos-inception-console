@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Container, Card, Table, Modal, Form, Alert, Spinner } from 'react-bootstrap';
-import { API_BASE_URL, getSession, authenticatedFetch, getSessionToken } from './postgrestAPI';
+import { Container, Card, Table, Form, Alert, Spinner } from 'react-bootstrap';
+import { API_BASE_URL, authenticatedFetch, getSessionToken, getOrgId } from './postgrestAPI';
 import { Button } from '@/Components/Button';
 
 const ApiKeys = () => {
@@ -12,6 +12,8 @@ const ApiKeys = () => {
   const [success, setSuccess] = useState(null);
   const [creatingKey, setCreatingKey] = useState(false);
   const [updatingKey, setUpdatingKey] = useState(null);
+  const [expirationOption, setExpirationOption] = useState('30d');
+  const [customDate, setCustomDate] = useState('');
 
   useEffect(() => {
     fetchApiKeys();
@@ -48,18 +50,30 @@ const ApiKeys = () => {
       return;
     }
 
+    let expires_at = null;
+    if (expirationOption === '7d') {
+      expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    } else if (expirationOption === '30d') {
+      expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    } else if (expirationOption === '90d') {
+      expires_at = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+    } else if (expirationOption === 'custom' && customDate) {
+      expires_at = new Date(customDate).toISOString();
+    } // Never: expires_at stays null
+
     try {
       setCreatingKey(true);
       setError(null);
-
       const response = await authenticatedFetch(`${API_BASE_URL}/apikeys`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Prefer: 'return=representation',
         },
         body: JSON.stringify({
           name: newKeyName.trim(),
-          user_id: getSession().user_id,
+          org_id: getOrgId(),
+          expires_at,
         }),
       });
 
@@ -161,6 +175,14 @@ const ApiKeys = () => {
         setError('Failed to copy to clipboard');
       });
   };
+
+  const expirationOptions = [
+    { value: '7d', label: '7 days' },
+    { value: '30d', label: '30 days' },
+    { value: '90d', label: '90 days' },
+    { value: 'never', label: 'Never' },
+    { value: 'custom', label: 'Custom date' },
+  ];
 
   return (
     <Container fluid>
@@ -295,44 +317,78 @@ const ApiKeys = () => {
       </Card>
 
       {/* Create API Key Modal */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-        <Modal.Header closeButton className="bg-dark border-secondary">
-          <Modal.Title className="text-white">Create New API Key</Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="bg-dark">
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label className="text-white">Key Name</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Enter a descriptive name for this API key"
-                value={newKeyName}
-                onChange={(e) => setNewKeyName(e.target.value)}
-                className="bg-dark text-white border-secondary"
-                disabled={creatingKey}
-              />
-              <Form.Text className="text-light-gray">
-                Choose a name that helps you identify where this key will be used.
-              </Form.Text>
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer className="bg-dark border-secondary">
-          <Button variant="secondary" onClick={() => setShowModal(false)} disabled={creatingKey}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={createApiKey} disabled={creatingKey || !newKeyName.trim()}>
-            {creatingKey ? (
-              <>
-                <Spinner animation="border" size="sm" className="me-2" />
-                Creating...
-              </>
-            ) : (
-              'Create API Key'
-            )}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="bg-bg-secondary rounded-xl shadow-lg w-full max-w-md mx-4">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-border-subtle">
+              <h5 className="text-white text-xl font-semibold">Create New API Key</h5>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-light-gray hover:text-white focus:outline-none text-2xl leading-none"
+                aria-label="Close modal"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="px-6 py-4">
+              <div className="mb-4">
+                <label htmlFor="newKeyName" className="text-white block mb-1 font-medium">
+                  Key Name
+                </label>
+                <input
+                  id="newKeyName"
+                  type="text"
+                  placeholder="Enter a descriptive name for this API key"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
+                  className="w-full bg-bg-secondary border border-border-subtle rounded p-2 text-white placeholder-gray-400"
+                  disabled={creatingKey}
+                />
+              </div>
+              <div className="mb-4">
+                <label className="text-white block mb-1 font-medium">Expiration</label>
+                <select
+                  className="w-full bg-bg-secondary border border-border-subtle rounded p-2 text-white"
+                  value={expirationOption}
+                  onChange={(e) => setExpirationOption(e.target.value)}
+                  disabled={creatingKey}
+                >
+                  {expirationOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                {expirationOption === 'custom' && (
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      type="datetime-local"
+                      value={customDate}
+                      onChange={(e) => setCustomDate(e.target.value)}
+                      className="bg-bg-secondary border border-border-subtle rounded p-2 text-white"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2 px-6 py-4 border-t border-border-subtle">
+              <Button variant="secondary" onClick={() => setShowModal(false)} disabled={creatingKey}>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={createApiKey} disabled={creatingKey || !newKeyName.trim()}>
+                {creatingKey ? (
+                  <>
+                    <Spinner animation="border" size="sm" className="me-2" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create API Key'
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Container>
   );
 };

@@ -15,7 +15,7 @@ import { Loader2 } from 'lucide-react';
 import MicrophoneStreamer from './Components/MicStreamer';
 import CameraControls from './Components/CameraControls';
 
-const LiveStream = ({ livestreamId, onSendMessage, onEndSession }) => {
+const LiveStreamInner = ({ livestreamId, onEndSession }) => {
   // State variables
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
@@ -46,10 +46,6 @@ const LiveStream = ({ livestreamId, onSendMessage, onEndSession }) => {
     onOpen: () => {
       console.log('WebSocket connected to:', socketUrl);
       sendMessage(JSON.stringify({ type: 'connect', token: getSessionToken(), session: livestreamId }));
-      // Pass sendMessage to parent component
-      if (onSendMessage) {
-        onSendMessage(sendMessage);
-      }
     },
     onClose: (event) => {
       console.log('WebSocket closed:', event.code, event.reason);
@@ -176,125 +172,125 @@ const LiveStream = ({ livestreamId, onSendMessage, onEndSession }) => {
   }, [liveStreamUrl]);
 
   return (
-    <Container fluid className="vh-100 p-0 d-flex flex-column">
-      {/* Video Stream */}
-      <Row className="flex-grow-1 m-0" style={{ position: 'relative', width: '100%', minHeight: '50vh' }}>
-        <Col className="p-0 d-flex justify-content-center">
-          <div className="w-full relative mb-6 h-full">
-            <div
-              className="bg-slate-800/20 backdrop-blur-sm border border-slate-700/50 rounded-xl relative overflow-hidden w-full h-full"
-              style={{ minHeight: '60vh', aspectRatio: '16/9' }}
-            >
-              {/* Connection Status Indicator */}
-              <div className="absolute top-4 right-4 z-20">
-                <div
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
-                    readyState === ReadyState.OPEN
-                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                      : readyState === ReadyState.CONNECTING
-                      ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                      : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                  }`}
-                >
-                  {readyState === ReadyState.OPEN ? <Wifi size={16} /> : <WifiOff size={16} />}
-                  <span>{connectionStatus}</span>
-                </div>
-              </div>
-
-              <PixelStreamingWrapper
-                initialSettings={pixelStreamingSettings}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                }}
-              />
-              {!isAgentReady && (
-                <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-10">
-                  <div className="text-center text-slate-300">
-                    <Loader2 className="animate-spin text-accent-mint mb-3 mx-auto" size={32} />
-                    <p className="text-lg font-medium">Initializing Interactive Agent...</p>
-                    <p className="text-sm text-slate-400">Waiting for agent connection</p>
-                    {readyState !== ReadyState.OPEN && (
-                      <p className="text-xs text-red-400 mt-2">Connection Status: {connectionStatus}</p>
-                    )}
+    <>
+      <Container fluid className="vh-100 p-0 d-flex flex-column">
+        {/* Video Stream */}
+        <Row className="flex-grow-1 m-0" style={{ position: 'relative', width: '100%', minHeight: '50vh' }}>
+          <Col className="p-0 d-flex justify-content-center">
+            <div className="w-full relative mb-6 h-full">
+              <div
+                className="bg-slate-800/20 backdrop-blur-sm border border-slate-700/50 rounded-xl relative overflow-hidden w-full h-full"
+                style={{ minHeight: '60vh', aspectRatio: '16/9' }}
+              >
+                {/* Connection Status Indicator */}
+                <div className="absolute top-4 right-4 z-20">
+                  <div
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
+                      readyState === ReadyState.OPEN
+                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                        : readyState === ReadyState.CONNECTING
+                        ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                        : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                    }`}
+                  >
+                    {readyState === ReadyState.OPEN ? <Wifi size={16} /> : <WifiOff size={16} />}
+                    <span>{connectionStatus}</span>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-        </Col>
-      </Row>
-      <Row className="" style={{ position: 'relative' }}>
-        <h2>{livestreamId}</h2>
-      </Row>
 
-      {/* Chat Area */}
-      <Row className="m-0" style={{ height: '250px' }}>
-        <Col className="p-0 d-flex flex-column border-top">
-          <Card.Body className="flex-grow-1 overflow-auto p-2">
-            {messages.map((msg, index) => (
-              <div key={index} className="mb-1">
-                <small className="text-muted">{msg.user}:</small> {msg.text}
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </Card.Body>
-
-          <Card.Footer className="p-2">
-            <div onKeyDown={(e) => e.stopPropagation()} onKeyUp={(e) => e.stopPropagation()}>
-              <Form.Group className="d-flex gap-2">
-                <Form.Control
-                  type="text"
-                  value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleClickSendMessage()}
-                  placeholder="Type a message..."
+                <PixelStreamingWrapper
+                  initialSettings={pixelStreamingSettings}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                  }}
                 />
-                <Button variant="primary" onClick={handleClickSendMessage} disabled={readyState !== ReadyState.OPEN}>
-                  <SendFill />
-                </Button>
-                <MicrophoneStreamer
-                  ref={MicRef}
-                  wsReadyState={readyState}
-                  sendMessage={sendMessage}
-                  ReadyState={ReadyState}
-                />
-              </Form.Group>
-
-              <div className="text-end mt-1">
-                <small
-                  className={`flex items-center gap-1 justify-end ${
-                    readyState === ReadyState.OPEN ? 'text-success' : 'text-danger'
-                  }`}
-                >
-                  {readyState === ReadyState.OPEN ? <Wifi size={14} /> : <WifiOff size={14} />}
-                  <span>{connectionStatus}</span>
-                </small>
-                &nbsp;
-                <Button onClick={() => onEndSession()} variant="secondary" size="sm">
-                  End Session
-                </Button>
+                {!isAgentReady && (
+                  <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-10">
+                    <div className="text-center text-slate-300">
+                      <Loader2 className="animate-spin text-accent-mint mb-3 mx-auto" size={32} />
+                      <p className="text-lg font-medium">Initializing Interactive Agent...</p>
+                      <p className="text-sm text-slate-400">Waiting for agent connection</p>
+                      {readyState !== ReadyState.OPEN && (
+                        <p className="text-xs text-red-400 mt-2">Connection Status: {connectionStatus}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          </Card.Footer>
-        </Col>
-      </Row>
-    </Container>
+          </Col>
+        </Row>
+        <Row className="" style={{ position: 'relative' }}>
+          <h2>{livestreamId}</h2>
+        </Row>
+
+        {/* Chat Area */}
+        <Row className="m-0" style={{ height: '250px' }}>
+          <Col className="p-0 d-flex flex-column border-top">
+            <Card.Body className="flex-grow-1 overflow-auto p-2">
+              {messages.map((msg, index) => (
+                <div key={index} className="mb-1">
+                  <small className="text-muted">{msg.user}:</small> {msg.text}
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </Card.Body>
+
+            <Card.Footer className="p-2">
+              <div onKeyDown={(e) => e.stopPropagation()} onKeyUp={(e) => e.stopPropagation()}>
+                <Form.Group className="d-flex gap-2">
+                  <Form.Control
+                    type="text"
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleClickSendMessage()}
+                    placeholder="Type a message..."
+                  />
+                  <Button variant="primary" onClick={handleClickSendMessage} disabled={readyState !== ReadyState.OPEN}>
+                    <SendFill />
+                  </Button>
+                  <MicrophoneStreamer
+                    ref={MicRef}
+                    wsReadyState={readyState}
+                    sendMessage={sendMessage}
+                    ReadyState={ReadyState}
+                  />
+                </Form.Group>
+
+                <div className="text-end mt-1">
+                  <small
+                    className={`flex items-center gap-1 justify-end ${
+                      readyState === ReadyState.OPEN ? 'text-success' : 'text-danger'
+                    }`}
+                  >
+                    {readyState === ReadyState.OPEN ? <Wifi size={14} /> : <WifiOff size={14} />}
+                    <span>{connectionStatus}</span>
+                  </small>
+                  &nbsp;
+                  <Button onClick={() => onEndSession()} variant="secondary" size="sm">
+                    End Session
+                  </Button>
+                </div>
+              </div>
+            </Card.Footer>
+          </Col>
+        </Row>
+      </Container>
+      <ConfigSidebar visual voice a2f llm isLiveSession sendMessage={sendMessage} />
+    </>
   );
 };
 
 const LiveStreamWithSidebar = ({ livestreamId, onEndSession }) => {
-  const [sendMessageRef, setSendMessageRef] = useState(null);
-
   return (
     <div className="relative mr-[480px] overflow-hidden">
       <div className="relative w-full overflow-y-auto">
-        <LiveStream livestreamId={livestreamId} onSendMessage={setSendMessageRef} onEndSession={onEndSession} />
+        <LiveStreamInner livestreamId={livestreamId} onEndSession={onEndSession} />
       </div>
-      <ConfigSidebar visual voice a2f llm sendMessage={sendMessageRef} isLiveSession={true} />
     </div>
   );
 };
