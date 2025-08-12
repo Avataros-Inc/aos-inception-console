@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { updateCharacter, API_BASE_URL, getSessionToken, getSession } from './postgrestAPI';
+import {
+  updateCharacter,
+  API_BASE_URL,
+  getSessionToken,
+  getSession,
+  getCharacters,
+  authenticatedFetch,
+  invalidateCharacterCache,
+} from './postgrestAPI';
 import { Form } from 'react-bootstrap';
 import { Loader2, UserPlus, Plus, X, Copy } from 'lucide-react';
 import { Button } from '@/Components/Button';
@@ -228,20 +236,7 @@ const CharPage = () => {
     async function fetchCharacters() {
       try {
         setIsLoading(true);
-
-        const response = await fetch(`${API_BASE_URL}/characters`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${getSessionToken()}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const data = await response.json();
+        const data = await getCharacters();
         setcharacters(data || []);
       } catch (error) {
         console.error(`Error getting characters:`, error);
@@ -249,7 +244,6 @@ const CharPage = () => {
         setIsLoading(false);
       }
     }
-
     fetchCharacters();
   }, []);
 
@@ -292,15 +286,12 @@ const CharPage = () => {
   const handleDelete = async (avatarId) => {
     if (confirm('Are you sure you want to delete this avatar?')) {
       try {
-        const response = await fetch(`${API_BASE_URL}/characters/${avatarId}`, {
+        const response = await authenticatedFetch(`${API_BASE_URL}/characters?id=eq.${avatarId}`, {
           method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${getSessionToken()}`,
-          },
         });
-
         if (response.ok) {
           setcharacters((prev) => prev.filter((char) => char.id !== avatarId));
+          invalidateCharacterCache();
         }
       } catch (error) {
         console.error('Failed to delete avatar:', error);
@@ -310,11 +301,10 @@ const CharPage = () => {
 
   const handleDuplicate = async (avatar) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/characters`, {
+      const response = await authenticatedFetch(`${API_BASE_URL}/characters`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${getSessionToken()}`,
           Prefer: 'return=representation',
         },
         body: JSON.stringify({
@@ -323,10 +313,10 @@ const CharPage = () => {
           id: undefined, // Remove ID so it gets auto-generated
         }),
       });
-
       if (response.ok) {
         const newChar = await response.json();
         setcharacters((prev) => [...prev, ...newChar]);
+        invalidateCharacterCache();
       }
     } catch (error) {
       console.error('Failed to duplicate avatar:', error);
