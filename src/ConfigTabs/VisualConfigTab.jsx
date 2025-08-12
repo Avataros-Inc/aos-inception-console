@@ -41,15 +41,24 @@ const environments = [
 
 const VisualConfigTab = ({ characters, updateConfig, config }) => {
   const [expandedSections, setExpandedSections] = useState({
-    avatar: true,
-    environment: true,
-    camera: true,
+    avatar: false,
+    environment: false,
+    camera: false,
   });
 
   const toggleSection = (section) => {
     setExpandedSections((prev) => ({
       ...prev,
       [section]: !prev[section],
+    }));
+  };
+
+  // Close dropdown after selection
+  const handleSelect = (section, cb) => {
+    cb();
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: false,
     }));
   };
 
@@ -87,7 +96,7 @@ const VisualConfigTab = ({ characters, updateConfig, config }) => {
                     ? 'border-accent-mint shadow-lg shadow-accent-mint/20'
                     : 'border-slate-600 hover:border-slate-400'
                 )}
-                onClick={() => updateConfig('avatar', character.id)}
+                onClick={() => handleSelect('avatar', () => updateConfig('avatar', character.id))}
               >
                 <div className="aspect-square relative">
                   <img
@@ -173,7 +182,7 @@ const VisualConfigTab = ({ characters, updateConfig, config }) => {
                     ? 'border-accent-mint shadow-lg shadow-accent-mint/20'
                     : 'border-slate-600 hover:border-slate-400'
                 )}
-                onClick={() => updateConfig('environment', env.id)}
+                onClick={() => handleSelect('environment', () => updateConfig('environment', env.id))}
               >
                 <div className="aspect-square relative">
                   <img
@@ -261,7 +270,7 @@ const VisualConfigTab = ({ characters, updateConfig, config }) => {
                         ? 'border-accent-mint shadow-lg shadow-accent-mint/20'
                         : 'border-slate-600 hover:border-slate-400'
                     )}
-                    onClick={() => updateConfig('camera', { preset: presetId })}
+                    onClick={() => handleSelect('camera', () => updateConfig('camera', { preset: presetId }))}
                   >
                     <div className="aspect-square relative">
                       <img
