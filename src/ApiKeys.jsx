@@ -23,11 +23,10 @@ const ApiKeys = () => {
     try {
       setLoading(true);
 
-      const response = await authenticatedFetch(`${API_BASE_URL}/apikeys`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      // Fetch API keys with user info using a join
+      const response = await authenticatedFetch(
+        `${API_BASE_URL}/apikeys?select=*,org_users!fk_user_id(name,email)&org_id=eq.${getOrgId()}`
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -236,7 +235,7 @@ const ApiKeys = () => {
                 <thead>
                   <tr>
                     <th style={{ width: '20%', minWidth: '120px' }}>Name</th>
-                    <th style={{ width: '25%', minWidth: '150px' }}>Key</th>
+                    <th style={{ width: '20%', minWidth: '120px' }}>User</th>
                     <th style={{ width: '15%', minWidth: '100px' }}>Status</th>
                     <th style={{ width: '15%', minWidth: '100px' }}>Created</th>
                     <th style={{ width: '15%', minWidth: '100px' }}>Last Used</th>
@@ -249,25 +248,10 @@ const ApiKeys = () => {
                       <td style={{ width: '20%', minWidth: '120px' }}>
                         <strong className="text-white">{key.name}</strong>
                       </td>
-                      <td style={{ width: '25%', minWidth: '150px' }}>
-                        <div className="d-flex align-items-center">
-                          <code className="text-accent me-2">
-                            {key.key
-                              ? `${key.key.substring(0, 8)}...${key.key.substring(key.key.length - 4)}`
-                              : 'Hidden'}
-                          </code>
-                          {key.key && (
-                            <Button
-                              variant="link"
-                              size="sm"
-                              className="p-0 text-accent"
-                              onClick={() => copyToClipboard(key.key)}
-                              title="Copy to clipboard"
-                            >
-                              📋
-                            </Button>
-                          )}
-                        </div>
+                      <td style={{ width: '20%', minWidth: '120px' }}>
+                        <span className="text-light-gray">
+                          {key.org_users ? `${key.org_users.name} (${key.org_users.email})` : 'Unknown'}
+                        </span>
                       </td>
                       <td style={{ width: '15%', minWidth: '100px' }}>
                         <div className="d-flex align-items-center">
