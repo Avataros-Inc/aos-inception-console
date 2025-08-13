@@ -1,14 +1,14 @@
 import { Bell, Search, User, Key, Play } from 'lucide-react';
 import { Button } from '@/Components/Button';
-import { useAvatarSession } from '../contexts/AvatarSessionContext';
+import { useAvatarLivestream } from '../contexts/AvatarLivestreamContext';
 import { useNavigate } from 'react-router-dom';
 
 export function Header() {
-  const { activeSession } = useAvatarSession();
+  const { activeLivestream } = useAvatarLivestream();
   const navigate = useNavigate();
 
   const handleSessionClick = () => {
-    if (activeSession) {
+    if (activeLivestream) {
       navigate('/console/conversational-ai');
     }
   };
@@ -25,14 +25,14 @@ export function Header() {
       <div className="flex-1"></div>
 
       {/* Active Session Indicator - moved to right corner */}
-      {activeSession && (
+      {activeLivestream?.config?.avatar?.name && (
         <button
           onClick={handleSessionClick}
           className="flex items-center space-x-2 bg-accent-mint/20 border border-accent-mint/30 rounded-lg px-3 py-1 hover:bg-accent-mint/30 transition-colors cursor-pointer"
         >
           <div className="w-2 h-2 bg-accent-mint rounded-full animate-pulse"></div>
           <Play size={14} className="text-accent-mint" />
-          <span className="text-accent-mint text-sm font-medium">{activeSession.avatar.name}</span>
+          <span className="text-accent-mint text-sm font-medium">{activeLivestream.config.avatar.name}</span>
         </button>
       )}
 

@@ -13,12 +13,12 @@ import { Form } from 'react-bootstrap';
 import { Loader2, UserPlus, Plus, X, Copy } from 'lucide-react';
 import { Button } from '@/Components/Button';
 import { AvatarCard, CreateAvatarCard } from '@/Components/AvatarCard';
-import { useAvatarSession } from './contexts/AvatarSessionContext';
+import { useAvatarLivestream } from './contexts/AvatarLivestreamContext';
 import { useConfig } from './contexts/ConfigContext';
 
 // Embed Modal Component
 const EmbedModal = ({ avatar, onClose }) => {
-  const { getEmbedCode } = useAvatarSession();
+  const { getEmbedCode } = useAvatarLivestream();
   const [copied, setCopied] = useState(false);
 
   const embedCode = getEmbedCode(avatar);
@@ -224,7 +224,7 @@ const CharCreator = ({ onClose, onCharacterCreated }) => {
 
 const CharPage = () => {
   const navigate = useNavigate();
-  const { launchSession } = useAvatarSession();
+  const { launchLivestream } = useAvatarLivestream();
   const { applyAvatarSession } = useConfig();
   const [characters, setcharacters] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -261,7 +261,7 @@ const CharPage = () => {
 
       // Create the updated config based on the avatar
       const updatedConfig = {
-        avatar: avatar.id,
+        avatar: avatar, // Store the full avatar object instead of just the ID
         environment: 'Map_Env_ltOliverDefault_v01', // Keep default environment
         camera: { preset: 'Preset1' }, // Keep default camera
         a2f_config: avatar.a2f_config || {},
@@ -273,7 +273,7 @@ const CharPage = () => {
       console.log('CharPage: Updated config for launching session:', updatedConfig);
 
       // Launch session with the updated config (this now creates backend livestream)
-      await launchSession(avatar, updatedConfig);
+      await launchLivestream(updatedConfig);
       console.log('CharPage: Session launched, navigating to conversational-ai');
       navigate('/console/conversational-ai');
     } catch (error) {

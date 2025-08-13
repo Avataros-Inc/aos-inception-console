@@ -16,7 +16,7 @@ import LiveStreamPage from './LiveStream';
 import { Sidebar } from './Components/Sidebar';
 import { Header } from './Components/Header';
 import { ConfigProvider } from './contexts/ConfigContext';
-import { AvatarSessionProvider } from './contexts/AvatarSessionContext';
+import { AvatarLivestreamProvider } from './contexts/AvatarLivestreamContext';
 
 import {
   Home,
@@ -182,7 +182,7 @@ const Console = () => {
   }
 
   return (
-    <AvatarSessionProvider>
+    <AvatarLivestreamProvider>
       <ConfigProvider characters={characters}>
         <div className="min-h-screen bg-background">
           <div className="fixed top-3 left-4 text-3xl">HelloAvatarOS</div>
@@ -240,7 +240,7 @@ const Console = () => {
           </div>
         </div>
       </ConfigProvider>
-    </AvatarSessionProvider>
+    </AvatarLivestreamProvider>
   );
 };
 

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Container, Row, Col, Form, Card, Spinner, Alert, Modal } from 'react-bootstrap';
 import { SendFill, Wifi, WifiOff, Broadcast } from 'react-bootstrap-icons';
-import { getRenderJob, insertRenderJob, getSessionToken, API_BASE_URL, updateRenderJob } from './postgrestAPI';
+import { getSessionToken, API_BASE_URL } from './postgrestAPI';
 import ConfigSidebar from '@/Components/ConfigSidebar';
 import { useConfig } from './contexts/ConfigContext';
-import { useAvatarSession } from './contexts/AvatarSessionContext';
+import { useAvatarLivestream } from './contexts/AvatarLivestreamContext';
 import { PixelStreamingWrapper } from './Components/PixelStreamingWrapper';
 // import { WebSocketService } from './websocketService';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
@@ -208,6 +208,12 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
                     height: '100%',
                   }}
                 />
+                {/* End Session button overlayed in bottom right of video */}
+                <div className="absolute bottom-4 right-4 z-30">
+                  <Button variant="destructive" size="sm" onClick={onEndSession}>
+                    End Session
+                  </Button>
+                </div>
                 {!isAgentReady && (
                   <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-10">
                     <div className="text-center text-slate-300">
@@ -261,20 +267,7 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
                   />
                 </Form.Group>
 
-                <div className="text-end mt-1">
-                  <small
-                    className={`flex items-center gap-1 justify-end ${
-                      readyState === ReadyState.OPEN ? 'text-success' : 'text-danger'
-                    }`}
-                  >
-                    {readyState === ReadyState.OPEN ? <Wifi size={14} /> : <WifiOff size={14} />}
-                    <span>{connectionStatus}</span>
-                  </small>
-                  &nbsp;
-                  <Button onClick={() => onEndSession()} variant="secondary" size="sm">
-                    End Session
-                  </Button>
-                </div>
+                <div className="text-end mt-1">{/* Connection status indicator removed for redundancy */}</div>
               </div>
             </Card.Footer>
           </Col>
@@ -291,127 +284,27 @@ const LiveStreamWithSidebar = ({ livestreamId, onEndSession }) => {
       <div className="relative w-full overflow-y-auto">
         <LiveStreamInner livestreamId={livestreamId} onEndSession={onEndSession} />
       </div>
+      {/* End Session button now handled inside video area */}
     </div>
   );
 };
 
 const LiveStreamPage = () => {
-  const { config, characters } = useConfig();
-  const { activeSession, endSession, createSession } = useAvatarSession();
-  const selectedAvatar = activeSession?.avatar;
-  const [status, setStatus] = useState('checking_storage');
-  const [livestreamId, setLivestreamId] = useState(null);
-  const [loadingMessage, setLoadingMessage] = useState('Checking for existing livestream...');
+  const { config } = useConfig();
+  const { activeLivestream, endLivestream, livestreamStatus, livestreamId, loadingMessage, launchLivestream } =
+    useAvatarLivestream();
+  const selectedAvatar = activeLivestream?.config?.avatar;
 
-  const recheckTime = 500;
+  const handleRequestLivestream = () => {
+    launchLivestream(config);
+  };
 
-  // Custom cleanup function that handles both avatar session and livestream cleanup
   const handleEndSession = async () => {
-    try {
-      // Always try to clean up the livestream first
-      const storedLivestream = localStorage.getItem('current_livestream');
-      if (storedLivestream && storedLivestream !== 'undefined') {
-        console.log('Cleaning up livestream:', storedLivestream);
-        await updateRenderJob(storedLivestream, { jobstatus: 2, ended_at: 'NOW()' });
-        localStorage.removeItem('current_livestream');
-        console.log('Livestream cleanup completed');
-      }
-
-      // Then try to end the avatar session if it exists
-      if (activeSession) {
-        await endSession();
-      } else {
-        console.log('No active avatar session to end');
-      }
-    } catch (error) {
-      console.error('Error during session cleanup:', error);
-    }
+    await endLivestream();
+    // window.location.reload();
   };
 
-  // Check for existing livestream on mount
-  useEffect(() => {
-    const storedLivestream = localStorage.getItem('current_livestream');
-
-    if (
-      storedLivestream &&
-      typeof storedLivestream === 'string' &&
-      storedLivestream !== 'undefined' &&
-      storedLivestream.includes('-')
-    ) {
-      setLivestreamId(storedLivestream);
-      setStatus('checking_readiness');
-      setLoadingMessage('Verifying livestream status...');
-    } else {
-      setStatus('needs_request');
-      setLoadingMessage('No active livestream found');
-    }
-  }, []);
-
-  // Poll livestream readiness when we have an ID
-  useEffect(() => {
-    if (status !== 'checking_readiness' || !livestreamId) return;
-
-    const checkLivestream = async () => {
-      try {
-        const renderjob = await getRenderJob(livestreamId);
-        if (renderjob === undefined) {
-          localStorage.removeItem('current_livestream');
-          window.location.reload();
-        } else if (renderjob.ended_at !== null) {
-          localStorage.removeItem('current_livestream');
-          window.location;
-        } else if (renderjob.jobstatus === 1) {
-          setStatus('ready');
-        } else if (renderjob.jobstatus >= 6) {
-          setLoadingMessage('Waiting streaming client');
-          setTimeout(checkLivestream, recheckTime);
-        } else if (renderjob.jobstatus === 2 || renderjob.jobstatus === 4) {
-          setLoadingMessage('Streaming finished');
-          localStorage.removeItem('current_livestream');
-          setStatus('needs_request');
-        } else {
-          setTimeout(checkLivestream, recheckTime);
-        }
-      } catch (error) {
-        console.error('Error checking livestream:', error);
-        setTimeout(checkLivestream, recheckTime);
-      }
-    };
-
-    const timer = setTimeout(checkLivestream, recheckTime);
-    return () => clearTimeout(timer);
-  }, [status, livestreamId]);
-
-  const requestLivestream = async () => {
-    setStatus('requesting');
-    setLoadingMessage('Requesting new livestream...');
-
-    try {
-      // Ensure there's an active avatar session before creating livestream
-      if (!activeSession && config.avatar && characters) {
-        console.log('Creating avatar session for livestream with avatar:', config.avatar);
-        const selectedAvatarData = characters.find((char) => char.id === config.avatar);
-        if (selectedAvatarData) {
-          createSession(selectedAvatarData, 'interactive');
-          console.log('Avatar session created for:', selectedAvatarData.name);
-        }
-      }
-
-      const renderJob = await insertRenderJob('live', config);
-
-      localStorage.setItem('current_livestream', renderJob);
-      setLivestreamId(renderJob);
-      setStatus('checking_readiness');
-      setLoadingMessage('Livestream created, verifying status...');
-    } catch (error) {
-      console.error('Error requesting livestream:', error);
-      setStatus('needs_request');
-      setLoadingMessage('Failed to create livestream. Please try again.');
-    }
-  };
-
-  if (status === 'ready') {
-    // return <Alert variant="success">Ready!</Alert>;
+  if (livestreamStatus === 'ready') {
     return <LiveStreamWithSidebar livestreamId={livestreamId} onEndSession={handleEndSession} />;
   }
 
@@ -429,29 +322,17 @@ const LiveStreamPage = () => {
                     <p className="text-text-secondary">
                       Active Session: <span className="text-accent-mint font-medium">{selectedAvatar.name}</span>
                     </p>
-                    {activeSession && (
+                    {activeLivestream && (
                       <p className="text-slate-400 text-xs">
-                        Started: {new Date(activeSession.startTime).toLocaleTimeString()}
+                        Started: {new Date(activeLivestream.created_at).toLocaleTimeString()}
                       </p>
                     )}
                   </div>
                 </div>
               )}
             </div>
-            {activeSession && (
-              <Button
-                variant="secondary"
-                onClick={async () => {
-                  if (confirm('Are you sure you want to end the current session?')) {
-                    try {
-                      await handleEndSession();
-                    } catch (error) {
-                      console.error('Failed to end session:', error);
-                      alert('Failed to end session. Please try again.');
-                    }
-                  }
-                }}
-              >
+            {activeLivestream && (
+              <Button variant="secondary" onClick={handleEndSession}>
                 End Session
               </Button>
             )}
@@ -470,15 +351,19 @@ const LiveStreamPage = () => {
                 <div className="text-left">
                   <p className="text-lg mb-2">{loadingMessage}</p>
                   <div className="flex items-center gap-3">
-                    {status === 'needs_request' && (
-                      <Button variant="primary" onClick={requestLivestream} disabled={status === 'requesting'}>
-                        {status === 'requesting' ? 'Requesting...' : 'Create Livestream'}
+                    {livestreamStatus === 'needs_request' && (
+                      <Button
+                        variant="primary"
+                        onClick={handleRequestLivestream}
+                        disabled={livestreamStatus === 'requesting'}
+                      >
+                        {livestreamStatus === 'requesting' ? 'Requesting...' : 'Create Livestream'}
                       </Button>
                     )}
-                    {status !== 'needs_request' && (
+                    {livestreamStatus !== 'needs_request' && (
                       <>
                         <p className="text-sm text-slate-500 mb-0">Session: {livestreamId}</p>
-                        <Button onClick={() => handleEndSession()} variant="secondary" size="sm">
+                        <Button onClick={handleEndSession} variant="secondary" size="sm">
                           End Session
                         </Button>
                       </>

@@ -166,6 +166,7 @@ const LiveControlsTab = ({ sendMessage = null }) => {
               const presetId = `Preset${index + 1}`;
               return (
                 <button
+                  key={presetId}
                   className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-200 hover:scale-105 bg-slate-800 ${
                     selectedPreset === presetId
                       ? 'border-accent-mint shadow-lg shadow-accent-mint/20'
