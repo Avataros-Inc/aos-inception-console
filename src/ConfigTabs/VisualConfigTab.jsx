@@ -100,8 +100,8 @@ const VisualConfigTab = ({ characters, updateConfig, config }) => {
               >
                 <div className="aspect-square relative">
                   <img
-                    src="/thumbnails/presets/Preset1.png"
-                    alt={character.name.capitalize()}
+                    src={`/thumbnails/characters/${character.name.toLowerCase()}.png`}
+                    alt={character.name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       e.target.style.display = 'none';
@@ -130,8 +130,12 @@ const VisualConfigTab = ({ characters, updateConfig, config }) => {
           >
             <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-600">
               <img
-                src="/thumbnails/presets/Preset1.png"
-                alt={selectedCharacter?.name?.capitalize() || 'Avatar'}
+                src={
+                  selectedCharacter
+                    ? `/thumbnails/characters/${selectedCharacter.name.toLowerCase()}.png`
+                    : '/thumbnails/presets/Preset1.png'
+                }
+                alt={selectedCharacter?.name || 'Avatar'}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   e.target.style.display = 'none';

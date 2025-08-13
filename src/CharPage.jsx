@@ -334,7 +334,7 @@ const CharPage = () => {
 
   const handleCreate = () => {
     // Navigate to Interactive Agent page for avatar creation and settings
-    navigate('/console/conversational-ai');
+    navigate('/console/trainer');
   };
 
   const handleCharacterCreated = (newCharacter) => {
