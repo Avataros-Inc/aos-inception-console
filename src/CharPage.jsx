@@ -261,7 +261,7 @@ const CharPage = () => {
 
       // Create the updated config based on the avatar
       const updatedConfig = {
-        avatar: avatar, // Store the full avatar object instead of just the ID
+        avatar: avatar.id,
         environment: 'Map_Env_ltOliverDefault_v01', // Keep default environment
         camera: { preset: 'Preset1' }, // Keep default camera
         a2f_config: avatar.a2f_config || {},
