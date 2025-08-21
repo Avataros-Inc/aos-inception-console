@@ -22,11 +22,7 @@ const ConfigSidebar = ({
   const tabConfig = useMemo(() => {
     const tabs = [];
 
-    if (isLiveSession) {
-      // During live session, only show live controls
-      tabs.push({ key: 'live', label: 'Live Controls', component: LiveControlsTab });
-    } else {
-      // Before session, show all requested tabs
+    if (!isLiveSession) {
       if (visual) tabs.push({ key: 'visual', label: 'Visual', component: VisualConfigTab });
       if (voice) tabs.push({ key: 'voice', label: 'Voice', component: VoiceConfigTab });
       if (a2f) tabs.push({ key: 'a2f', label: 'Config', component: A2FConfigTab });
@@ -59,7 +55,7 @@ const ConfigSidebar = ({
   }
 
   return (
-    <div className="fixed top-0 right-0 w-[480px] h-screen sidebar-glass-right border-l border-border-subtle p-5 overflow-y-auto z-[900]">
+    <div className="fixed top-0 right-0 w-[480px] h-screen sidebar-glass-right border-l border-border-subtle p-5 overflow-y-auto z-[900] transform transition-transform duration-500 ease-in-out translate-x-0 before:ml-[480px]">
       {/* Tab Navigation */}
       <div className="border-b border-border-subtle mb-5">
         <div className="flex gap-2 pb-3">

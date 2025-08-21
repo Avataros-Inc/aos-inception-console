@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Container, Row, Col, Form, Card, Spinner, Alert, Modal } from 'react-bootstrap';
-import { SendFill, Wifi, WifiOff, Broadcast } from 'react-bootstrap-icons';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Container, Row, Col } from 'react-bootstrap';
+import { Wifi, WifiOff, Broadcast, Plus, Mic, MicMute, X, Send } from 'react-bootstrap-icons';
 import { getSessionToken, API_BASE_URL } from './postgrestAPI';
 import ConfigSidebar from '@/Components/ConfigSidebar';
 import { useConfig } from './contexts/ConfigContext';
@@ -13,7 +13,240 @@ import { githubDarkTheme, JsonEditor } from 'json-edit-react';
 import { Loader2 } from 'lucide-react';
 
 import MicrophoneStreamer from './Components/MicStreamer';
-import CameraControls from './Components/CameraControls';
+
+// UIOverlay Component
+const UIOverlay = ({
+  messageInput,
+  setMessageInput,
+  handleClickSendMessage,
+  readyState,
+  ReadyState,
+  sendMessage,
+  MicRef,
+}) => {
+  const [isVADMode, setIsVADMode] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [microphoneVolume, setMicrophoneVolume] = useState(0);
+
+  const handleVADToggle = useCallback(async () => {
+    const newVADMode = !isVADMode;
+    setIsVADMode(newVADMode);
+
+    if (newVADMode) {
+      // Entering VAD mode - activate microphone
+      setIsMuted(false);
+      if (MicRef.current) {
+        await MicRef.current.setVADMode?.(true);
+      }
+    } else {
+      // Exiting VAD mode - deactivate microphone
+      setIsMuted(false);
+      if (MicRef.current) {
+        await MicRef.current.setVADMode?.(false);
+      }
+    }
+  }, [isVADMode, MicRef]);
+
+  const handleExitVAD = useCallback(async () => {
+    setIsVADMode(false);
+    setIsMuted(false);
+    if (MicRef.current) {
+      await MicRef.current.setVADMode?.(false);
+    }
+  }, [MicRef]);
+
+  const handleMicClick = async () => {
+    if (isVADMode) {
+      // In VAD mode, toggle mute state
+      const newMuted = !isMuted;
+      setIsMuted(newMuted);
+      if (MicRef.current) {
+        await MicRef.current.toggleMute?.(newMuted);
+      }
+    } else {
+      // In typing mode, enable VAD mode and start listening
+      await handleVADToggle();
+    }
+  };
+
+  // Listen for VAD state changes from MicrophoneStreamer
+  useEffect(() => {
+    if (MicRef?.current) {
+      MicRef.current.setVolumeCallback?.((volume) => {
+        setMicrophoneVolume(volume);
+      });
+    }
+  }, [MicRef]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Escape key to exit VAD mode
+      if (e.key === 'Escape' && isVADMode) {
+        handleExitVAD();
+      }
+      // Ctrl/Cmd + M to toggle VAD mode
+      if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
+        e.preventDefault();
+        handleVADToggle();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isVADMode, handleExitVAD, handleVADToggle]);
+
+  // Sound wave animation component
+  const SoundWaveAnimation = () => {
+    const [animationFrame, setAnimationFrame] = useState(0);
+
+    // More bars for better voice representation
+    const numberOfBars = 8;
+    const baseHeights = [4, 8, 12, 16, 20, 16, 12, 8];
+
+    // Animation loop for smoother wave movement
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setAnimationFrame((prev) => prev + 1);
+      }, 80); // Update every 80ms for smooth animation
+
+      return () => clearInterval(interval);
+    }, []);
+
+    // Calculate wave heights based on microphone volume with more realistic voice patterns
+    const getWaveHeights = () => {
+      if (isMuted) {
+        // When muted, show flat waves
+        return new Array(numberOfBars).fill(2);
+      }
+
+      // Enhanced volume calculation with better sensitivity
+      const volumeLevel = Math.max(0.1, Math.min(1, microphoneVolume * 2.5));
+
+      // Create more natural voice-like patterns
+      return baseHeights.map((baseHeight, i) => {
+        // Create wave-like motion with different frequencies for each bar
+        const waveOffset = Math.sin(animationFrame * 0.15 + i * 0.8) * 0.3;
+        const voicePattern = Math.sin(animationFrame * 0.25 + i * 1.2) * 0.4;
+
+        // Combine volume with wave patterns for more realistic voice visualization
+        const heightMultiplier = volumeLevel * (0.8 + waveOffset + voicePattern);
+        const finalHeight = Math.max(2, baseHeight * heightMultiplier);
+
+        return Math.min(24, finalHeight); // Cap max height
+      });
+    };
+
+    const waveHeights = getWaveHeights();
+
+    return (
+      <div className="flex items-center justify-center gap-1">
+        {waveHeights.map((height, i) => (
+          <div
+            key={i}
+            className={`w-1 rounded-full transition-all duration-75 ${
+              isMuted ? 'bg-white/30' : 'bg-gradient-to-t from-green-400/60 to-green-300/80'
+            }`}
+            style={{
+              height: height + 'px',
+              animationDelay: `${i * 50}ms`,
+            }}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {/* Floating Input Bar */}
+      <div className="absolute bottom-6 w-full z-20 flex items-center justify-center">
+        <div className="w-[50%]">
+          <div className="bg-white/10 backdrop-blur-md rounded-full px-6 py-4 border border-white/20 shadow-2xl">
+            <div className="flex items-center gap-4">
+              {/* Plus Icon */}
+              <button className="p-1 hover:bg-white/10 rounded-full transition-colors">
+                <Plus size={18} className="text-white/70" />
+              </button>
+
+              {/* Text Input / VAD Display */}
+              <div className="flex-1 relative">
+                {isVADMode ? (
+                  <div className="flex items-center justify-center py-1">
+                    <SoundWaveAnimation />
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleClickSendMessage()}
+                    placeholder="Ask anything"
+                    className="w-full bg-transparent text-white placeholder-white/50 focus:outline-none text-base"
+                    onKeyDown={(e) => e.stopPropagation()}
+                    onKeyUp={(e) => e.stopPropagation()}
+                  />
+                )}
+              </div>
+
+              {/* Microphone Button */}
+              <button
+                onClick={handleMicClick}
+                className={`p-2 rounded-full transition-colors relative ${
+                  isVADMode
+                    ? isMuted
+                      ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                      : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                    : 'hover:bg-white/10 text-white/70'
+                }`}
+                title={isVADMode ? (isMuted ? 'Unmute microphone' : 'Mute microphone') : 'Switch to voice mode'}
+              >
+                {isVADMode && isMuted ? <MicMute size={18} /> : <Mic size={18} />}
+                {isVADMode && isMuted && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-6 h-0.5 bg-red-400 rotate-45 rounded"></div>
+                  </div>
+                )}
+              </button>
+
+              {/* Send Button - Only show when not in VAD mode */}
+              {!isVADMode && (
+                <button
+                  onClick={handleClickSendMessage}
+                  className="px-4 py-2 rounded-full text-sm font-medium transition-colors text-white/70 hover:bg-white/20"
+                  title="Send message"
+                >
+                  <Send size={18} />
+                </button>
+              )}
+
+              {/* Exit VAD Mode Button */}
+              {isVADMode && (
+                <button
+                  onClick={handleExitVAD}
+                  className="p-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-full transition-colors"
+                  title="Exit voice mode"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Hidden MicrophoneStreamer for VAD functionality */}
+        <div style={{ display: 'none' }}>
+          <MicrophoneStreamer
+            ref={MicRef}
+            wsReadyState={readyState}
+            sendMessage={sendMessage}
+            ReadyState={ReadyState}
+          />
+        </div>
+      </div>
+    </>
+  );
+};
 
 const LiveStreamInner = ({ livestreamId, onEndSession }) => {
   // State variables
@@ -21,8 +254,10 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
   const [messageInput, setMessageInput] = useState('');
   const [isAgentReady, setIsAgentReady] = useState(false);
   const [_avatarTalking, setAvatarTalking] = useState('');
-  const messagesEndRef = useRef(null);
   const MicRef = useRef(null);
+
+  // Get endLivestream function from context
+  const { endLivestream } = useAvatarLivestream();
 
   // Auto-hide loading after a timeout as fallback
   useEffect(() => {
@@ -49,7 +284,14 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
     },
     onClose: (event) => {
       console.log('WebSocket closed:', event.code, event.reason);
-      if (event.code !== 1000) {
+
+      // Handle backend reporting job ended (status code 400)
+      if (event.code === 400) {
+        console.log('Backend reported job ended, clearing active job...');
+        endLivestream().catch((error) => {
+          console.error('Error clearing active job:', error);
+        });
+      } else if (event.code !== 1000) {
         console.warn('WebSocket closed unexpectedly. Code:', event.code, 'Reason:', event.reason);
       }
     },
@@ -95,6 +337,10 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
     },
 
     shouldReconnect: (closeEvent) => {
+      // Don't reconnect if backend reported job ended (status code 400)
+      if (closeEvent.code === 400) {
+        return false;
+      }
       // Only reconnect if it wasn't a normal closure
       return closeEvent.code !== 1000;
     },
@@ -134,10 +380,10 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
     setMessageInput('');
   };
 
-  // Auto-scroll to bottom of messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  // Remove auto-scroll to bottom of messages - let user control scrolling
+  // useEffect(() => {
+  //   messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // }, [messages]);
 
   // Memoize the initialSettings to prevent unnecessary re-renders of PixelStreamingWrapper
   const pixelStreamingSettings = useMemo(() => {
@@ -179,13 +425,12 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
           <Col className="p-0 d-flex justify-content-center">
             <div className="w-full relative mb-6 h-full">
               <div
-                className="bg-slate-800/20 backdrop-blur-sm border border-slate-700/50 rounded-xl relative overflow-hidden w-full h-full"
+                className="bg-slate-800/20 backdrop-blur-sm border border-slate-700/50 rounded-xl relative w-full h-full"
                 style={{ minHeight: '60vh', aspectRatio: '16/9' }}
               >
-                {/* Connection Status Indicator */}
-                <div className="absolute top-4 right-4 z-20">
+                <div className="absolute z-20 p-4 w-full flex justify-between">
                   <div
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
+                    className={`d-flex align-items-center gap-2 px-3 py-2 rounded-lg text-sm fw-medium ${
                       readyState === ReadyState.OPEN
                         ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                         : readyState === ReadyState.CONNECTING
@@ -196,80 +441,79 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
                     {readyState === ReadyState.OPEN ? <Wifi size={16} /> : <WifiOff size={16} />}
                     <span>{connectionStatus}</span>
                   </div>
+                  <Button variant="destructive" size="sm" onClick={onEndSession}>
+                    End Session
+                  </Button>
                 </div>
 
                 <PixelStreamingWrapper
                   initialSettings={pixelStreamingSettings}
                   style={{
-                    position: 'absolute',
+                    position: 'relative',
                     top: 0,
                     left: 0,
-                    width: '100%',
-                    height: '100%',
                   }}
                 />
-                {/* End Session button overlayed in bottom right of video */}
-                <div className="absolute bottom-4 right-4 z-30">
-                  <Button variant="destructive" size="sm" onClick={onEndSession}>
-                    End Session
-                  </Button>
-                </div>
+
                 {!isAgentReady && (
-                  <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-10">
+                  <div
+                    className="absolute inset-0 top-0 start-0 w-100 h-100 bg-slate-900/80 backdrop-blur-sm d-flex align-items-center justify-content-center"
+                    style={{ zIndex: 10 }}
+                  >
                     <div className="text-center text-slate-300">
                       <Loader2 className="animate-spin text-accent-mint mb-3 mx-auto" size={32} />
-                      <p className="text-lg font-medium">Initializing Interactive Agent...</p>
-                      <p className="text-sm text-slate-400">Waiting for agent connection</p>
+                      <p className="fs-5 fw-medium">Initializing Interactive Agent...</p>
+                      <p className="small text-slate-400">Waiting for agent connection</p>
                       {readyState !== ReadyState.OPEN && (
-                        <p className="text-xs text-red-400 mt-2">Connection Status: {connectionStatus}</p>
+                        <p className="text-red-400 small mt-2">Connection Status: {connectionStatus}</p>
                       )}
                     </div>
                   </div>
                 )}
+
+                {/* UI Overlay - Floating Input */}
+                <UIOverlay
+                  messageInput={messageInput}
+                  setMessageInput={setMessageInput}
+                  handleClickSendMessage={handleClickSendMessage}
+                  readyState={readyState}
+                  ReadyState={ReadyState}
+                  sendMessage={sendMessage}
+                  MicRef={MicRef}
+                />
               </div>
             </div>
           </Col>
         </Row>
-        <Row className="" style={{ position: 'relative' }}>
-          <h2>{livestreamId}</h2>
-        </Row>
 
-        {/* Chat Area */}
-        <Row className="m-0" style={{ height: '250px' }}>
-          <Col className="p-0 d-flex flex-column border-top">
-            <Card.Body className="flex-grow-1 overflow-auto p-2">
-              {messages.map((msg, index) => (
-                <div key={index} className="mb-1">
-                  <small className="text-muted">{msg.user}:</small> {msg.text}
+        {/* Chat History Below Video */}
+        <Row className="m-0" style={{ height: '25vh' }}>
+          <Col className="p-1">
+            <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-xl p-4 h-100">
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <h5 className="text-white mb-0 fw-medium">Chat History</h5>
+                <div className="d-flex align-items-center gap-2 small">
+                  <div
+                    className={`rounded-circle ${readyState === ReadyState.OPEN ? 'bg-green-400' : 'bg-red-400'}`}
+                    style={{ width: '8px', height: '8px' }}
+                  ></div>
+                  <span className="text-white/60">{readyState === ReadyState.OPEN ? 'Connected' : 'Disconnected'}</span>
                 </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </Card.Body>
-
-            <Card.Footer className="p-2">
-              <div onKeyDown={(e) => e.stopPropagation()} onKeyUp={(e) => e.stopPropagation()}>
-                <Form.Group className="d-flex gap-2">
-                  <Form.Control
-                    type="text"
-                    value={messageInput}
-                    onChange={(e) => setMessageInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleClickSendMessage()}
-                    placeholder="Type a message..."
-                  />
-                  <Button variant="primary" onClick={handleClickSendMessage} disabled={readyState !== ReadyState.OPEN}>
-                    <SendFill />
-                  </Button>
-                  <MicrophoneStreamer
-                    ref={MicRef}
-                    wsReadyState={readyState}
-                    sendMessage={sendMessage}
-                    ReadyState={ReadyState}
-                  />
-                </Form.Group>
-
-                <div className="text-end mt-1">{/* Connection status indicator removed for redundancy */}</div>
               </div>
-            </Card.Footer>
+              <div className="overflow-auto pe-2" style={{ height: 'calc(100% - 60px)' }}>
+                {messages.map((msg, index) => (
+                  <div key={index} className="small mb-2">
+                    <span className="text-white/60 fw-medium">{msg.user}:</span>
+                    <span className="text-white/90 ms-2">{msg.text}</span>
+                  </div>
+                ))}
+                {messages.length === 0 && (
+                  <div className="text-white/40 small fst-italic text-center py-4">
+                    No messages yet. Start a conversation!
+                  </div>
+                )}
+              </div>
+            </div>
           </Col>
         </Row>
       </Container>
@@ -280,8 +524,8 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
 
 const LiveStreamWithSidebar = ({ livestreamId, onEndSession }) => {
   return (
-    <div className="relative mr-[480px] overflow-hidden">
-      <div className="relative w-full overflow-y-auto">
+    <div className="relative w-full h-full">
+      <div className="relative w-full">
         <LiveStreamInner livestreamId={livestreamId} onEndSession={onEndSession} />
       </div>
       {/* End Session button now handled inside video area */}
@@ -304,12 +548,19 @@ const LiveStreamPage = () => {
     // window.location.reload();
   };
 
-  if (livestreamStatus === 'ready') {
+  // Determine if we should show the sidebar based on livestream status
+  const showSidebar = livestreamStatus === 'needs_request' || livestreamStatus === 'ready';
+  const isInStreamingMode = livestreamStatus === 'ready';
+
+  const { isLivestreamActive } = useAvatarLivestream();
+
+  if (isInStreamingMode) {
     return <LiveStreamWithSidebar livestreamId={livestreamId} onEndSession={handleEndSession} />;
   }
 
+  // For loading/waiting states, show full width without sidebar initially, then with sidebar when ready
   return (
-    <div className="relative mr-[480px] overflow-hidden">
+    <div className={`relative ${!isLivestreamActive && 'pr-[480px]'} overflow-hidden w-full h-full`}>
       <div className="relative w-full overflow-y-auto">
         <div className="mb-6">
           <div className="flex items-center justify-between">
@@ -342,7 +593,7 @@ const LiveStreamPage = () => {
         {/* Empty window placeholder for livestream */}
         <div className="w-full relative mb-6">
           <div
-            className="bg-slate-800/20 backdrop-blur-sm border border-slate-700/50 rounded-xl relative overflow-hidden"
+            className="bg-slate-800/20 backdrop-blur-sm border border-slate-700/50 rounded-xl relative overflow-hidden transition-all duration-300"
             style={{ paddingBottom: '56.25%' }} // 16:9 Aspect Ratio
           >
             <div className="absolute inset-0 flex items-center justify-center">
@@ -391,13 +642,10 @@ const LiveStreamPage = () => {
           />
         </div>
       </div>
-      <ConfigSidebar visual voice a2f llm isLiveSession={false} />
+      {/* Show sidebar only when not waiting for streaming client */}
+      {showSidebar && <ConfigSidebar visual voice a2f llm isLiveSession={false} />}
     </div>
   );
 };
-
-// const LiveStreamPage = () => {
-
-// };
 
 export default LiveStreamPage;
