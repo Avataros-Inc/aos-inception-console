@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { Mic, MicMute, ChatDots } from 'react-bootstrap-icons';
 import { Button, Alert } from 'react-bootstrap';
 import { MicVAD } from '@ricky0123/vad-web';
@@ -17,8 +17,37 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
   const mutedRef = useRef(true); // Track muted state for VAD callbacks
   const vadInitializingRef = useRef(false); // Prevent multiple initialization attempts
   const volumeCallbackRef = useRef(null); // Volume callback function
-  const analyserRef = useRef(null); // Audio analyser for volume detection
   const volumeMonitoringRef = useRef(false); // Track if volume monitoring is active
+  const sharedStreamRef = useRef(null); // Shared media stream to avoid conflicts
+
+  // Get or create a shared media stream to avoid conflicts
+  const getSharedStream = async () => {
+    if (sharedStreamRef.current && sharedStreamRef.current.active) {
+      return sharedStreamRef.current;
+    }
+
+    try {
+      sharedStreamRef.current = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+      return sharedStreamRef.current;
+    } catch (error) {
+      console.error('[Stream] Error creating shared stream:', error);
+      throw error;
+    }
+  };
+
+  const cleanupSharedStream = () => {
+    if (sharedStreamRef.current) {
+      sharedStreamRef.current.getTracks().forEach((track) => track.stop());
+      sharedStreamRef.current = null;
+    }
+  };
 
   // Centralized VAD initialization function
   const initializeVAD = async () => {
@@ -60,17 +89,8 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
           },
         });
 
-        // Start continuous volume monitoring when VAD is initialized
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-          },
-        });
-        if (!audioContextRef.current) {
-          audioContextRef.current = new AudioContext();
-        }
-        startVolumeMonitoring(stream);
+        // Don't start volume monitoring here - let MicVAD handle its own audio processing
+        // Volume monitoring will be started only when we begin recording
       } catch (autoError) {
         console.warn('[VAD] Auto-detection failed, trying with explicit URLs:', autoError);
 
@@ -94,17 +114,7 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
           },
         });
 
-        // Start continuous volume monitoring for fallback VAD as well
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-          },
-        });
-        if (!audioContextRef.current) {
-          audioContextRef.current = new AudioContext();
-        }
-        startVolumeMonitoring(stream);
+        // Don't start volume monitoring here either - avoid conflicts with MicVAD's AudioContext
       }
 
       console.log('[VAD] VAD initialized successfully');
@@ -141,27 +151,53 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
     // Placeholder for future avatar volume monitoring
   };
 
-  // Volume monitoring for microphone input
-  const startVolumeMonitoring = (stream) => {
-    if (!audioContextRef.current || volumeMonitoringRef.current) return;
+  // Alternative volume monitoring that doesn't use AudioContext (for VAD compatibility)
+  const startSimpleVolumeMonitoring = useCallback(() => {
+    // Simplified volume monitoring that doesn't conflict with VAD
+    // This can be used when VAD is active and we still want basic volume feedback
+    if (volumeCallbackRef.current?.callback) {
+      const mockVolume = userTalking ? Math.random() * 0.5 + 0.3 : 0.1; // Mock volume based on talking state
+      volumeCallbackRef.current.callback(mockVolume);
+    }
+  }, [userTalking]);
+
+  // Real-time volume monitoring using a separate AudioContext for display purposes only
+  const startRealVolumeMonitoring = useCallback(async () => {
+    if (volumeMonitoringRef.current) return;
 
     try {
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      analyserRef.current = audioContextRef.current.createAnalyser();
+      // Create a separate stream just for volume monitoring to avoid conflicts
+      const volumeStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false, // Disable processing to get raw volume levels
+          noiseSuppression: false,
+          autoGainControl: false,
+        },
+      });
+
+      // Create a separate AudioContext specifically for volume monitoring
+      const volumeAudioContext = new AudioContext();
+      const source = volumeAudioContext.createMediaStreamSource(volumeStream);
+      const analyser = volumeAudioContext.createAnalyser();
 
       // Configure analyser for real-time volume detection
-      analyserRef.current.fftSize = 256;
-      analyserRef.current.smoothingTimeConstant = 0.8;
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.8;
 
-      source.connect(analyserRef.current);
+      source.connect(analyser);
 
-      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
       volumeMonitoringRef.current = true;
 
       const updateVolume = () => {
-        if (!volumeMonitoringRef.current || !analyserRef.current) return;
+        if (!volumeMonitoringRef.current) {
+          // Cleanup when stopping
+          volumeStream.getTracks().forEach((track) => track.stop());
+          volumeAudioContext.close();
+          return;
+        }
 
-        analyserRef.current.getByteFrequencyData(dataArray);
+        analyser.getByteFrequencyData(dataArray);
 
         // Calculate RMS (Root Mean Square) for better volume representation
         let sum = 0;
@@ -186,16 +222,15 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
 
       updateVolume();
     } catch (error) {
-      console.error('[Volume] Error setting up volume monitoring:', error);
+      console.error('[Volume] Error setting up real volume monitoring:', error);
+      // Fall back to simple monitoring if real monitoring fails
+      startSimpleVolumeMonitoring();
     }
-  };
+  }, [startSimpleVolumeMonitoring]);
 
   const stopVolumeMonitoring = () => {
     volumeMonitoringRef.current = false;
-    if (analyserRef.current) {
-      analyserRef.current.disconnect();
-      analyserRef.current = null;
-    }
+    // The cleanup will be handled by the updateVolume function when volumeMonitoringRef becomes false
   };
 
   const checkMicrophonePermission = async () => {
@@ -217,19 +252,15 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: 1,
-          sampleRate: 16000,
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
-      });
+      // Use the shared stream instead of creating a new one
+      const stream = await getSharedStream();
 
-      audioContextRef.current = new AudioContext({ sampleRate: 16000 });
+      // Skip volume monitoring setup when VAD is running to avoid AudioContext conflicts
+      // VAD handles its own audio processing, so we don't need duplicate monitoring
+      console.log('[Recording] Starting recording with separate volume monitoring');
 
-      // Start volume monitoring
-      startVolumeMonitoring(stream);
+      // Use real volume monitoring with a separate stream/context to avoid conflicts
+      await startRealVolumeMonitoring();
 
       mediaRecorderRef.current = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus',
@@ -274,20 +305,16 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
   };
 
   const stopRecording = () => {
-    // Stop volume monitoring
-    stopVolumeMonitoring();
+    // Don't stop volume monitoring here as it's shared
+    // Volume monitoring will be stopped when the component unmounts
 
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => {
-        track.stop();
-      });
+      // Don't stop the stream tracks as they're shared
       mediaRecorderRef.current = null;
     }
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
+    // Don't close AudioContext here as it might be used for volume monitoring
+    // AudioContext will be cleaned up in the component unmount
 
     // Send stop message
     const canSend = wsReadyState === ReadyState.OPEN || (sendMessage && typeof sendMessage === 'function');
@@ -434,9 +461,16 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
 
   useEffect(() => {
     checkMicrophonePermission();
+
+    // Store refs at the start of the effect to avoid stale closures
+    const audioContextRefCurrent = audioContextRef;
+
     return () => {
       // Cleanup volume monitoring
       stopVolumeMonitoring();
+
+      // Cleanup shared stream
+      cleanupSharedStream();
 
       // Cleanup VAD and media resources
       if (vadRef.current) {
@@ -449,13 +483,26 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
       }
       if (mediaRecorderRef.current) {
         mediaRecorderRef.current.stop();
-        mediaRecorderRef.current.stream?.getTracks().forEach((track) => track.stop());
+        // Don't stop stream tracks here as they're handled by cleanupSharedStream
       }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
+
+      // Use stored reference to avoid stale closure
+      if (audioContextRefCurrent.current) {
+        audioContextRefCurrent.current.close();
       }
     };
   }, []);
+
+  // Start volume monitoring when not muted (for UI feedback)
+  useEffect(() => {
+    if (!muted && !volumeMonitoringRef.current) {
+      startRealVolumeMonitoring().catch((error) => {
+        console.error('[Volume] Failed to start volume monitoring:', error);
+      });
+    } else if (muted && volumeMonitoringRef.current) {
+      stopVolumeMonitoring();
+    }
+  }, [muted, startRealVolumeMonitoring]);
 
   if (hasPermission === false) {
     return (
