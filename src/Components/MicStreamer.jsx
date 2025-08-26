@@ -19,9 +19,12 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
   const volumeCallbackRef = useRef(null); // Volume callback function
   const volumeMonitoringRef = useRef(false); // Track if volume monitoring is active
   const sharedStreamRef = useRef(null); // Shared media stream to avoid conflicts
+  const preTriggerRef = useRef(false); // Track if pre-trigger is active
+  const volumeHistoryRef = useRef([]); // Volume history for trend analysis
+  const preRecordingTimeoutRef = useRef(null); // Timeout for pre-recording cleanup
 
   // Get or create a shared media stream to avoid conflicts
-  const getSharedStream = async () => {
+  const getSharedStream = useCallback(async () => {
     if (sharedStreamRef.current && sharedStreamRef.current.active) {
       return sharedStreamRef.current;
     }
@@ -40,7 +43,7 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
       console.error('[Stream] Error creating shared stream:', error);
       throw error;
     }
-  };
+  }, []);
 
   const cleanupSharedStream = () => {
     if (sharedStreamRef.current) {
@@ -79,13 +82,25 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
             const isWebSocketReady = wsReadyState === ReadyState.OPEN || wsReadyState === ReadyState.CONNECTING;
             const currentMuted = mutedRef.current;
             if (!currentMuted && isWebSocketReady) {
+              // Clear any pre-recording timeout since VAD has confirmed speech
+              if (preRecordingTimeoutRef.current) {
+                clearTimeout(preRecordingTimeoutRef.current);
+                preRecordingTimeoutRef.current = null;
+              }
+
               setUserTalking(true);
-              startRecording();
+              // Start recording if not already started by pre-trigger
+              if (!preTriggerRef.current) {
+                startRecording();
+              }
+              preTriggerRef.current = false; // Reset pre-trigger flag
             }
           },
           onSpeechEnd: () => {
             setUserTalking(false);
             stopRecording();
+            preTriggerRef.current = false; // Reset pre-trigger flag
+            volumeHistoryRef.current = []; // Clear volume history for clean start
           },
         });
 
@@ -104,13 +119,25 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
             const isWebSocketReady = wsReadyState === ReadyState.OPEN || wsReadyState === ReadyState.CONNECTING;
             const currentMuted = mutedRef.current;
             if (!currentMuted && isWebSocketReady) {
+              // Clear any pre-recording timeout since VAD has confirmed speech
+              if (preRecordingTimeoutRef.current) {
+                clearTimeout(preRecordingTimeoutRef.current);
+                preRecordingTimeoutRef.current = null;
+              }
+
               setUserTalking(true);
-              startRecording();
+              // Start recording if not already started by pre-trigger
+              if (!preTriggerRef.current) {
+                startRecording();
+              }
+              preTriggerRef.current = false; // Reset pre-trigger flag
             }
           },
           onSpeechEnd: () => {
             setUserTalking(false);
             stopRecording();
+            preTriggerRef.current = false; // Reset pre-trigger flag
+            volumeHistoryRef.current = []; // Clear volume history for clean start
           },
         });
 
@@ -151,13 +178,151 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
     // Placeholder for future avatar volume monitoring
   };
 
+  // Volume-based pre-trigger to start recording before VAD detects speech
+  const handleVolumePreTrigger = useCallback(
+    (volume, bandIntensities) => {
+      // Only process pre-trigger if not muted, VAD is running, and we're not already recording
+      if (muted || !vadRunning || userTalking || preTriggerRef.current) {
+        return;
+      }
+
+      // Add current volume to history for trend analysis
+      volumeHistoryRef.current.push(volume);
+
+      // Keep only the last 10 volume readings (about 0.5-1 second of history)
+      if (volumeHistoryRef.current.length > 10) {
+        volumeHistoryRef.current.shift();
+      }
+
+      // Calculate volume trend (is volume increasing?)
+      let trend = 0;
+      if (volumeHistoryRef.current.length >= 3) {
+        const recent = volumeHistoryRef.current.slice(-3);
+        for (let i = 1; i < recent.length; i++) {
+          trend += recent[i] - recent[i - 1];
+        }
+      }
+
+      // Pre-trigger thresholds
+      const volumeThreshold = 0.15; // Lower threshold for volume detection
+      const trendThreshold = 0.05; // Positive trend indicating rising volume
+      const voiceFrequencyThreshold = 0.08; // Activity in voice-relevant frequencies
+
+      // Check if we have voice-like frequency activity (bands 1-6 are most important for speech)
+      const voiceActivity = bandIntensities.slice(1, 7).reduce((sum, intensity) => sum + intensity, 0) / 6;
+
+      // Trigger pre-recording if:
+      // 1. Volume exceeds threshold AND shows rising trend, OR
+      // 2. Strong voice frequency activity is detected
+      const shouldPreTrigger =
+        (volume > volumeThreshold && trend > trendThreshold) || voiceActivity > voiceFrequencyThreshold;
+
+      if (shouldPreTrigger) {
+        preTriggerRef.current = true;
+
+        // Call startRecording asynchronously to avoid dependency issues
+        setTimeout(() => {
+          if (mediaRecorderRef.current === null || mediaRecorderRef.current.state === 'inactive') {
+            // Trigger recording start by simulating the same logic as startRecording
+            getSharedStream()
+              .then((stream) => {
+                if (preTriggerRef.current) {
+                  mediaRecorderRef.current = new MediaRecorder(stream, {
+                    mimeType: 'audio/webm;codecs=opus',
+                  });
+                  audioChunksRef.current = [];
+
+                  mediaRecorderRef.current.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const audioData = reader.result;
+                        const canSend =
+                          wsReadyState === ReadyState.OPEN || (sendMessage && typeof sendMessage === 'function');
+
+                        if (canSend) {
+                          const message = {
+                            type: 'audioin',
+                            time: Date.now(),
+                            content: audioData,
+                            format: 'webm',
+                            codec: 'opus',
+                            sampleRate: 16000,
+                            channels: 1,
+                            encoding: 'dataurl',
+                          };
+                          sendMessage(JSON.stringify(message));
+                        }
+                      };
+                      reader.onerror = (error) => {
+                        console.error('Error reading audio data:', error);
+                      };
+                      reader.readAsDataURL(event.data);
+                    }
+                  };
+
+                  mediaRecorderRef.current.start(100);
+                }
+              })
+              .catch((err) => {
+                console.error('Error starting pre-trigger recording:', err);
+              });
+          }
+        }, 0);
+
+        // Set a timeout to stop pre-recording if VAD doesn't confirm speech within reasonable time
+        preRecordingTimeoutRef.current = setTimeout(() => {
+          if (preTriggerRef.current && !userTalking) {
+            preTriggerRef.current = false;
+            volumeHistoryRef.current = []; // Clear volume history
+
+            // Stop recording
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+              mediaRecorderRef.current.stop();
+              mediaRecorderRef.current = null;
+            }
+
+            // Send stop message
+            const canSend = wsReadyState === ReadyState.OPEN || (sendMessage && typeof sendMessage === 'function');
+            if (canSend) {
+              sendMessage(
+                JSON.stringify({
+                  type: 'audioin',
+                  content: 'stop',
+                })
+              );
+            }
+          }
+        }, 3000); // 3 second timeout
+      }
+    },
+    [muted, vadRunning, userTalking, wsReadyState, sendMessage, getSharedStream, ReadyState.OPEN]
+  );
+
   // Alternative volume monitoring that doesn't use AudioContext (for VAD compatibility)
   const startSimpleVolumeMonitoring = useCallback(() => {
     // Simplified volume monitoring that doesn't conflict with VAD
     // This can be used when VAD is active and we still want basic volume feedback
     if (volumeCallbackRef.current?.callback) {
-      const mockVolume = userTalking ? Math.random() * 0.5 + 0.3 : 0.1; // Mock volume based on talking state
-      volumeCallbackRef.current.callback(mockVolume);
+      const mockVolume = userTalking ? Math.random() * 0.3 + 0.2 : 0.05; // Reduced mock noise
+
+      // Create realistic voice-like frequency band patterns instead of random
+      const mockBands = new Array(12).fill(0).map((_, i) => {
+        if (!userTalking) return 0.02; // Very low baseline when not talking
+
+        // Create voice-like frequency distribution
+        // Lower frequencies (0-3) should be stronger for fundamental/harmonics
+        // Mid frequencies (4-7) moderate for formants
+        // Higher frequencies (8-11) weaker but present
+        const voicePattern = [0.8, 0.9, 0.7, 0.6, 0.5, 0.4, 0.3, 0.4, 0.2, 0.15, 0.1, 0.05];
+        const baseIntensity = voicePattern[i] || 0.1;
+
+        // Add slight variation but keep it stable
+        const variation = (Math.random() - 0.5) * 0.1;
+        return Math.max(0.02, baseIntensity * mockVolume + variation);
+      });
+
+      volumeCallbackRef.current.callback(mockVolume, mockBands);
     }
   }, [userTalking]);
 
@@ -180,13 +345,14 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
       const source = volumeAudioContext.createMediaStreamSource(volumeStream);
       const analyser = volumeAudioContext.createAnalyser();
 
-      // Configure analyser for real-time volume detection
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.8;
+      // Configure analyser for real-time volume detection with heavy noise reduction
+      analyser.fftSize = 512; // Increased for better frequency resolution
+      analyser.smoothingTimeConstant = 0.9; // Maximum smoothing
 
       source.connect(analyser);
 
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const frequencyData = new Uint8Array(analyser.frequencyBinCount);
       volumeMonitoringRef.current = true;
 
       const updateVolume = () => {
@@ -198,6 +364,7 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
         }
 
         analyser.getByteFrequencyData(dataArray);
+        analyser.getByteFrequencyData(frequencyData);
 
         // Calculate RMS (Root Mean Square) for better volume representation
         let sum = 0;
@@ -206,16 +373,66 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
         }
         const rms = Math.sqrt(sum / dataArray.length);
 
-        // Normalize to 0-1 range with better sensitivity for voice
-        const normalizedVolume = Math.min(1, rms / 128);
+        // Normalize to 0-1 range with noise gate and better sensitivity for voice
+        const noiseGate = 25; // Increased noise gate threshold even more
+        const adjustedRms = Math.max(0, rms - noiseGate);
+        const normalizedVolume = Math.min(1, adjustedRms / 95); // Further reduced sensitivity
 
-        // Apply exponential smoothing for more natural volume changes
-        const smoothedVolume = normalizedVolume * 0.3 + (volumeCallbackRef.current?.lastVolume || 0) * 0.7;
+        // Apply very heavy exponential smoothing for more natural volume changes
+        const smoothedVolume = normalizedVolume * 0.05 + (volumeCallbackRef.current?.lastVolume || 0) * 0.95;
+
+        // Process frequency data for voice visualization
+        const sampleRate = volumeAudioContext.sampleRate;
+        const nyquist = sampleRate / 2;
+        const frequencyBinSize = nyquist / frequencyData.length;
+
+        // Define voice-relevant frequency ranges
+        const frequencyBands = [
+          { min: 80, max: 150, weight: 1.2 }, // Fundamental frequency (bass)
+          { min: 150, max: 300, weight: 1.4 }, // Low harmonics
+          { min: 300, max: 600, weight: 1.5 }, // Mid-low harmonics
+          { min: 600, max: 1200, weight: 1.6 }, // Mid harmonics
+          { min: 1200, max: 2000, weight: 1.4 }, // Upper mid
+          { min: 2000, max: 3000, weight: 1.3 }, // Formant region
+          { min: 3000, max: 4000, weight: 1.2 }, // Upper formants
+          { min: 4000, max: 6000, weight: 1.0 }, // Brightness
+          { min: 6000, max: 8000, weight: 0.9 }, // High frequencies
+          { min: 8000, max: 12000, weight: 0.8 }, // Very high frequencies
+          { min: 12000, max: 16000, weight: 0.7 }, // Ultra high
+          { min: 16000, max: 20000, weight: 0.6 }, // Top range
+        ];
+
+        // Calculate intensity for each frequency band
+        const bandIntensities = frequencyBands.map((band) => {
+          const startBin = Math.floor(band.min / frequencyBinSize);
+          const endBin = Math.floor(band.max / frequencyBinSize);
+
+          let bandSum = 0;
+          let count = 0;
+
+          for (let i = startBin; i <= endBin && i < frequencyData.length; i++) {
+            bandSum += frequencyData[i];
+            count++;
+          }
+
+          const avgIntensity = count > 0 ? bandSum / count : 0;
+          const noiseThreshold = 12; // Higher noise threshold for frequency bands
+          const adjustedIntensity = Math.max(0, avgIntensity - noiseThreshold);
+          const normalized = Math.min(1, (adjustedIntensity / 220) * band.weight); // Further reduced sensitivity
+
+          // Apply very heavy smoothing per band
+          const prevIntensity = volumeCallbackRef.current?.bandIntensities?.[frequencyBands.indexOf(band)] || 0;
+          return normalized * 0.08 + prevIntensity * 0.92;
+        });
 
         if (volumeCallbackRef.current?.callback) {
-          volumeCallbackRef.current.callback(smoothedVolume);
+          volumeCallbackRef.current.callback(smoothedVolume, bandIntensities);
           volumeCallbackRef.current.lastVolume = smoothedVolume;
+          volumeCallbackRef.current.bandIntensities = bandIntensities;
         }
+
+        // Volume-based pre-trigger for faster speech detection
+        handleVolumePreTrigger(smoothedVolume, bandIntensities);
 
         requestAnimationFrame(updateVolume);
       };
@@ -226,7 +443,7 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
       // Fall back to simple monitoring if real monitoring fails
       startSimpleVolumeMonitoring();
     }
-  }, [startSimpleVolumeMonitoring]);
+  }, [startSimpleVolumeMonitoring, handleVolumePreTrigger]);
 
   const stopVolumeMonitoring = () => {
     volumeMonitoringRef.current = false;
@@ -250,7 +467,7 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
     }
   };
 
-  const startRecording = async () => {
+  const startRecording = useCallback(async () => {
     try {
       // Use the shared stream instead of creating a new one
       const stream = await getSharedStream();
@@ -302,9 +519,9 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
     } catch (err) {
       console.error('Error starting recording:', err);
     }
-  };
+  }, [wsReadyState, ReadyState.OPEN, sendMessage, getSharedStream, startRealVolumeMonitoring]);
 
-  const stopRecording = () => {
+  const stopRecording = useCallback(() => {
     // Don't stop volume monitoring here as it's shared
     // Volume monitoring will be stopped when the component unmounts
 
@@ -326,7 +543,7 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
         })
       );
     }
-  };
+  }, [wsReadyState, ReadyState.OPEN, sendMessage]);
 
   const handleButton = async () => {
     if (AvatarTalking) {
@@ -455,6 +672,7 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
       volumeCallbackRef.current = {
         callback: callback,
         lastVolume: 0,
+        bandIntensities: new Array(12).fill(0),
       };
     },
   }));
@@ -466,6 +684,12 @@ const MicrophoneStreamer = forwardRef(({ wsReadyState, sendMessage, ReadyState }
     const audioContextRefCurrent = audioContextRef;
 
     return () => {
+      // Cleanup pre-trigger timeout
+      if (preRecordingTimeoutRef.current) {
+        clearTimeout(preRecordingTimeoutRef.current);
+        preRecordingTimeoutRef.current = null;
+      }
+
       // Cleanup volume monitoring
       stopVolumeMonitoring();
 

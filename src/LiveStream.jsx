@@ -27,6 +27,7 @@ const UIOverlay = ({
   const [isVADMode, setIsVADMode] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [microphoneVolume, setMicrophoneVolume] = useState(0);
+  const [frequencyBands, setFrequencyBands] = useState(new Array(12).fill(0));
 
   const handleVADToggle = useCallback(async () => {
     const newVADMode = !isVADMode;
@@ -72,8 +73,11 @@ const UIOverlay = ({
   // Listen for VAD state changes from MicrophoneStreamer
   useEffect(() => {
     if (MicRef?.current) {
-      MicRef.current.setVolumeCallback?.((volume) => {
+      MicRef.current.setVolumeCallback?.((volume, bands) => {
         setMicrophoneVolume(volume);
+        if (bands) {
+          setFrequencyBands(bands);
+        }
       });
     }
   }, [MicRef]);
@@ -101,55 +105,76 @@ const UIOverlay = ({
     const [animationFrame, setAnimationFrame] = useState(0);
 
     // More bars for better voice representation
-    const numberOfBars = 8;
-    const baseHeights = [4, 8, 12, 16, 20, 16, 12, 8];
+    const numberOfBars = 12;
+    const baseHeights = [6, 10, 14, 18, 22, 26, 28, 26, 22, 18, 14, 10];
 
-    // Animation loop for smoother wave movement
+    // Animation loop for very smooth wave movement
     useEffect(() => {
       const interval = setInterval(() => {
         setAnimationFrame((prev) => prev + 1);
-      }, 80); // Update every 80ms for smooth animation
+      }, 150); // Much slower update for very smooth animation
 
       return () => clearInterval(interval);
     }, []);
 
-    // Calculate wave heights based on microphone volume with more realistic voice patterns
+    // Calculate wave heights based on frequency data and microphone volume
     const getWaveHeights = () => {
       if (isMuted) {
-        // When muted, show flat waves
-        return new Array(numberOfBars).fill(2);
+        // When muted, show minimal flat waves
+        return new Array(numberOfBars).fill(3);
       }
 
-      // Enhanced volume calculation with better sensitivity
-      const volumeLevel = Math.max(0.1, Math.min(1, microphoneVolume * 2.5));
+      // Enhanced volume calculation with strong noise gate
+      const volumeLevel = Math.max(0.02, Math.min(1, microphoneVolume * 1.8));
 
-      // Create more natural voice-like patterns
+      // Use real frequency data when available, fallback to patterns
       return baseHeights.map((baseHeight, i) => {
-        // Create wave-like motion with different frequencies for each bar
-        const waveOffset = Math.sin(animationFrame * 0.15 + i * 0.8) * 0.3;
-        const voicePattern = Math.sin(animationFrame * 0.25 + i * 1.2) * 0.4;
+        let heightMultiplier = volumeLevel;
 
-        // Combine volume with wave patterns for more realistic voice visualization
-        const heightMultiplier = volumeLevel * (0.8 + waveOffset + voicePattern);
-        const finalHeight = Math.max(2, baseHeight * heightMultiplier);
+        // Use real frequency band data if available
+        if (frequencyBands && frequencyBands.length >= numberOfBars) {
+          const bandIntensity = frequencyBands[i] || 0;
+          // Only respond to significant frequency activity, heavily suppress noise
+          const significantActivity = bandIntensity > 0.2 ? bandIntensity : bandIntensity * 0.1;
+          heightMultiplier = Math.max(0.05, volumeLevel * 0.8 + significantActivity * 0.8);
+        } else {
+          // Fallback to stable voice-like synthetic patterns
+          // Create frequency-specific patterns that mimic voice characteristics
+          const lowFreqPattern = Math.sin(animationFrame * 0.06 + i * 0.4) * 0.1;
+          const midFreqPattern = Math.sin(animationFrame * 0.08 + i * 0.6) * 0.08;
+          const highFreqPattern = Math.sin(animationFrame * 0.04 + i * 0.3) * 0.05;
 
-        return Math.min(24, finalHeight); // Cap max height
+          // Weight patterns based on typical voice frequency distribution
+          const voiceWeights = [0.8, 0.9, 0.7, 0.6, 0.5, 0.4, 0.3, 0.4, 0.2, 0.15, 0.1, 0.05];
+          const voiceWeight = voiceWeights[i] || 0.1;
+
+          heightMultiplier = volumeLevel * (voiceWeight + lowFreqPattern + midFreqPattern + highFreqPattern);
+        }
+
+        // Reduce random variation for much smoother appearance
+        const randomVariation = (Math.random() - 0.5) * 0.02;
+        const finalHeight = Math.max(3, baseHeight * (heightMultiplier + randomVariation));
+
+        return Math.min(24, finalHeight); // Keep original max height
       });
     };
 
     const waveHeights = getWaveHeights();
 
     return (
-      <div className="flex items-center justify-center gap-1">
+      <div className="flex items-center justify-center gap-1.5 px-4">
         {waveHeights.map((height, i) => (
           <div
             key={i}
-            className={`w-1 rounded-full transition-all duration-75 ${
-              isMuted ? 'bg-white/30' : 'bg-gradient-to-t from-green-400/60 to-green-300/80'
+            className={`w-2.5 rounded-full transition-all duration-300 ease-out ${
+              isMuted
+                ? 'bg-white/25'
+                : 'bg-gradient-to-t from-green-400/70 to-green-300/90 shadow-sm shadow-green-400/30'
             }`}
             style={{
               height: height + 'px',
               animationDelay: `${i * 50}ms`,
+              transform: `scaleY(${0.98 + (frequencyBands[i] || 0) * 0.1})`,
             }}
           />
         ))}
@@ -161,7 +186,7 @@ const UIOverlay = ({
     <>
       {/* Floating Input Bar */}
       <div className="absolute bottom-6 w-full z-20 flex items-center justify-center">
-        <div className="w-[50%]">
+        <div className="w-[60%] max-w-2xl">
           <div className="bg-white/10 backdrop-blur-md rounded-full px-6 py-4 border border-white/20 shadow-2xl">
             <div className="flex items-center gap-4">
               {/* Plus Icon */}
