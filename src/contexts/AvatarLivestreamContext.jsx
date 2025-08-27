@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { updateRenderJob, insertRenderJob, getRenderJob } from '../postgrestAPI';
+import { getRenderJob, createLivestream, deleteLivestream } from '../postgrestAPI';
 
 // Create the context
 const AvatarLivestreamContext = createContext();
@@ -98,10 +98,10 @@ export const AvatarLivestreamProvider = ({ children }) => {
       await endLivestream();
 
       if (config) {
-        const renderJobId = await insertRenderJob('live', config);
-        localStorage.setItem('current_livestream', renderJobId);
+        const livestreamId = await createLivestream(config);
+        localStorage.setItem('current_livestream', livestreamId);
 
-        const job = await getRenderJob(renderJobId);
+        const job = await getRenderJob(livestreamId);
         if (job && job.config) {
           setActiveLivestream(job);
           setLivestreamStatus('checking_readiness');
@@ -146,7 +146,7 @@ export const AvatarLivestreamProvider = ({ children }) => {
     try {
       if (livestreamId && livestreamId !== 'undefined' && livestreamId !== null) {
         console.log('AvatarLivestreamContext: Ending backend livestream:', livestreamId);
-        await updateRenderJob(livestreamId, { jobstatus: 2, ended_at: 'NOW()' });
+        await deleteLivestream(livestreamId);
         localStorage.removeItem('current_livestream');
         console.log('AvatarLivestreamContext: Backend livestream ended successfully');
       }

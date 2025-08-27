@@ -412,24 +412,83 @@ export const checkVideoStatus = async (renderJobID) => {
     });
 
     if (!response.ok) {
-      const retryAfter = response.headers.get('Retry-After') || '5';
-      const errorData = await response.json();
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const videoData = await response.json();
+    return videoData;
+  } catch (error) {
+    console.error(`Error checking video status:`, error);
+    throw error;
+  }
+};
 
-      return {
-        error: errorData.error || errorData.message || 'Failed to fetch video',
-        retryAfter: parseInt(retryAfter, 10),
-        status: response.status,
-        exists: errorData.exists || false,
-      };
+// New livestream API functions
+export const createLivestream = async (config) => {
+  try {
+    const livestreamData = {
+      avatar_id: config.avatar,
+      EnvironmentID: config.environment,
+      wardrobe_id: config.wardrobe_id || null,
+      hair_id: config.hair_id || null,
+      llm: config.llm_config ?? null,
+      voice: config.voice_config ?? null,
+      lipsync: config.a2f_config?.lipsync ?? null,
+      camera: config.camera || { preset: 'Preset1', resolution: '1920x1080' },
+      user_token: null,
+    };
+
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/livestream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(livestreamData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
     }
 
-    const data = await response.json();
-    return { url: data.url, exists: true };
+    const result = await response.json();
+    return result;
   } catch (error) {
-    return {
-      error: 'Network error occurred',
-      retryAfter: 5,
-      exists: false,
-    };
+    console.error(`Error creating livestream:`, error);
+    throw error;
+  }
+};
+
+export const deleteLivestream = async (renderjobId) => {
+  try {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/livestream/${renderjobId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error(`Error deleting livestream:`, error);
+    throw error;
+  }
+};
+
+// Fetch environments from API
+export const getEnvironments = async () => {
+  try {
+    const response = await authenticatedFetch(`${API_BASE_URL}/uassets?type=eq.env`, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const environments = await response.json();
+    return environments;
+  } catch (error) {
+    console.error(`Error fetching environments:`, error);
+    throw error;
   }
 };

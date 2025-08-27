@@ -299,7 +299,10 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
   const socketUrl = `${API_BASE_URL.replace('https:', 'wss:').replace('http:', 'ws:')}/ws`;
 
   // const liveStreamUrl = `ws://192.168.4.118:8080/livestream/${livestreamId}`;
-  const liveStreamUrl = `${API_BASE_URL.replace('https:', 'wss:').replace('http:', 'ws:')}/livestream/${livestreamId}`;
+  const liveStreamUrl = `${API_BASE_URL.replace('https:', 'wss:').replace(
+    'http:',
+    'ws:'
+  )}/api/v1/livestream/${livestreamId}`;
 
   const { sendMessage, readyState } = useWebSocket(socketUrl, {
     // protocols: [`auth-${getSessionToken()}`, "test"],

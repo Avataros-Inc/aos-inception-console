@@ -6,7 +6,7 @@ export const ConfigProvider = ({ children, characters }) => {
   const [config, setConfig] = useState({
     avatar: characters[0]?.id || '',
     environment: 'Map_Env_ltOliverDefault_v01',
-    camera: { preset: 'Preset1' },
+    camera: { preset: 'Preset1', resolution: '1920x1080' },
     a2f_config: characters[0]?.a2f_config || {},
     voice_config: characters[0]?.voice_config || {},
     llm_config: characters[0]?.llm_config || {},
