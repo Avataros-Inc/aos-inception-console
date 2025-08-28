@@ -1,16 +1,48 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import { getEnvironments } from '../postgrestAPI';
 
 const ConfigContext = createContext();
 
 export const ConfigProvider = ({ children, characters }) => {
   const [config, setConfig] = useState({
     avatar: characters[0]?.id || '',
-    environment: 'Map_Env_ltOliverDefault_v01',
+    environment: 'Map_Env_ltOliverDefault_v01', // Will be updated to UUID once environments load
     camera: { preset: 'Preset1', resolution: '1920x1080' },
     a2f_config: characters[0]?.a2f_config || {},
     voice_config: characters[0]?.voice_config || {},
     llm_config: characters[0]?.llm_config || {},
   });
+
+  // Load environments and set default environment UUID
+  useEffect(() => {
+    const initializeDefaultEnvironment = async () => {
+      try {
+        const environments = await getEnvironments();
+        if (environments && environments.length > 0) {
+          // Try to find the default environment by name/path
+          const defaultEnv = environments.find(
+            (env) =>
+              env.name === 'Map_Env_ltOliverDefault_v01' ||
+              env.asset_path === 'Map_Env_ltOliverDefault_v01' ||
+              env.id === 'Map_Env_ltOliverDefault_v01'
+          );
+
+          // Use the found environment or fall back to the first one
+          const selectedEnv = defaultEnv || environments[0];
+
+          setConfig((prev) => ({
+            ...prev,
+            environment: selectedEnv.id, // Use the UUID
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to initialize default environment:', error);
+        // Keep the string value as fallback - createLivestream will handle the lookup
+      }
+    };
+
+    initializeDefaultEnvironment();
+  }, []);
 
   // Function to apply avatar session configuration
   const applyAvatarSession = useCallback((sessionAvatar) => {

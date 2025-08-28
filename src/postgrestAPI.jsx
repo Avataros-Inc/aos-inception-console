@@ -423,53 +423,85 @@ export const checkVideoStatus = async (renderJobID) => {
 };
 
 // New livestream API functions
+// Create a new livestream session using the Swagger API
 export const createLivestream = async (config) => {
   try {
-    const livestreamData = {
+    let environment_id = config.environment;
+
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(environment_id);
+
+    if (!isUUID) {
+      try {
+        const environments = await getEnvironments();
+        const environment = environments.find(
+          (env) => env.name === environment_id || env.id === environment_id || env.asset_path === environment_id
+        );
+
+        if (environment) {
+          environment_id = environment.id;
+        } else {
+          console.warn('Environment not found, using first available environment');
+          environment_id = environments[0]?.id;
+        }
+      } catch (error) {
+        console.error('Failed to fetch environments for lookup:', error);
+        throw new Error('Could not resolve environment ID');
+      }
+    }
+
+    const requestBody = {
       avatar_id: config.avatar,
-      EnvironmentID: config.environment,
-      wardrobe_id: config.wardrobe_id || null,
-      hair_id: config.hair_id || null,
-      llm: config.llm_config ?? null,
-      voice: config.voice_config ?? null,
-      lipsync: config.a2f_config?.lipsync ?? null,
+      environment_id: environment_id,
       camera: config.camera || { preset: 'Preset1', resolution: '1920x1080' },
-      user_token: null,
+      user_token: getSessionToken(),
     };
+
+    if (config.voice_config && Object.keys(config.voice_config).length > 0) {
+      requestBody.voice = config.voice_config;
+    }
+
+    if (config.llm_config && Object.keys(config.llm_config).length > 0) {
+      requestBody.llm = config.llm_config;
+    }
+
+    if (config.a2f_config && Object.keys(config.a2f_config).length > 0) {
+      requestBody.lipsync = config.a2f_config;
+    }
+
+    console.log('Creating livestream with config:', JSON.stringify(requestBody, null, 2));
 
     const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/livestream`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(livestreamData),
+      body: JSON.stringify(requestBody),
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    const result = await response.json();
-    return result;
+    const livestream = await response.json();
+    return livestream.id || livestream; // Return the livestream ID or full object
   } catch (error) {
     console.error(`Error creating livestream:`, error);
     throw error;
   }
 };
 
-export const deleteLivestream = async (renderjobId) => {
+// Delete a livestream session using the Swagger API
+export const deleteLivestream = async (jobId) => {
   try {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/livestream/${renderjobId}`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/livestream/${jobId}`, {
       method: 'DELETE',
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+      const errorData = await response.json();
+      throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
     }
 
-    return true;
+    const result = await response.json();
+    return result;
   } catch (error) {
-    console.error(`Error deleting livestream:`, error);
+    console.error(`Error deleting livestream ${jobId}:`, error);
     throw error;
   }
 };
