@@ -470,7 +470,7 @@ export const createLivestream = async (config) => {
 
     console.log('Creating livestream with config:', JSON.stringify(requestBody, null, 2));
 
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/livestream`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/live`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -489,7 +489,7 @@ export const createLivestream = async (config) => {
 // Delete a livestream session using the Swagger API
 export const deleteLivestream = async (jobId) => {
   try {
-    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/livestream/${jobId}`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/live/${jobId}`, {
       method: 'DELETE',
     });
 
