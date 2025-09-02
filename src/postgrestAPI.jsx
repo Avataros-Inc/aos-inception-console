@@ -46,6 +46,13 @@ export const authenticatedFetch = async (url, options = {}) => {
 
   // Handle 401 Unauthorized responses
   if (response.status === 401) {
+    // For DELETE operations, log but don't auto-logout to prevent disruption
+    if (options.method === 'DELETE') {
+      console.warn('DELETE operation received 401 - this might be expected for ended sessions');
+      // Don't automatically logout for DELETE operations
+      return response;
+    }
+
     // Clear the invalid session
     removeSession();
 
@@ -493,15 +500,53 @@ export const deleteLivestream = async (jobId) => {
       method: 'DELETE',
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
-    }
+    if (response.ok) {
+      // Successful deletion
+      const result = await response.json();
+      console.log('DELETE successful, response:', result);
+      return result;
+    } else if (response.status === 401) {
+      // Handle 401 specifically - session might already be ended
+      try {
+        const responseText = await response.text();
+        console.log('DELETE 401 response text:', responseText);
 
-    const result = await response.json();
-    return result;
+        // Try to parse as JSON to see if we get session info
+        try {
+          const data = JSON.parse(responseText);
+          if (data.error === 'unauthorized' && data.jobstatus === 3) {
+            console.log('Session already ended (jobstatus: 3), treating as successful cleanup');
+            return { success: true, alreadyEnded: true, jobstatus: 3 };
+          }
+        } catch {
+          // Not JSON, handle as regular unauthorized
+        }
+
+        console.warn('DELETE received 401 - session may already be ended');
+        return { success: false, error: 'unauthorized', alreadyEnded: true };
+      } catch (parseError) {
+        console.error('Error parsing 401 response:', parseError);
+        return { success: false, error: 'unauthorized' };
+      }
+    } else {
+      // Other error status codes
+      try {
+        const errorData = await response.json();
+        console.error('DELETE error response:', errorData);
+        throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+      } catch {
+        // If we can't parse the error response, just use the status
+        console.error('DELETE failed with status:', response.status);
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+    }
   } catch (error) {
     console.error(`Error deleting livestream ${jobId}:`, error);
+    // Don't re-throw auth errors to prevent logout
+    if (error.message.includes('Authentication failed')) {
+      console.warn('Authentication error on DELETE - ignoring to prevent logout');
+      return { success: false, error: 'Authentication failed' };
+    }
     throw error;
   }
 };

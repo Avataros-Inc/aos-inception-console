@@ -224,6 +224,7 @@ const Console = () => {
               <Route path="/renders" element={<RenderQueue />} />
               <Route path="/videos" element={<Videos />} />
               <Route path="/conversational-ai" element={<LiveStreamPage />} />
+              <Route path="/conversational-ai/:sessionId" element={<LiveStreamPage />} />
               <Route path="/apikeys" element={<ApiKeys />} />
               <Route
                 path="/billing"

@@ -273,9 +273,15 @@ const CharPage = () => {
       console.log('CharPage: Updated config for launching session:', updatedConfig);
 
       // Launch session with the updated config (this now creates backend livestream)
-      await launchLivestream(updatedConfig);
+      const session = await launchLivestream(updatedConfig);
       console.log('CharPage: Session launched, navigating to conversational-ai');
-      navigate('/console/conversational-ai');
+
+      // Navigate to the session-specific URL if we have a session ID
+      if (session && session.id) {
+        navigate(`/console/conversational-ai/${session.id}`);
+      } else {
+        navigate('/console/conversational-ai');
+      }
     } catch (error) {
       console.error('CharPage: Failed to launch session:', error);
       // Navigate anyway - the user might still want to access the page

@@ -11,6 +11,7 @@ import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { Button } from '@/Components/Button';
 import { githubDarkTheme, JsonEditor } from 'json-edit-react';
 import { Loader2 } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
 
 import MicrophoneStreamer from './Components/MicStreamer';
 
@@ -563,32 +564,73 @@ const LiveStreamWithSidebar = ({ livestreamId, onEndSession }) => {
 
 const LiveStreamPage = () => {
   const { config } = useConfig();
-  const { activeLivestream, endLivestream, livestreamStatus, livestreamId, loadingMessage, launchLivestream } =
-    useAvatarLivestream();
+  const { sessionId } = useParams();
+  const navigate = useNavigate();
+  const {
+    activeLivestream,
+    endLivestream,
+    livestreamStatus,
+    livestreamId,
+    loadingMessage,
+    launchLivestream,
+    connectToExistingSession,
+  } = useAvatarLivestream();
   const selectedAvatar = activeLivestream?.config?.avatar;
 
+  // Effect to handle URL-based session connection
+  useEffect(() => {
+    console.log('LiveStream: URL effect triggered - sessionId:', sessionId, 'livestreamId:', livestreamId);
+
+    if (sessionId && sessionId !== livestreamId) {
+      // Try to connect to the session specified in the URL
+      console.log('LiveStream: Connecting to existing session from URL:', sessionId);
+      connectToExistingSession(sessionId);
+    } else if (!sessionId && activeLivestream) {
+      // If we're on base route but have an active session, clear it
+      console.log('LiveStream: On base route with active session, clearing it');
+      endLivestream();
+    } else if (!sessionId) {
+      console.log('LiveStream: On base route with no active session - ready to create new session');
+    }
+  }, [sessionId, livestreamId, connectToExistingSession, activeLivestream, endLivestream]);
+
+  // Effect to update URL when session changes
+  useEffect(() => {
+    if (livestreamId && !sessionId) {
+      // Update URL to include the session ID as soon as we have one
+      navigate(`/console/conversational-ai/${livestreamId}`, { replace: true });
+    }
+  }, [livestreamId, sessionId, navigate]);
+
   const handleRequestLivestream = () => {
+    console.log('LiveStream: Requesting new livestream with config:', config);
     launchLivestream(config);
   };
 
-  const handleEndSession = async () => {
-    await endLivestream();
-    // window.location.reload();
+  const handleCreateNewSession = () => {
+    console.log('LiveStream: Creating new session - navigating to base route');
+    // Navigate to base route without session ID to allow creating new sessions
+    navigate('/console/conversational-ai');
   };
 
-  // Determine if we should show the sidebar based on livestream status
-  const showSidebar = livestreamStatus === 'needs_request' || livestreamStatus === 'ready';
-  const isInStreamingMode = livestreamStatus === 'ready';
+  const handleEndSession = async () => {
+    console.log('LiveStream: Ending session and navigating to base route');
+    await endLivestream();
+    // Navigate back to base route to allow creating new sessions
+    navigate('/console/conversational-ai');
+  };
 
-  const { isLivestreamActive } = useAvatarLivestream();
+  // Always show sidebar except when in active streaming mode
+  const showSidebar = livestreamStatus !== 'ready';
+  const isInStreamingMode = livestreamStatus === 'ready';
 
   if (isInStreamingMode) {
     return <LiveStreamWithSidebar livestreamId={livestreamId} onEndSession={handleEndSession} />;
   }
 
-  // For loading/waiting states, show full width without sidebar initially, then with sidebar when ready
+  // For loading/waiting states, show full width with sidebar space when sidebar is visible
   return (
-    <div className={`relative ${!isLivestreamActive && 'pr-[480px]'} overflow-hidden w-full h-full`}>
+    <div className={`relative ${showSidebar ? 'pr-[480px]' : ''} overflow-hidden w-full h-full`}>
       <div className="relative w-full overflow-y-auto">
         <div className="mb-6">
           <div className="flex items-center justify-between">
@@ -602,9 +644,24 @@ const LiveStreamPage = () => {
                       Active Session: <span className="text-accent-mint font-medium">{selectedAvatar.name}</span>
                     </p>
                     {activeLivestream && (
-                      <p className="text-slate-400 text-xs">
-                        Started: {new Date(activeLivestream.created_at).toLocaleTimeString()}
-                      </p>
+                      <>
+                        <p className="text-slate-400 text-xs">
+                          Started: {new Date(activeLivestream.created_at).toLocaleTimeString()}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-slate-400 text-xs">Session ID: {livestreamId}</p>
+                          <button
+                            onClick={() => {
+                              const sessionUrl = `${window.location.origin}${window.location.pathname}#/console/conversational-ai/${livestreamId}`;
+                              navigator.clipboard.writeText(sessionUrl);
+                            }}
+                            className="text-xs text-slate-400 hover:text-accent-mint transition-colors"
+                            title="Copy session URL"
+                          >
+                            📋
+                          </button>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
@@ -626,9 +683,34 @@ const LiveStreamPage = () => {
           >
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center text-slate-400 flex items-center gap-6">
-                <Broadcast size={48} />
+                <Broadcast
+                  size={48}
+                  className={
+                    livestreamStatus === 'session_ended'
+                      ? 'text-red-400'
+                      : livestreamStatus === 'session_not_found'
+                      ? 'text-yellow-400'
+                      : livestreamStatus === 'connection_error'
+                      ? 'text-red-400'
+                      : 'text-slate-400'
+                  }
+                />
                 <div className="text-left">
-                  <p className="text-lg mb-2">{loadingMessage}</p>
+                  <p
+                    className={`text-lg mb-2 ${
+                      livestreamStatus === 'session_ended'
+                        ? 'text-red-300'
+                        : livestreamStatus === 'session_not_found'
+                        ? 'text-yellow-300'
+                        : livestreamStatus === 'connection_error'
+                        ? 'text-red-300'
+                        : 'text-slate-400'
+                    }`}
+                  >
+                    {!sessionId && livestreamStatus === 'needs_request'
+                      ? 'Ready to create a new session'
+                      : loadingMessage}
+                  </p>
                   <div className="flex items-center gap-3">
                     {livestreamStatus === 'needs_request' && (
                       <Button
@@ -639,14 +721,60 @@ const LiveStreamPage = () => {
                         {livestreamStatus === 'requesting' ? 'Requesting...' : 'Create Livestream'}
                       </Button>
                     )}
-                    {livestreamStatus !== 'needs_request' && (
-                      <>
-                        <p className="text-sm text-slate-500 mb-0">Session: {livestreamId}</p>
-                        <Button onClick={handleEndSession} variant="secondary" size="sm">
-                          End Session
+                    {(livestreamStatus === 'session_ended' ||
+                      livestreamStatus === 'session_not_found' ||
+                      livestreamStatus === 'connection_error') &&
+                      sessionId && (
+                        <>
+                          <div className="flex flex-col gap-1">
+                            <p className="text-sm text-slate-500 mb-0">Session: {sessionId}</p>
+                            {livestreamStatus === 'session_ended' && (
+                              <p className="text-xs text-red-400">This session has ended</p>
+                            )}
+                            {livestreamStatus === 'session_not_found' && (
+                              <p className="text-xs text-yellow-400">Session not found or invalid</p>
+                            )}
+                            {livestreamStatus === 'connection_error' && (
+                              <p className="text-xs text-red-400">Connection error occurred</p>
+                            )}
+                          </div>
+                          <Button variant="primary" onClick={handleCreateNewSession} size="sm">
+                            Create New Session
+                          </Button>
+                        </>
+                      )}
+                    {(livestreamStatus === 'session_ended' ||
+                      livestreamStatus === 'session_not_found' ||
+                      livestreamStatus === 'connection_error') &&
+                      !sessionId && (
+                        <Button variant="primary" onClick={handleRequestLivestream}>
+                          Create Livestream
                         </Button>
-                      </>
-                    )}
+                      )}
+                    {livestreamStatus !== 'needs_request' &&
+                      livestreamStatus !== 'session_ended' &&
+                      livestreamStatus !== 'session_not_found' &&
+                      livestreamStatus !== 'connection_error' && (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm text-slate-500 mb-0">Session: {livestreamId}</p>
+                            <button
+                              onClick={() => {
+                                const sessionUrl = `${window.location.origin}${window.location.pathname}#/console/conversational-ai/${livestreamId}`;
+                                navigator.clipboard.writeText(sessionUrl);
+                                // You could add a toast notification here
+                              }}
+                              className="text-xs text-slate-400 hover:text-accent-mint transition-colors"
+                              title="Copy session URL"
+                            >
+                              📋
+                            </button>
+                          </div>
+                          <Button onClick={handleEndSession} variant="secondary" size="sm">
+                            End Session
+                          </Button>
+                        </>
+                      )}
                   </div>
                 </div>
               </div>
