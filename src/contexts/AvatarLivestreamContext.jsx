@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getRenderJob, createLivestream, deleteLivestream } from '../postgrestAPI';
+import { getLiveSession, createLivestream, deleteLivestream } from '../postgrestAPI';
 
 // Create the context
 const AvatarLivestreamContext = createContext();
@@ -32,41 +32,64 @@ export const AvatarLivestreamProvider = ({ children }) => {
 
   // Poll livestream readiness when we have an ID
   useEffect(() => {
-    if (livestreamStatus !== 'checking_readiness' || !livestreamId) return;
+    if (livestreamStatus !== 'checking_readiness' || !livestreamId) {
+      return;
+    }
+
+    let timeoutId = null;
+    let isPolling = true;
 
     const checkLivestream = async () => {
+      if (!isPolling) {
+        return;
+      }
+
       try {
-        const renderjob = await getRenderJob(livestreamId);
-        if (renderjob === undefined) {
+        const liveSession = await getLiveSession(livestreamId);
+
+        if (!isPolling) {
+          return;
+        }
+
+        if (liveSession === undefined) {
           setLivestreamStatus('session_not_found');
           setLoadingMessage('Session not found');
-        } else if (renderjob.jobstatus === 1) {
-          // Job is ready - prioritize this over ended_at
+        } else if (liveSession.jobstatus === 1) {
           setLivestreamStatus('ready');
-        } else if (renderjob.jobstatus === 2 || renderjob.jobstatus === 4) {
-          // Job has finished
+        } else if (liveSession.jobstatus === 2 || liveSession.jobstatus === 4) {
           setLivestreamStatus('session_ended');
           setLoadingMessage('Stream Ended');
-        } else if (renderjob.ended_at !== null && renderjob.jobstatus !== 1) {
-          // Only consider ended_at if jobstatus is not 1 (ready)
+        } else if (liveSession.ended_at && liveSession.ended_at !== '' && liveSession.jobstatus !== 1) {
           setLivestreamStatus('session_ended');
           setLoadingMessage('Stream Ended');
-        } else if (renderjob.jobstatus >= 6) {
+        } else if (liveSession.jobstatus >= 6) {
           setLoadingMessage('Waiting streaming client');
-          setTimeout(checkLivestream, recheckTime);
+          if (isPolling) {
+            timeoutId = setTimeout(checkLivestream, recheckTime);
+          }
         } else {
-          setTimeout(checkLivestream, recheckTime);
+          if (isPolling) {
+            timeoutId = setTimeout(checkLivestream, recheckTime);
+          }
         }
       } catch (error) {
         console.error('Error checking livestream:', error);
         setLivestreamStatus('connection_error');
         setLoadingMessage('Failed to connect to session');
-        setTimeout(checkLivestream, recheckTime);
+        if (isPolling) {
+          timeoutId = setTimeout(checkLivestream, recheckTime * 2); // Double the interval on error
+        }
       }
     };
 
-    const timer = setTimeout(checkLivestream, recheckTime);
-    return () => clearTimeout(timer);
+    timeoutId = setTimeout(checkLivestream, recheckTime);
+
+    return () => {
+      isPolling = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [livestreamStatus, livestreamId]);
 
   // Launch livestream (unified livestream creation function)
@@ -87,7 +110,7 @@ export const AvatarLivestreamProvider = ({ children }) => {
         const livestreamId = await createLivestream(config);
         // No localStorage needed - navigation will handle the URL
 
-        const job = await getRenderJob(livestreamId);
+        const job = await getLiveSession(livestreamId);
         if (job && job.config) {
           setActiveLivestream(job);
           setLivestreamStatus('checking_readiness');
@@ -134,7 +157,7 @@ export const AvatarLivestreamProvider = ({ children }) => {
     setLoadingMessage('Connecting to existing session...');
 
     try {
-      const job = await getRenderJob(sessionId);
+      const job = await getLiveSession(sessionId);
       console.log('AvatarLivestreamContext: Retrieved job for session', sessionId, ':', job);
       if (job && job.config) {
         // Set the new session (no localStorage needed)
@@ -150,8 +173,7 @@ export const AvatarLivestreamProvider = ({ children }) => {
           setLivestreamStatus('session_ended');
           setLoadingMessage('Stream Ended');
           return false;
-        } else if (job.ended_at !== null && job.jobstatus !== 1) {
-          // Only consider ended_at if jobstatus is not 1 (ready)
+        } else if (job.ended_at && job.ended_at !== '' && job.jobstatus !== 1) {
           setLivestreamStatus('session_ended');
           setLoadingMessage('Stream Ended');
           return false;
@@ -182,7 +204,7 @@ export const AvatarLivestreamProvider = ({ children }) => {
     try {
       if (livestreamId && livestreamId !== 'undefined' && livestreamId !== null) {
         // Check if the livestream is already ended to avoid unnecessary DELETE calls
-        if (activeLivestream.ended_at !== null && activeLivestream.jobstatus !== 1) {
+        if (activeLivestream.ended_at && activeLivestream.ended_at !== '' && activeLivestream.jobstatus !== 1) {
           console.log('AvatarLivestreamContext: Livestream already ended, skipping DELETE call');
         } else {
           console.log('AvatarLivestreamContext: Ending backend livestream:', livestreamId);

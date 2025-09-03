@@ -29,7 +29,7 @@ const navItems = [
     label: 'Developer',
     icon: Code,
     subsections: [
-      { key: 'render-queue', label: 'Render Queue', path: '/console/renders' },
+      { key: 'live-sessions', label: 'Live Sessions', path: '/console/renders' },
       { key: 'videos', label: 'Videos', path: '/console/videos' },
       { key: 'api-keys', label: 'API Keys', path: '/console/apikeys' },
       { key: 'billing', label: 'Billing', path: '/console/billing' },

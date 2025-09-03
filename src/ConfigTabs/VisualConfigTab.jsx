@@ -44,6 +44,7 @@ const VisualConfigTab = ({ characters, updateConfig, config }) => {
         const formattedEnvironments = apiEnvironments.map((env) => ({
           id: env.id,
           name: env.name || env.id, // Use name if available, fallback to id
+          path: env.path, // Include path for thumbnail loading
         }));
         setEnvironments(formattedEnvironments);
       } catch (error) {
@@ -199,7 +200,7 @@ const VisualConfigTab = ({ characters, updateConfig, config }) => {
               >
                 <div className="aspect-square relative">
                   <img
-                    src={`/thumbnails/environment/${env.id}.png`}
+                    src={`/thumbnails/environment/${env.path}.png`}
                     alt={env.name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -229,7 +230,7 @@ const VisualConfigTab = ({ characters, updateConfig, config }) => {
           >
             <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-600">
               <img
-                src={`/thumbnails/environment/${selectedEnvironment}.png`}
+                src={`/thumbnails/environment/${environments.find((env) => env.id === selectedEnvironment)?.path}.png`}
                 alt={environments.find((env) => env.id === selectedEnvironment)?.name || 'Environment'}
                 className="w-full h-full object-cover"
                 onError={(e) => {

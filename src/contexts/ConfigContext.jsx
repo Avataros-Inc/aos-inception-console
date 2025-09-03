@@ -23,7 +23,7 @@ export const ConfigProvider = ({ children, characters }) => {
           const defaultEnv = environments.find(
             (env) =>
               env.name === 'Map_Env_ltOliverDefault_v01' ||
-              env.asset_path === 'Map_Env_ltOliverDefault_v01' ||
+              env.path === 'Map_Env_ltOliverDefault_v01' ||
               env.id === 'Map_Env_ltOliverDefault_v01'
           );
 

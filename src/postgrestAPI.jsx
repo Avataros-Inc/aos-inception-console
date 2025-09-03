@@ -441,7 +441,7 @@ export const createLivestream = async (config) => {
       try {
         const environments = await getEnvironments();
         const environment = environments.find(
-          (env) => env.name === environment_id || env.id === environment_id || env.asset_path === environment_id
+          (env) => env.name === environment_id || env.id === environment_id || env.path === environment_id
         );
 
         if (environment) {
@@ -566,6 +566,76 @@ export const getEnvironments = async () => {
     return environments;
   } catch (error) {
     console.error(`Error fetching environments:`, error);
+    throw error;
+  }
+};
+
+// New live session API functions
+// Get all live sessions for the organization
+export const getLiveSessions = async () => {
+  try {
+    // Use renderjobs endpoint with jobtype filter for livestreams
+    const response = await authenticatedFetch(`${API_BASE_URL}/renderjobs?jobtype=eq.live&order=created_at.desc`, {
+      method: 'GET',
+      headers: {
+        Prefer: 'return=representation',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const liveSessions = await response.json();
+    return liveSessions;
+  } catch (error) {
+    console.error(`Error fetching live sessions:`, error);
+    throw error;
+  }
+};
+
+// Get a specific live session by ID
+export const getLiveSession = async (sessionId) => {
+  try {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/live/${sessionId}`, {
+      method: 'GET',
+      headers: {
+        Prefer: 'return=representation',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const liveSession = await response.json();
+    return liveSession;
+  } catch (error) {
+    console.error(`Error fetching live session:`, error);
+    throw error;
+  }
+};
+
+// Update a live session
+export const updateLiveSession = async (sessionId, updates) => {
+  try {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/live/${sessionId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation',
+      },
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const updatedSession = await response.json();
+    return updatedSession;
+  } catch (error) {
+    console.error(`Error updating live session ${sessionId}:`, error);
     throw error;
   }
 };
