@@ -306,7 +306,7 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
   )}/api/v1/livestream/${livestreamId}`;
 
   const { sendMessage, readyState } = useWebSocket(socketUrl, {
-    // protocols: [`auth-${getSessionToken()}`, "test"],
+    protocols: [`auth-${getSessionToken()}`],
     onOpen: () => {
       console.log('WebSocket connected to:', socketUrl);
       sendMessage(JSON.stringify({ type: 'connect', token: getSessionToken(), session: livestreamId }));
