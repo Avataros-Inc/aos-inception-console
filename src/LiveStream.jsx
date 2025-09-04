@@ -280,10 +280,64 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
   const [messageInput, setMessageInput] = useState('');
   const [isAgentReady, setIsAgentReady] = useState(false);
   const [_avatarTalking, setAvatarTalking] = useState('');
+  const [sessionValid, setSessionValid] = useState(false);
+  const [sessionError, setSessionError] = useState(null);
   const MicRef = useRef(null);
 
   // Get endLivestream function from context
   const { endLivestream } = useAvatarLivestream();
+
+  // Check if the session exists and is valid before connecting
+  useEffect(() => {
+    const validateSession = async () => {
+      if (!livestreamId) {
+        setSessionError('No livestream ID provided');
+        return;
+      }
+
+      try {
+        console.log('Validating session:', livestreamId);
+        // First check if the session exists via your API
+        const response = await fetch(`${API_BASE_URL}/api/v1/live/${livestreamId}`, {
+          headers: {
+            Authorization: `Bearer ${getSessionToken()}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const sessionData = await response.json();
+          console.log('Session data:', sessionData);
+
+          // Check if session is ended
+          if (sessionData.ended_at && sessionData.ended_at !== '0001-01-01T00:00:00Z') {
+            setSessionError(`Session ended at ${new Date(sessionData.ended_at).toLocaleString()}`);
+            setSessionValid(false);
+            return;
+          }
+
+          // Check jobstatus - should be 1 for active
+          if (sessionData.jobstatus !== 1) {
+            setSessionError(`Session is not active (status: ${sessionData.jobstatus})`);
+            setSessionValid(false);
+            return;
+          }
+
+          setSessionValid(true);
+          setSessionError(null);
+        } else {
+          const errorText = await response.text();
+          console.error('Session validation failed:', response.status, errorText);
+          setSessionError(`Session validation failed: ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Error validating session:', error);
+        setSessionError(`Validation error: ${error.message}`);
+      }
+    };
+
+    validateSession();
+  }, [livestreamId]);
 
   // Auto-hide loading after a timeout as fallback
   useEffect(() => {
@@ -297,91 +351,126 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
 
   // const socketUrl = 'http://192.168.4.118:8080/ws/'+livestreamId;
   // const socketUrl = 'ws://192.168.4.118:8082/ws';
-  const socketUrl = `${API_BASE_URL.replace('https:', 'wss:').replace('http:', 'ws:')}/ws`;
+  const token = getSessionToken();
+  const socketUrl = `${API_BASE_URL.replace('https:', 'wss:').replace(
+    'http:',
+    'ws:'
+  )}/api/v1/livestream/${livestreamId}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
 
-  // const liveStreamUrl = `ws://192.168.4.118:8080/livestream/${livestreamId}`;
+  // For PixelStreaming, keep this separate if needed
   const liveStreamUrl = `${API_BASE_URL.replace('https:', 'wss:').replace(
     'http:',
     'ws:'
   )}/api/v1/livestream/${livestreamId}`;
 
-  const { sendMessage, readyState } = useWebSocket(socketUrl, {
-    protocols: [`auth-${getSessionToken()}`],
-    onOpen: () => {
-      console.log('WebSocket connected to:', socketUrl);
-      sendMessage(JSON.stringify({ type: 'connect', token: getSessionToken(), session: livestreamId }));
-    },
-    onClose: (event) => {
-      console.log('WebSocket closed:', event.code, event.reason);
-
-      // Handle backend reporting job ended (status code 400)
-      if (event.code === 400) {
-        console.log('Backend reported job ended, clearing active job...');
-        endLivestream().catch((error) => {
-          console.error('Error clearing active job:', error);
-        });
-      } else if (event.code !== 1000) {
-        console.warn('WebSocket closed unexpectedly. Code:', event.code, 'Reason:', event.reason);
-      }
-    },
-    onError: (event) => {
-      console.error('WebSocket error:', event);
-    },
-    onMessage: (message) => {
-      try {
-        const data = JSON.parse(message.data);
-
-        if (data.type === 'error') {
-          console.log('Error: ', data.content);
-          return;
-        }
-
-        // Set agent as ready on first meaningful message from server
-        if (!isAgentReady && data.type !== 'error') {
-          setIsAgentReady(true);
-        }
-
-        if (data.type === 'textout') {
-          setMessages((prevMessages) => [...prevMessages, { user: 'assistant', text: data.content }]);
-        } else if (data.type === 'textin') {
-          setMessages((prevMessages) => [...prevMessages, { user: 'You', text: data.content }]);
-        } else if (data.type === 'audioout') {
-          // Handle audio output from server (avatar speech)
-          // This might contain audio data for the avatar to speak
-          // You might need to play this audio or trigger avatar animation
-        } else if (data.type === 'audioin_processed') {
-          // Handle processed audio input (speech-to-text result)
-          setMessages((prevMessages) => [...prevMessages, { user: 'You (voice)', text: data.content }]);
-        } else if (data.type === 'avatarTalking') {
-          setAvatarTalking(data.content);
-          if (MicRef.current) {
-            MicRef.current.handleAvatarTalking(data.content);
+  const { sendMessage, readyState } = useWebSocket(
+    sessionValid ? socketUrl : null, // Only connect if session is valid
+    {
+      // protocols: [`auth-${getSessionToken()}`],
+      headers: token
+        ? {
+            Authorization: `Bearer ${token}`,
           }
-        } else {
-          console.log('Unknown message type: ', data);
-        }
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error, 'Raw message:', message.data);
-      }
-    },
+        : {},
+      onOpen: () => {
+        console.log('WebSocket connected to:', socketUrl);
+        console.log('Using token:', token ? 'Present' : 'Missing');
+        console.log('Livestream ID:', livestreamId);
+        // The authentication should now be handled via query parameter or headers
+        // If the server expects a specific message format, send it
+        // sendMessage(JSON.stringify({
+        //   type: 'auth',
+        //   token: token,
+        //   session: livestreamId
+        // }));
+      },
+      onClose: (event) => {
+        console.log('WebSocket closed:', event.code, event.reason);
+        console.log('Close event details:', {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean,
+          type: event.type,
+        });
 
-    shouldReconnect: (closeEvent) => {
-      // Don't reconnect if backend reported job ended (status code 400)
-      if (closeEvent.code === 400) {
-        return false;
-      }
-      // Only reconnect if it wasn't a normal closure
-      return closeEvent.code !== 1000;
-    },
-    reconnectAttempts: 5,
-    reconnectInterval: (attemptNumber) => Math.min(Math.pow(2, attemptNumber) * 1000, 30000), // Exponential backoff, max 30s
-    heartbeat: {
-      message: 'ping',
-      returnMessage: 'pong',
-      timeout: 60000,
-      interval: 25000,
-    },
-  });
+        // Handle backend reporting job ended (status code 400)
+        if (event.code === 400) {
+          console.log('Backend reported job ended, clearing active job...');
+          endLivestream().catch((error) => {
+            console.error('Error clearing active job:', error);
+          });
+        } else if (event.code !== 1000) {
+          console.warn('WebSocket closed unexpectedly. Code:', event.code, 'Reason:', event.reason);
+        }
+      },
+      onError: (event) => {
+        console.error('WebSocket error:', event);
+        console.error('WebSocket error details:', {
+          type: event.type,
+          target: event.target,
+          currentTarget: event.currentTarget,
+          readyState: event.target?.readyState,
+          url: event.target?.url,
+        });
+
+        setSessionError(`WebSocket connection failed`);
+      },
+      onMessage: (message) => {
+        try {
+          const data = JSON.parse(message.data);
+
+          if (data.type === 'error') {
+            console.log('Error: ', data.content);
+            return;
+          }
+
+          // Set agent as ready on first meaningful message from server
+          if (!isAgentReady && data.type !== 'error') {
+            setIsAgentReady(true);
+          }
+
+          if (data.type === 'textout') {
+            setMessages((prevMessages) => [...prevMessages, { user: 'assistant', text: data.content }]);
+          } else if (data.type === 'textin') {
+            setMessages((prevMessages) => [...prevMessages, { user: 'You', text: data.content }]);
+          } else if (data.type === 'audioout') {
+            // Handle audio output from server (avatar speech)
+            // This might contain audio data for the avatar to speak
+            // You might need to play this audio or trigger avatar animation
+          } else if (data.type === 'audioin_processed') {
+            // Handle processed audio input (speech-to-text result)
+            setMessages((prevMessages) => [...prevMessages, { user: 'You (voice)', text: data.content }]);
+          } else if (data.type === 'avatarTalking') {
+            setAvatarTalking(data.content);
+            if (MicRef.current) {
+              MicRef.current.handleAvatarTalking(data.content);
+            }
+          } else {
+            console.log('Unknown message type: ', data);
+          }
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error, 'Raw message:', message.data);
+        }
+      },
+
+      shouldReconnect: (closeEvent) => {
+        // Don't reconnect if backend reported job ended (status code 400)
+        if (closeEvent.code === 400) {
+          return false;
+        }
+        // Only reconnect if it wasn't a normal closure
+        return closeEvent.code !== 1000;
+      },
+      reconnectAttempts: 5,
+      reconnectInterval: (attemptNumber) => Math.min(Math.pow(2, attemptNumber) * 1000, 30000), // Exponential backoff, max 30s
+      heartbeat: {
+        message: 'ping',
+        returnMessage: 'pong',
+        timeout: 60000,
+        interval: 25000,
+      },
+    }
+  );
 
   const connectionStatus = {
     [ReadyState.CONNECTING]: 'Connecting',
@@ -416,6 +505,10 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
 
   // Memoize the initialSettings to prevent unnecessary re-renders of PixelStreamingWrapper
   const pixelStreamingSettings = useMemo(() => {
+    if (!sessionValid || sessionError) {
+      return null;
+    }
+
     return {
       ss: liveStreamUrl,
       AutoPlayVideo: true,
@@ -444,7 +537,7 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
       WebRTCIceTimeout: 10000, // 10 second timeout for ICE
       WebRTCDisconnectionTimeout: 5000, // 5 second timeout for disconnection
     };
-  }, [liveStreamUrl]);
+  }, [liveStreamUrl, sessionValid, sessionError]);
 
   return (
     <>
@@ -475,14 +568,33 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
                   </Button>
                 </div>
 
-                <PixelStreamingWrapper
-                  initialSettings={pixelStreamingSettings}
-                  style={{
-                    position: 'relative',
-                    top: 0,
-                    left: 0,
-                  }}
-                />
+                {pixelStreamingSettings ? (
+                  <PixelStreamingWrapper
+                    initialSettings={pixelStreamingSettings}
+                    style={{
+                      position: 'relative',
+                      top: 0,
+                      left: 0,
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-slate-800/50" />
+                )}
+
+                {(!sessionValid || sessionError) && (
+                  <div
+                    className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm d-flex align-items-center justify-content-center"
+                    style={{ zIndex: 5 }}
+                  >
+                    <div className="text-center text-slate-300">
+                      <div className="text-slate-400 mb-3">📺</div>
+                      <p className="fs-6 fw-medium">Video Stream Unavailable</p>
+                      <p className="small text-slate-400">
+                        {sessionError ? 'Session has ended' : 'Validating session...'}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {!isAgentReady && (
                   <div
@@ -490,11 +602,37 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
                     style={{ zIndex: 10 }}
                   >
                     <div className="text-center text-slate-300">
-                      <Loader2 className="animate-spin text-accent-mint mb-3 mx-auto" size={32} />
-                      <p className="fs-5 fw-medium">Initializing Interactive Agent...</p>
-                      <p className="small text-slate-400">Waiting for agent connection</p>
-                      {readyState !== ReadyState.OPEN && (
-                        <p className="text-red-400 small mt-2">Connection Status: {connectionStatus}</p>
+                      {sessionError ? (
+                        <>
+                          <div className="text-red-400 mb-3">⚠️</div>
+                          <p className="fs-5 fw-medium text-red-400">Session Error</p>
+                          <p className="small text-red-300">{sessionError}</p>
+                          <p className="small text-slate-400 mt-2">WebSocket connection status: {connectionStatus}</p>
+                          <div className="mt-3">
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => (window.location.hash = '/console/conversational-ai')}
+                            >
+                              Create New Session
+                            </Button>
+                          </div>
+                        </>
+                      ) : !sessionValid ? (
+                        <>
+                          <Loader2 className="animate-spin text-accent-mint mb-3 mx-auto" size={32} />
+                          <p className="fs-5 fw-medium">Validating Session...</p>
+                          <p className="small text-slate-400">Checking session: {livestreamId}</p>
+                        </>
+                      ) : (
+                        <>
+                          <Loader2 className="animate-spin text-accent-mint mb-3 mx-auto" size={32} />
+                          <p className="fs-5 fw-medium">Initializing Interactive Agent...</p>
+                          <p className="small text-slate-400">Waiting for agent connection</p>
+                          {readyState !== ReadyState.OPEN && (
+                            <p className="text-red-400 small mt-2">Connection Status: {connectionStatus}</p>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
