@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getLiveSessions, deleteLivestream } from './postgrestAPI';
-import { MonitorPlay, Play, Square, RotateCcw, Clock, Loader2 } from 'lucide-react';
+import { MonitorPlay, Play, Square, RotateCcw, Clock, Loader2, RefreshCw } from 'lucide-react';
 
 // Status mapping object for live sessions
 const LIVE_STATUS = {
@@ -18,6 +18,8 @@ export const RenderQueue = () => {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchSessions = async () => {
     try {
@@ -40,6 +42,7 @@ export const RenderQueue = () => {
       });
 
       setSessions(data);
+      setLastUpdated(new Date());
     } catch (err) {
       console.error('Failed to fetch live sessions:', err);
       setError(err.message || 'Failed to load live sessions');
@@ -51,14 +54,19 @@ export const RenderQueue = () => {
   useEffect(() => {
     fetchSessions();
 
-    // Set up polling every 5 seconds to refresh live sessions
-    const interval = setInterval(() => {
-      fetchSessions();
-    }, 5000);
+    // Only set up auto-refresh if enabled and there are active sessions
+    let interval;
+    if (autoRefresh) {
+      interval = setInterval(() => {
+        fetchSessions();
+      }, 10000); // Increased to 10 seconds for less aggressive polling
+    }
 
-    // Cleanup interval on component unmount
-    return () => clearInterval(interval);
-  }, []);
+    // Cleanup interval on component unmount or when autoRefresh changes
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [autoRefresh]);
 
   const handleEnd = async (sessionId) => {
     try {
@@ -104,10 +112,38 @@ export const RenderQueue = () => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-green-500 bg-clip-text text-transparent mb-2">
-          Live Sessions
-        </h2>
-        <p className="text-slate-400">Monitor and manage your active avatar live sessions</p>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-green-500 bg-clip-text text-transparent mb-2">
+              Live Sessions
+            </h2>
+            <p className="text-slate-400">Monitor and manage your active avatar live sessions</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {lastUpdated && (
+              <span className="text-sm text-slate-500">
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </span>
+            )}
+            <label className="flex items-center gap-2 text-sm text-slate-300">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                className="rounded border-slate-600 bg-slate-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-800"
+              />
+              Auto-refresh (10s)
+            </label>
+            <button
+              onClick={fetchSessions}
+              disabled={loading}
+              className="inline-flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+              Refresh
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden">
