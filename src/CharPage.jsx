@@ -255,6 +255,7 @@ const CharPage = () => {
 
   const handlePlay = async (avatar) => {
     console.log('CharPage: handlePlay called for avatar:', avatar.name);
+
     try {
       // Apply avatar configuration first - this updates the ConfigContext
       applyAvatarSession(avatar);
@@ -272,19 +273,29 @@ const CharPage = () => {
 
       console.log('CharPage: Updated config for launching session:', updatedConfig);
 
-      // Launch session with the updated config (this now creates backend livestream)
+      // Launch session with the updated config and WAIT for it to complete
+      console.log('CharPage: Creating session...');
       const session = await launchLivestream(updatedConfig);
-      console.log('CharPage: Session launched, navigating to conversational-ai');
 
-      // Navigate to the session-specific URL if we have a session ID
-      if (session && session.id) {
-        navigate(`/console/conversational-ai/${session.id}`);
+      console.log('CharPage: Session response:', session);
+      console.log('CharPage: Session keys:', session ? Object.keys(session) : 'null');
+
+      // Check for session ID in the returned object
+      const sessionId = session?.id || session?.session_id || session?.livestream_id;
+
+      if (sessionId) {
+        console.log('CharPage: Session created successfully with ID:', sessionId);
+        // Navigate to the session-specific URL
+        navigate(`/console/conversational-ai/${sessionId}`);
       } else {
+        console.error('CharPage: Session creation failed - no session ID found in response:', session);
+        // Still navigate but without session ID
         navigate('/console/conversational-ai');
       }
     } catch (error) {
       console.error('CharPage: Failed to launch session:', error);
-      // Navigate anyway - the user might still want to access the page
+      // Show error but still allow navigation
+      alert(`Failed to create session: ${error.message}`);
       navigate('/console/conversational-ai');
     }
   };

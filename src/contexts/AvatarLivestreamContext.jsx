@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { getLiveSession, createLivestream, deleteLivestream } from '../postgrestAPI';
+import { SESSION_STATES, CONNECTION_STEPS } from '../constants/connectionStates';
 
 // Create the context
 const AvatarLivestreamContext = createContext();
@@ -16,116 +17,196 @@ export const useAvatarLivestream = () => {
 // Provider component
 export const AvatarLivestreamProvider = ({ children }) => {
   const [activeLivestream, setActiveLivestream] = useState(null);
-  const [livestreamStatus, setLivestreamStatus] = useState('checking_storage');
-  const [loadingMessage, setLoadingMessage] = useState('Checking for existing livestream...');
+  const [sessionState, setSessionState] = useState(SESSION_STATES.IDLE);
+  const [statusMessage, setStatusMessage] = useState('Ready to create session');
+  const [connectionProgress, setConnectionProgress] = useState(0);
+  const [lastError, setLastError] = useState(null);
 
-  const recheckTime = 500;
+  // Refs for cleanup and avoiding race conditions
+  const pollTimeoutRef = useRef(null);
+  const isUnmountedRef = useRef(false);
+  const retryCountRef = useRef(0);
+
+  const recheckTime = 2000; // Increased from 500ms to reduce API load
+  const maxRetries = 5;
 
   const livestreamId = activeLivestream?.id || null;
 
-  // Load livestream from URL parameter on mount, not localStorage
+  // Cleanup function to prevent memory leaks
+  const cleanup = () => {
+    if (pollTimeoutRef.current) {
+      clearTimeout(pollTimeoutRef.current);
+      pollTimeoutRef.current = null;
+    }
+  };
+
+  // Cleanup on unmount
   useEffect(() => {
-    // Don't auto-load from localStorage anymore since we use URL-based sessions
-    setLivestreamStatus('needs_request');
-    setLoadingMessage('No active livestream found');
+    return () => {
+      isUnmountedRef.current = true;
+      cleanup();
+    };
   }, []);
 
-  // Poll livestream readiness when we have an ID
-  useEffect(() => {
-    if (livestreamStatus !== 'checking_readiness' || !livestreamId) {
-      return;
+  // Safe state update function
+  const safeSetState = (stateSetter, value) => {
+    if (!isUnmountedRef.current) {
+      stateSetter(value);
     }
+  };
 
-    let timeoutId = null;
-    let isPolling = true;
+  // Enhanced error handling
+  const handleError = (error, context = 'Unknown') => {
+    console.error(`Session error in ${context}:`, error);
+    const errorMessage = error.message || 'An unexpected error occurred';
+    safeSetState(setLastError, { context, message: errorMessage, timestamp: Date.now() });
+    safeSetState(setSessionState, SESSION_STATES.ERROR);
+    safeSetState(setStatusMessage, `Error: ${errorMessage}`);
+    safeSetState(setConnectionProgress, 0);
+  };
 
-    const checkLivestream = async () => {
-      if (!isPolling) {
+  // Improved session validation with exponential backoff
+  const validateSession = async (sessionId, attempt = 0) => {
+    if (isUnmountedRef.current) return null;
+
+    try {
+      const session = await getLiveSession(sessionId);
+      retryCountRef.current = 0; // Reset retry count on success
+      return session;
+    } catch (error) {
+      if (attempt < maxRetries && !isUnmountedRef.current) {
+        const backoffDelay = Math.min(1000 * Math.pow(2, attempt), 10000); // Max 10s
+        console.log(`Session validation failed, retrying in ${backoffDelay}ms (attempt ${attempt + 1}/${maxRetries})`);
+
+        await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+        return validateSession(sessionId, attempt + 1);
+      }
+      throw error;
+    }
+  };
+
+  // Smart polling with better logic
+  const pollSessionStatus = async (sessionId) => {
+    if (isUnmountedRef.current) return;
+
+    cleanup(); // Clear any existing timeout
+
+    try {
+      safeSetState(setStatusMessage, CONNECTION_STEPS.VALIDATING.message);
+      safeSetState(setConnectionProgress, CONNECTION_STEPS.VALIDATING.progress);
+
+      const session = await validateSession(sessionId);
+
+      if (isUnmountedRef.current || !session) return;
+
+      // Update session data
+      safeSetState(setActiveLivestream, session);
+
+      // Check session status with better logic
+      if (session.jobstatus === 1) {
+        // Session is ready
+        safeSetState(setSessionState, SESSION_STATES.CONNECTED);
+        safeSetState(setStatusMessage, CONNECTION_STEPS.CONNECTED.message);
+        safeSetState(setConnectionProgress, CONNECTION_STEPS.CONNECTED.progress);
+        safeSetState(setLastError, null);
         return;
+      } else if (
+        session.jobstatus === 2 ||
+        session.jobstatus === 4 ||
+        (session.ended_at && session.ended_at !== '' && session.ended_at !== '0001-01-01T00:00:00Z')
+      ) {
+        // Session ended
+        safeSetState(setSessionState, SESSION_STATES.ERROR);
+        safeSetState(setStatusMessage, 'Session has ended');
+        safeSetState(setConnectionProgress, 0);
+        return;
+      } else {
+        // Session still initializing - continue polling with better messaging
+        const statusMessages = {
+          0: 'Session initializing...',
+          3: 'Session preparing...',
+          6: 'Waiting for streaming service...',
+          7: 'Starting streaming service...',
+        };
+
+        const message = statusMessages[session.jobstatus] || 'Session starting...';
+        safeSetState(setStatusMessage, message);
+        safeSetState(setConnectionProgress, Math.min(75, 25 + session.jobstatus * 10));
+
+        // Continue polling with exponential backoff if there are consecutive failures
+        const nextPollDelay = recheckTime + retryCountRef.current * 1000;
+        pollTimeoutRef.current = setTimeout(() => pollSessionStatus(sessionId), nextPollDelay);
       }
-
-      try {
-        const liveSession = await getLiveSession(livestreamId);
-
-        if (!isPolling) {
-          return;
-        }
-
-        if (liveSession === undefined) {
-          setLivestreamStatus('session_not_found');
-          setLoadingMessage('Session not found');
-        } else if (liveSession.jobstatus === 1) {
-          setLivestreamStatus('ready');
-        } else if (liveSession.jobstatus === 2 || liveSession.jobstatus === 4) {
-          setLivestreamStatus('session_ended');
-          setLoadingMessage('Stream Ended');
-        } else if (liveSession.ended_at && liveSession.ended_at !== '' && liveSession.jobstatus !== 1) {
-          setLivestreamStatus('session_ended');
-          setLoadingMessage('Stream Ended');
-        } else if (liveSession.jobstatus >= 6) {
-          setLoadingMessage('Waiting streaming client');
-          if (isPolling) {
-            timeoutId = setTimeout(checkLivestream, recheckTime);
-          }
-        } else {
-          if (isPolling) {
-            timeoutId = setTimeout(checkLivestream, recheckTime);
-          }
-        }
-      } catch (error) {
-        console.error('Error checking livestream:', error);
-        setLivestreamStatus('connection_error');
-        setLoadingMessage('Failed to connect to session');
-        if (isPolling) {
-          timeoutId = setTimeout(checkLivestream, recheckTime * 2); // Double the interval on error
-        }
+    } catch (error) {
+      retryCountRef.current++;
+      if (retryCountRef.current >= maxRetries) {
+        handleError(error, 'Session validation');
+      } else {
+        // Continue polling with backoff
+        const backoffDelay = recheckTime * Math.pow(2, retryCountRef.current);
+        pollTimeoutRef.current = setTimeout(() => pollSessionStatus(sessionId), backoffDelay);
       }
-    };
-
-    timeoutId = setTimeout(checkLivestream, recheckTime);
-
-    return () => {
-      isPolling = false;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [livestreamStatus, livestreamId]);
+    }
+  };
 
   // Launch livestream (unified livestream creation function)
   const launchLivestream = async (config) => {
     console.log('LaunchLivestream: Starting new livestream with config:', config);
+    console.log('LaunchLivestream: Config type:', typeof config, 'Config truthy:', !!config);
 
-    // Set livestream status for UI feedback
-    setLivestreamStatus('requesting');
-    setLoadingMessage('Creating new livestream...');
+    // Set initial connecting state
+    safeSetState(setSessionState, SESSION_STATES.CONNECTING);
+    safeSetState(setStatusMessage, CONNECTION_STEPS.CREATING.message);
+    safeSetState(setConnectionProgress, CONNECTION_STEPS.CREATING.progress);
+    safeSetState(setLastError, null);
 
     try {
-      // Only end existing livestream if we have one AND it's different from what we're creating
+      // Only end existing livestream if we have one
       if (activeLivestream && activeLivestream.id !== livestreamId) {
         await endLivestream();
       }
 
+      console.log('LaunchLivestream: Checking config condition...');
       if (config) {
-        const livestreamId = await createLivestream(config);
-        // No localStorage needed - navigation will handle the URL
+        console.log('LaunchLivestream: Config is valid, creating livestream...');
+        const newLivestreamId = await createLivestream(config);
+        console.log('LaunchLivestream: Created livestream with ID:', newLivestreamId);
 
-        const job = await getLiveSession(livestreamId);
-        if (job && job.config) {
-          setActiveLivestream(job);
-          setLivestreamStatus('checking_readiness');
-          setLoadingMessage('Livestream created, verifying status...');
-          return job;
-        }
+        // Return immediately with the session ID for navigation
+        // We'll fetch the full job details in the background
+        const sessionObj = { id: newLivestreamId };
+        console.log('LaunchLivestream: Created session object:', sessionObj);
+
+        // Fetch job details in background and update state
+        (async () => {
+          try {
+            console.log('LaunchLivestream: Fetching session details for ID:', newLivestreamId);
+            const job = await getLiveSession(newLivestreamId);
+            console.log('LaunchLivestream: Retrieved job:', job);
+
+            if (job && job.config) {
+              safeSetState(setActiveLivestream, job);
+              // Start polling for session readiness
+              pollSessionStatus(newLivestreamId);
+            } else {
+              console.error('LaunchLivestream: Job is null or missing config:', job);
+            }
+          } catch (error) {
+            console.error('LaunchLivestream: Error fetching job details:', error);
+          }
+        })();
+
+        console.log('LaunchLivestream: About to return session object:', sessionObj);
+        return sessionObj;
       }
 
-      setLivestreamStatus('needs_request');
-      setLoadingMessage('Failed to create livestream');
+      console.log('LaunchLivestream: Config was null/undefined, returning null');
+      safeSetState(setSessionState, SESSION_STATES.ERROR);
+      safeSetState(setStatusMessage, 'Failed to create livestream');
       return null;
     } catch (error) {
-      console.error('Error creating livestream:', error);
-      setLivestreamStatus('needs_request');
-      setLoadingMessage('Failed to create livestream. Please try again.');
+      console.error('LaunchLivestream: Error in try block:', error);
+      handleError(error, 'Livestream creation');
       throw error;
     }
   };
@@ -153,44 +234,47 @@ export const AvatarLivestreamProvider = ({ children }) => {
     }
 
     console.log('AvatarLivestreamContext: Connecting to existing session:', sessionId);
-    setLivestreamStatus('checking_readiness');
-    setLoadingMessage('Connecting to existing session...');
+
+    safeSetState(setSessionState, SESSION_STATES.CONNECTING);
+    safeSetState(setStatusMessage, 'Connecting to existing session...');
+    safeSetState(setConnectionProgress, 25);
+    safeSetState(setLastError, null);
 
     try {
       const job = await getLiveSession(sessionId);
       console.log('AvatarLivestreamContext: Retrieved job for session', sessionId, ':', job);
-      if (job && job.config) {
-        // Set the new session (no localStorage needed)
-        setActiveLivestream(job);
 
-        // Check if the session is still active - prioritize jobstatus over ended_at
-        console.log('AvatarLivestreamContext: Job status:', job.jobstatus, 'Ended at:', job.ended_at);
+      if (job && job.config) {
+        safeSetState(setActiveLivestream, job);
+
+        // Check if the session is still active
         if (job.jobstatus === 1) {
-          setLivestreamStatus('ready');
-          setLoadingMessage('Connected to session');
+          safeSetState(setSessionState, SESSION_STATES.CONNECTED);
+          safeSetState(setStatusMessage, CONNECTION_STEPS.CONNECTED.message);
+          safeSetState(setConnectionProgress, CONNECTION_STEPS.CONNECTED.progress);
           return true;
-        } else if (job.jobstatus === 2 || job.jobstatus === 4) {
-          setLivestreamStatus('session_ended');
-          setLoadingMessage('Stream Ended');
-          return false;
-        } else if (job.ended_at && job.ended_at !== '' && job.jobstatus !== 1) {
-          setLivestreamStatus('session_ended');
-          setLoadingMessage('Stream Ended');
+        } else if (
+          job.jobstatus === 2 ||
+          job.jobstatus === 4 ||
+          (job.ended_at && job.ended_at !== '' && job.ended_at !== '0001-01-01T00:00:00Z')
+        ) {
+          safeSetState(setSessionState, SESSION_STATES.ERROR);
+          safeSetState(setStatusMessage, 'Session has ended');
+          safeSetState(setConnectionProgress, 0);
           return false;
         } else {
-          setLivestreamStatus('checking_readiness');
-          setLoadingMessage('Verifying session status...');
+          // Start polling for session readiness
+          pollSessionStatus(sessionId);
           return true;
         }
       } else {
-        setLivestreamStatus('session_not_found');
-        setLoadingMessage('Session not found');
+        safeSetState(setSessionState, SESSION_STATES.ERROR);
+        safeSetState(setStatusMessage, 'Session not found');
+        safeSetState(setConnectionProgress, 0);
         return false;
       }
     } catch (error) {
-      console.error('Error connecting to existing session:', error);
-      setLivestreamStatus('connection_error');
-      setLoadingMessage('Failed to connect to session');
+      handleError(error, 'Session connection');
       return false;
     }
   };
@@ -198,9 +282,12 @@ export const AvatarLivestreamProvider = ({ children }) => {
   // End the current livestream
   const endLivestream = async () => {
     if (!activeLivestream) {
-      console.log('AvatarLivestreamContext: No active livestream to end - this is expected in some cases');
+      console.log('AvatarLivestreamContext: No active livestream to end');
       return Promise.resolve();
     }
+
+    cleanup(); // Stop any ongoing polling
+
     try {
       if (livestreamId && livestreamId !== 'undefined' && livestreamId !== null) {
         // Check if the livestream is already ended to avoid unnecessary DELETE calls
@@ -223,21 +310,14 @@ export const AvatarLivestreamProvider = ({ children }) => {
     } catch (error) {
       console.error('AvatarLivestreamContext: Failed to end backend livestream:', error);
       // Don't throw the error - we still want to clear the local state
-      // Log the error details for debugging
-      if (error.message && error.message.includes('JSON.parse')) {
-        console.warn(
-          'AvatarLivestreamContext: JSON parsing error on DELETE - this may be expected for some DELETE endpoints'
-        );
-      }
-      if (error.message && error.message.includes('Authentication failed')) {
-        console.warn('AvatarLivestreamContext: Authentication error on DELETE - session may have expired');
-      }
     }
 
-    // Clear state (no localStorage to clear)
-    setActiveLivestream(null);
-    setLivestreamStatus('needs_request');
-    setLoadingMessage('No active livestream found');
+    // Clear state
+    safeSetState(setActiveLivestream, null);
+    safeSetState(setSessionState, SESSION_STATES.IDLE);
+    safeSetState(setStatusMessage, 'Ready to create session');
+    safeSetState(setConnectionProgress, 0);
+    safeSetState(setLastError, null);
     console.log('AvatarLivestreamContext: Livestream ended');
   };
 
@@ -253,14 +333,43 @@ export const AvatarLivestreamProvider = ({ children }) => {
 </iframe>`;
   };
 
+  // Clear error state
+  const clearError = () => {
+    safeSetState(setLastError, null);
+    if (sessionState === SESSION_STATES.ERROR) {
+      safeSetState(setSessionState, SESSION_STATES.IDLE);
+      safeSetState(setStatusMessage, 'Ready to create session');
+      safeSetState(setConnectionProgress, 0);
+    }
+  };
+
+  // Legacy compatibility - map new states to old API
+  const livestreamStatus =
+    {
+      [SESSION_STATES.IDLE]: 'needs_request',
+      [SESSION_STATES.CONNECTING]: 'checking_readiness',
+      [SESSION_STATES.CONNECTED]: 'ready',
+      [SESSION_STATES.ERROR]: lastError?.context === 'Session connection' ? 'connection_error' : 'session_ended',
+    }[sessionState] || 'needs_request';
+
+  const loadingMessage = statusMessage;
+
   const value = {
+    // New improved API
+    sessionState,
+    statusMessage,
+    connectionProgress,
+    lastError,
+    clearError,
+
+    // Legacy API for backward compatibility
     activeLivestream,
     updateLivestreamSettings,
     endLivestream,
     launchLivestream,
     connectToExistingSession,
     getEmbedCode,
-    isLivestreamActive: !!activeLivestream,
+    isLivestreamActive: sessionState === SESSION_STATES.CONNECTED,
     livestreamStatus,
     livestreamId,
     loadingMessage,
