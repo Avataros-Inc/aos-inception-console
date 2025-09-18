@@ -353,9 +353,10 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
   const token = getSessionToken();
 
   // Communications WebSocket - for sending messages and receiving replies
-  const commsSocketUrl = `${API_BASE_URL.replace('https:', 'wss:').replace('http:', 'ws:')}/ws${
-    token ? `?token=${encodeURIComponent(token)}` : ''
-  }`;
+  // const commsSocketUrl = `${API_BASE_URL.replace('https:', 'wss:').replace('http:', 'ws:')}/ws${
+  //   token ? `?token=${encodeURIComponent(token)}` : ''
+  // }`;
+  const commsSocketUrl = `${API_BASE_URL.replace('https:', 'wss:').replace('http:', 'ws:')}/ws`;
 
   // Pixel Streaming WebSocket - for video stream
   const pixelStreamUrl = `${API_BASE_URL.replace('https:', 'wss:').replace(
@@ -374,15 +375,16 @@ const LiveStreamInner = ({ livestreamId, onEndSession }) => {
         : {},
       onOpen: () => {
         console.log('Communications WebSocket connected to:', commsSocketUrl);
-        console.log('Using token:', token ? 'Present' : 'Missing');
+        console.log('Using connect token:', token ? 'Present' : 'Missing');
         console.log('Livestream ID:', livestreamId);
+
         // The authentication should now be handled via query parameter or headers
         // If the server expects a specific message format, send it
-        // sendMessage(JSON.stringify({
-        //   type: 'auth',
-        //   token: token,
-        //   session: livestreamId
-        // }));
+        sendMessage(JSON.stringify({
+          type: 'connect',
+          token: token,
+          session: livestreamId
+        }));
       },
       onClose: (event) => {
         console.log('WebSocket closed:', event.code, event.reason);
