@@ -29,10 +29,32 @@ pipeline {
             }
         }   
         
-        stage('Build Docker Image') {
+        stage('Build Docker Image with Tests') {
             steps {
                 script {
+                    // Build with tests integrated in Docker multi-stage build
+                    // Tests will run as part of the Docker build process
                     sh "docker build -t ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} ."
+                    
+                    // Extract test results and coverage from Docker image for archiving
+                    sh """
+                        # Create a temporary container to extract test results if they exist
+                        if docker run --rm --name temp-test-extract ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} test -d /test-results 2>/dev/null; then
+                            echo "Extracting test results..."
+                            docker run --rm -v \${PWD}/test-results:/host-results ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} \
+                                sh -c 'cp -r /test-results/* /host-results/ 2>/dev/null || echo "No test results to copy"'
+                        else
+                            echo "No test results found in container"
+                        fi
+                    """
+                }
+            }
+            post {
+                always {
+                    // Archive test results if they exist
+                    archiveArtifacts artifacts: 'test-results/**/*', allowEmptyArchive: true
+                    // Also try to archive coverage specifically
+                    archiveArtifacts artifacts: 'coverage/**/*', allowEmptyArchive: true
                 }
             }
         }
