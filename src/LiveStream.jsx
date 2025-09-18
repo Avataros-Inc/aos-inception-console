@@ -1,86 +1,478 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Container, Row, Col, Form, Button, Card, Spinner, Alert } from 'react-bootstrap';
-import { SendFill, Wifi, WifiOff, Broadcast } from 'react-bootstrap-icons';
-import { getRenderJob, insertRenderJob, getSessionToken, updateRenderJob, API_BASE_URL } from './postgrestAPI';
-import A2FConfigTab from './ConfigTabs/A2FConfigTab';
-import VisualConfigTab from './ConfigTabs/VisualConfigTab';
-import VoiceConfigTab from './ConfigTabs/VoiceConfigTab';
-import LLMConfigTab from './ConfigTabs/LLMConfigTab';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Container, Row, Col } from 'react-bootstrap';
+import { Wifi, WifiOff, Broadcast, Plus, Mic, MicMute, X, Send } from 'react-bootstrap-icons';
+import { getSessionToken, API_BASE_URL } from './postgrestAPI';
+import ConfigSidebar from '@/Components/ConfigSidebar';
+import { useConfig } from './contexts/ConfigContext';
+import { useAvatarLivestream } from './contexts/AvatarLivestreamContext';
 import { PixelStreamingWrapper } from './Components/PixelStreamingWrapper';
 // import { WebSocketService } from './websocketService';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
+import { Button } from '@/Components/Button';
+import { githubDarkTheme, JsonEditor } from 'json-edit-react';
+import { Loader2, AlertCircle, CheckCircle, Play } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
 
 import MicrophoneStreamer from './Components/MicStreamer';
-import CameraControls from './Components/CameraControls';
 
+// UIOverlay Component
+const UIOverlay = ({
+  messageInput,
+  setMessageInput,
+  handleClickSendMessage,
+  readyState,
+  ReadyState,
+  sendMessage,
+  MicRef,
+}) => {
+  const [isVADMode, setIsVADMode] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [microphoneVolume, setMicrophoneVolume] = useState(0);
+  const [frequencyBands, setFrequencyBands] = useState(new Array(12).fill(0));
 
-const handleEndSession = async (jobId) => {
-  try {
-    await updateRenderJob(jobId, { jobstatus: 2, ended_at: "NOW()" });
-    localStorage.removeItem('current_livestream');
-    window.location.reload();
-  } catch (error) {
-    alert(`Failed to end session: ${error.message}`);
-  }
+  const handleVADToggle = useCallback(async () => {
+    const newVADMode = !isVADMode;
+    setIsVADMode(newVADMode);
+
+    if (newVADMode) {
+      // Entering VAD mode - activate microphone
+      setIsMuted(false);
+      if (MicRef.current) {
+        await MicRef.current.setVADMode?.(true);
+      }
+    } else {
+      // Exiting VAD mode - deactivate microphone
+      setIsMuted(false);
+      if (MicRef.current) {
+        await MicRef.current.setVADMode?.(false);
+      }
+    }
+  }, [isVADMode, MicRef]);
+
+  const handleExitVAD = useCallback(async () => {
+    setIsVADMode(false);
+    setIsMuted(false);
+    if (MicRef.current) {
+      await MicRef.current.setVADMode?.(false);
+    }
+  }, [MicRef]);
+
+  const handleMicClick = async () => {
+    if (isVADMode) {
+      // In VAD mode, toggle mute state
+      const newMuted = !isMuted;
+      setIsMuted(newMuted);
+      if (MicRef.current) {
+        await MicRef.current.toggleMute?.(newMuted);
+      }
+    } else {
+      // In typing mode, enable VAD mode and start listening
+      await handleVADToggle();
+    }
+  };
+
+  // Listen for VAD state changes from MicrophoneStreamer
+  useEffect(() => {
+    if (MicRef?.current) {
+      MicRef.current.setVolumeCallback?.((volume, bands) => {
+        setMicrophoneVolume(volume);
+        if (bands) {
+          setFrequencyBands(bands);
+        }
+      });
+    }
+  }, [MicRef]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Escape key to exit VAD mode
+      if (e.key === 'Escape' && isVADMode) {
+        handleExitVAD();
+      }
+      // Ctrl/Cmd + M to toggle VAD mode
+      if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
+        e.preventDefault();
+        handleVADToggle();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isVADMode, handleExitVAD, handleVADToggle]);
+
+  // Sound wave animation component
+  const SoundWaveAnimation = () => {
+    const [animationFrame, setAnimationFrame] = useState(0);
+
+    // More bars for better voice representation
+    const numberOfBars = 12;
+    const baseHeights = [6, 10, 14, 18, 22, 26, 28, 26, 22, 18, 14, 10];
+
+    // Animation loop for very smooth wave movement
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setAnimationFrame((prev) => prev + 1);
+      }, 150); // Much slower update for very smooth animation
+
+      return () => clearInterval(interval);
+    }, []);
+
+    // Calculate wave heights based on frequency data and microphone volume
+    const getWaveHeights = () => {
+      if (isMuted) {
+        // When muted, show minimal flat waves
+        return new Array(numberOfBars).fill(3);
+      }
+
+      // Enhanced volume calculation with strong noise gate
+      const volumeLevel = Math.max(0.02, Math.min(1, microphoneVolume * 1.8));
+
+      // Use real frequency data when available, fallback to patterns
+      return baseHeights.map((baseHeight, i) => {
+        let heightMultiplier = volumeLevel;
+
+        // Use real frequency band data if available
+        if (frequencyBands && frequencyBands.length >= numberOfBars) {
+          const bandIntensity = frequencyBands[i] || 0;
+          // Only respond to significant frequency activity, heavily suppress noise
+          const significantActivity = bandIntensity > 0.2 ? bandIntensity : bandIntensity * 0.1;
+          heightMultiplier = Math.max(0.05, volumeLevel * 0.8 + significantActivity * 0.8);
+        } else {
+          // Fallback to stable voice-like synthetic patterns
+          // Create frequency-specific patterns that mimic voice characteristics
+          const lowFreqPattern = Math.sin(animationFrame * 0.06 + i * 0.4) * 0.1;
+          const midFreqPattern = Math.sin(animationFrame * 0.08 + i * 0.6) * 0.08;
+          const highFreqPattern = Math.sin(animationFrame * 0.04 + i * 0.3) * 0.05;
+
+          // Weight patterns based on typical voice frequency distribution
+          const voiceWeights = [0.8, 0.9, 0.7, 0.6, 0.5, 0.4, 0.3, 0.4, 0.2, 0.15, 0.1, 0.05];
+          const voiceWeight = voiceWeights[i] || 0.1;
+
+          heightMultiplier = volumeLevel * (voiceWeight + lowFreqPattern + midFreqPattern + highFreqPattern);
+        }
+
+        // Reduce random variation for much smoother appearance
+        const randomVariation = (Math.random() - 0.5) * 0.02;
+        const finalHeight = Math.max(3, baseHeight * (heightMultiplier + randomVariation));
+
+        return Math.min(24, finalHeight); // Keep original max height
+      });
+    };
+
+    const waveHeights = getWaveHeights();
+
+    return (
+      <div className="flex items-center justify-center gap-1.5 px-4">
+        {waveHeights.map((height, i) => (
+          <div
+            key={i}
+            className={`w-2.5 rounded-full transition-all duration-300 ease-out ${
+              isMuted
+                ? 'bg-white/25'
+                : 'bg-gradient-to-t from-green-400/70 to-green-300/90 shadow-sm shadow-green-400/30'
+            }`}
+            style={{
+              height: height + 'px',
+              animationDelay: `${i * 50}ms`,
+              transform: `scaleY(${0.98 + (frequencyBands[i] || 0) * 0.1})`,
+            }}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {/* Floating Input Bar */}
+      <div className="absolute bottom-6 w-full z-20 flex items-center justify-center">
+        <div className="w-[60%] max-w-2xl">
+          <div className="bg-white/10 backdrop-blur-md rounded-full px-6 py-4 border border-white/20 shadow-2xl">
+            <div className="flex items-center gap-4">
+              {/* Plus Icon */}
+              <button className="p-1 hover:bg-white/10 rounded-full transition-colors">
+                <Plus size={18} className="text-white/70" />
+              </button>
+
+              {/* Text Input / VAD Display */}
+              <div className="flex-1 relative">
+                {isVADMode ? (
+                  <div className="flex items-center justify-center py-1">
+                    <SoundWaveAnimation />
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleClickSendMessage()}
+                    placeholder="Ask anything"
+                    className="w-full bg-transparent text-white placeholder-white/50 focus:outline-none text-base"
+                    onKeyDown={(e) => e.stopPropagation()}
+                    onKeyUp={(e) => e.stopPropagation()}
+                  />
+                )}
+              </div>
+
+              {/* Microphone Button */}
+              <button
+                onClick={handleMicClick}
+                className={`p-2 rounded-full transition-colors relative ${
+                  isVADMode
+                    ? isMuted
+                      ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                      : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                    : 'hover:bg-white/10 text-white/70'
+                }`}
+                title={isVADMode ? (isMuted ? 'Unmute microphone' : 'Mute microphone') : 'Switch to voice mode'}
+              >
+                {isVADMode && isMuted ? <MicMute size={18} /> : <Mic size={18} />}
+                {isVADMode && isMuted && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-6 h-0.5 bg-red-400 rotate-45 rounded"></div>
+                  </div>
+                )}
+              </button>
+
+              {/* Send Button - Only show when not in VAD mode */}
+              {!isVADMode && (
+                <button
+                  onClick={handleClickSendMessage}
+                  className="px-4 py-2 rounded-full text-sm font-medium transition-colors text-white/70 hover:bg-white/20"
+                  title="Send message"
+                >
+                  <Send size={18} />
+                </button>
+              )}
+
+              {/* Exit VAD Mode Button */}
+              {isVADMode && (
+                <button
+                  onClick={handleExitVAD}
+                  className="p-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-full transition-colors"
+                  title="Exit voice mode"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Hidden MicrophoneStreamer for VAD functionality */}
+        <div style={{ display: 'none' }}>
+          <MicrophoneStreamer
+            ref={MicRef}
+            wsReadyState={readyState}
+            sendMessage={sendMessage}
+            ReadyState={ReadyState}
+          />
+        </div>
+      </div>
+    </>
+  );
 };
 
-const LiveStream = ({ livestreamId }) => {
+const LiveStreamInner = ({ livestreamId, onEndSession }) => {
+  // State variables
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
-  const [AvatarTalking, setAvatarTalking] = useState(false);
-  const [status, setStatus] = useState('disconnected');
-  const messagesEndRef = useRef(null);
-  const wsRef = useRef(null);
+  const [isAgentReady, setIsAgentReady] = useState(false);
+  const [_avatarTalking, setAvatarTalking] = useState('');
+  const [sessionValid, setSessionValid] = useState(false);
+  const [sessionError, setSessionError] = useState(null);
+  const MicRef = useRef(null);
 
-  const MicRef = useRef();
+  // Get endLivestream function from context
+  const { endLivestream } = useAvatarLivestream();
 
-  // const socketUrl = 'http://192.168.4.118:8080/ws/'+livestreamId;
-  // const socketUrl = 'ws://192.168.4.118:8082/ws';
-  const socketUrl = `${API_BASE_URL.replace('https:', 'wss:').replace('http:', 'ws:')}/ws`;
-
-
-  // const liveStreamUrl = `ws://192.168.4.118:8080/livestream/${livestreamId}`;
-  const liveStreamUrl = `${API_BASE_URL.replace('https:', 'wss:').replace('http:', 'ws:')}/livestream/${livestreamId}`;
-
-  const { sendMessage, lastMessage, readyState } = useWebSocket(socketUrl, {
-    // protocols: [`auth-${getSessionToken()}`, "test"],
-    onOpen: () => {
-      sendMessage(JSON.stringify({ type: 'connect', token: getSessionToken(), session: livestreamId }));
-    },
-    onMessage: (message) => {
-      const data = JSON.parse(message.data);
-      if (data.type === 'error') {
-        console.log('Error: ', data.content);
+  // Check if the session exists and is valid before connecting
+  useEffect(() => {
+    const validateSession = async () => {
+      if (!livestreamId) {
+        setSessionError('No livestream ID provided');
         return;
       }
-      console.log('Message: ', data);
-      if (data.type === 'textout') {
-        setMessages(prevMessages => [...prevMessages, { user: 'assistant', text: data.content }]);
-      }
-      else if (data.type === 'textin') {
-        setMessages(prevMessages => [...prevMessages, { user: 'You', text: data.content }]);
-      }
-      else if (data.type === 'avatarTalking') {
-        setAvatarTalking(data.content);
-        if (MicRef.current) {
-          MicRef.current.handleAvatarTalking(data.content);
-        };
-      }
-      else {
-        console.log('Unknown message type: ', data);
-      }
 
-    },
+      try {
+        console.log('Validating session:', livestreamId);
+        // First check if the session exists via your API
+        const response = await fetch(`${API_BASE_URL}/api/v1/live/${livestreamId}`, {
+          headers: {
+            Authorization: `Bearer ${getSessionToken()}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-    shouldReconnect: (closeEvent) => true,
-    heartbeat: {
-      message: 'ping',
-      returnMessage: 'pong',
-      timeout: 60000,
-      interval: 25000,
-    },
-  });
+        if (response.ok) {
+          const sessionData = await response.json();
+          console.log('Session data:', sessionData);
 
+          // Check if session is ended
+          if (sessionData.ended_at && sessionData.ended_at !== '0001-01-01T00:00:00Z') {
+            setSessionError(`Session ended at ${new Date(sessionData.ended_at).toLocaleString()}`);
+            setSessionValid(false);
+            return;
+          }
+
+          // Check jobstatus - should be 1 for active
+          if (sessionData.jobstatus !== 1) {
+            setSessionError(`Session is not active (status: ${sessionData.jobstatus})`);
+            setSessionValid(false);
+            return;
+          }
+
+          setSessionValid(true);
+          setSessionError(null);
+        } else {
+          const errorText = await response.text();
+          console.error('Session validation failed:', response.status, errorText);
+          setSessionError(`Session validation failed: ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Error validating session:', error);
+        setSessionError(`Validation error: ${error.message}`);
+      }
+    };
+
+    validateSession();
+  }, [livestreamId]);
+
+  // Auto-hide loading after a timeout as fallback
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      console.log('Agent ready timeout - hiding loading screen');
+      setIsAgentReady(true);
+    }, 10000); // 10 seconds timeout
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Configure WebSocket URLs for different purposes
+  const token = getSessionToken();
+
+  // Communications WebSocket - for sending messages and receiving replies
+  // const commsSocketUrl = `${API_BASE_URL.replace('https:', 'wss:').replace('http:', 'ws:')}/ws${
+  //   token ? `?token=${encodeURIComponent(token)}` : ''
+  // }`;
+  const commsSocketUrl = `${API_BASE_URL.replace('https:', 'wss:').replace('http:', 'ws:')}/ws`;
+
+  // Pixel Streaming WebSocket - for video stream
+  const pixelStreamUrl = `${API_BASE_URL.replace('https:', 'wss:').replace(
+    'http:',
+    'ws:'
+  )}/api/v1/livestream/${livestreamId}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+
+  const { sendMessage, readyState } = useWebSocket(
+    sessionValid ? commsSocketUrl : null, // Only connect if session is valid for communications
+    {
+      // protocols: [`auth-${getSessionToken()}`],
+      headers: token
+        ? {
+            Authorization: `Bearer ${token}`,
+          }
+        : {},
+      onOpen: () => {
+        console.log('Communications WebSocket connected to:', commsSocketUrl);
+        console.log('Using connect token:', token ? 'Present' : 'Missing');
+        console.log('Livestream ID:', livestreamId);
+
+        // The authentication should now be handled via query parameter or headers
+        // If the server expects a specific message format, send it
+        sendMessage(JSON.stringify({
+          type: 'connect',
+          token: token,
+          session: livestreamId
+        }));
+      },
+      onClose: (event) => {
+        console.log('WebSocket closed:', event.code, event.reason);
+        console.log('Close event details:', {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean,
+          type: event.type,
+        });
+
+        // Handle backend reporting job ended (status code 400)
+        if (event.code === 400) {
+          console.log('Backend reported job ended, clearing active job...');
+          endLivestream().catch((error) => {
+            console.error('Error clearing active job:', error);
+          });
+        } else if (event.code !== 1000) {
+          console.warn('WebSocket closed unexpectedly. Code:', event.code, 'Reason:', event.reason);
+        }
+      },
+      onError: (event) => {
+        console.error('WebSocket error:', event);
+        console.error('WebSocket error details:', {
+          type: event.type,
+          target: event.target,
+          currentTarget: event.currentTarget,
+          readyState: event.target?.readyState,
+          url: event.target?.url,
+        });
+
+        setSessionError(`WebSocket connection failed`);
+      },
+      onMessage: (message) => {
+        try {
+          const data = JSON.parse(message.data);
+
+          if (data.type === 'error') {
+            console.log('Error: ', data.content);
+            return;
+          }
+
+          // Set agent as ready on first meaningful message from server
+          if (!isAgentReady && data.type !== 'error') {
+            setIsAgentReady(true);
+          }
+
+          if (data.type === 'textout') {
+            setMessages((prevMessages) => [...prevMessages, { user: 'assistant', text: data.content }]);
+          } else if (data.type === 'textin') {
+            setMessages((prevMessages) => [...prevMessages, { user: 'You', text: data.content }]);
+          } else if (data.type === 'audioout') {
+            // Handle audio output from server (avatar speech)
+            // This might contain audio data for the avatar to speak
+            // You might need to play this audio or trigger avatar animation
+          } else if (data.type === 'audioin_processed') {
+            // Handle processed audio input (speech-to-text result)
+            setMessages((prevMessages) => [...prevMessages, { user: 'You (voice)', text: data.content }]);
+          } else if (data.type === 'avatarTalking') {
+            setAvatarTalking(data.content);
+            if (MicRef.current) {
+              MicRef.current.handleAvatarTalking(data.content);
+            }
+          } else {
+            console.log('Unknown message type: ', data);
+          }
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error, 'Raw message:', message.data);
+        }
+      },
+
+      shouldReconnect: (closeEvent) => {
+        // Don't reconnect if backend reported job ended (status code 400)
+        if (closeEvent.code === 400) {
+          return false;
+        }
+        // Only reconnect if it wasn't a normal closure
+        return closeEvent.code !== 1000;
+      },
+      reconnectAttempts: 5,
+      reconnectInterval: (attemptNumber) => Math.min(Math.pow(2, attemptNumber) * 1000, 30000), // Exponential backoff, max 30s
+      heartbeat: {
+        message: 'ping',
+        returnMessage: 'pong',
+        timeout: 60000,
+        interval: 25000,
+      },
+    }
+  );
 
   const connectionStatus = {
     [ReadyState.CONNECTING]: 'Connecting',
@@ -90,368 +482,521 @@ const LiveStream = ({ livestreamId }) => {
     [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
   }[readyState];
 
+  // Also set agent ready when websocket connection is stable
+  useEffect(() => {
+    if (readyState === ReadyState.OPEN && !isAgentReady) {
+      // Wait a short moment for potential messages, then show as ready
+      const timer = setTimeout(() => {
+        setIsAgentReady(true);
+      }, 3000); // 3 seconds after connection opens
+
+      return () => clearTimeout(timer);
+    }
+  }, [readyState, isAgentReady]);
+
   const handleClickSendMessage = () => {
     sendMessage(JSON.stringify({ type: 'textin', content: messageInput }));
-    setMessages(prevState => [...prevState, { user: 'You', text: messageInput }]);
+    setMessages((prevState) => [...prevState, { user: 'You', text: messageInput }]);
     setMessageInput('');
   };
 
+  // Remove auto-scroll to bottom of messages - let user control scrolling
+  // useEffect(() => {
+  //   messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // }, [messages]);
 
-  // Auto-scroll to bottom of messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  // Memoize the initialSettings to prevent unnecessary re-renders of PixelStreamingWrapper
+  const pixelStreamingSettings = useMemo(() => {
+    if (!sessionValid || sessionError) {
+      return null;
+    }
 
+    return {
+      ss: pixelStreamUrl,
+      AutoPlayVideo: true,
+      AutoConnect: true,
+      HoveringMouse: false,
+      StartVideoMuted: false,
+      WaitForStreamer: false,
+      KeyboardInput: false,
+      MouseInput: false,
+      TouchInput: false,
+      GamepadInput: false,
+      XRControllerInput: false,
+      MatchViewportRes: true,
+      // Let PixelStreamingWrapper handle codec selection
+      PreferredCodec: 'VP8', // Default to VP8 for compatibility
+      WebRTCMinBitrate: 1000,
+      WebRTCMaxBitrate: 20000,
+      WebRTCFPS: 60,
+      SuppressBrowserKeys: true,
+      UseMic: false,
+      OfferToReceive: false,
+      HideUI: true,
+      // Force TURN usage if direct connection fails
+      ForceTURN: false, // Start with false, can enable if needed
+      // Additional WebRTC configuration
+      WebRTCIceTimeout: 10000, // 10 second timeout for ICE
+      WebRTCDisconnectionTimeout: 5000, // 5 second timeout for disconnection
+    };
+  }, [pixelStreamUrl, sessionValid, sessionError]);
 
   return (
-    <Container fluid className="vh-100 p-0 d-flex flex-column">
-      {/* Video Stream */}
-      <Row className="flex-grow-1 m-0" style={{ position: 'relative', width:  '100%', minHeight: '50vh'  }}>
-        <Col className="p-0 d-flex justify-content-center">
-          <div style={{
-            width: '100%',
-            // paddingTop: '56.25%', /* 16:9 Aspect Ratio */
-            position: 'relative'
-          }}>
-
-
-            <PixelStreamingWrapper
-              initialSettings={{
-                ss: liveStreamUrl,
-                AutoPlayVideo: true,
-                AutoConnect: true,
-                HoveringMouse: false,
-                StartVideoMuted: false,
-                WaitForStreamer: true,
-                KeyboardInput: true,
-                MouseInput: true,
-                TouchInput: false,
-                MatchViewportResolution: true,
-                // ForceTurn: true
-              }}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                // height: '100%'
-              }}
-            />
-
-
-
-          </div>
-        </Col>
-      </Row>
-      <Row className="" style={{ position: 'relative' }}>
-        <h2>{livestreamId}</h2>
-        <CameraControls sendMessage={sendMessage} />
-      </Row>
-
-      {/* Chat Area */}
-      <Row className="m-0" style={{ height: '250px' }}>
-        <Col className="p-0 d-flex flex-column border-top">
-          <Card.Body className="flex-grow-1 overflow-auto p-2">
-            {messages.map((msg, index) => (
-              <div key={index} className="mb-1">
-                <small className="text-muted">{msg.user}:</small>{' '}
-                {msg.text}
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </Card.Body>
-
-          <Card.Footer className="p-2">
-            <Form.Group className="d-flex gap-2">
-              <Form.Control
-                type="text"
-                value={messageInput}
-                onChange={(e) => setMessageInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleClickSendMessage()}
-                placeholder="Type a message..."
-              />
-              <Button
-                variant="primary"
-                onClick={handleClickSendMessage}
-                disabled={readyState !== ReadyState.OPEN}
+    <>
+      <Container fluid className="vh-100 p-0 d-flex flex-column">
+        {/* Video Stream */}
+        <Row className="flex-grow-1 m-0" style={{ position: 'relative', width: '100%', minHeight: '50vh' }}>
+          <Col className="p-0 d-flex justify-content-center">
+            <div className="w-full relative mb-6 h-full">
+              <div
+                className="bg-slate-800/20 backdrop-blur-sm border border-slate-700/50 rounded-xl relative w-full h-full"
+                style={{ minHeight: '60vh', aspectRatio: '16/9' }}
               >
-                <SendFill />
-              </Button>
-              <MicrophoneStreamer ref={MicRef} wsReadyState={readyState} sendMessage={sendMessage} ReadyState={ReadyState} />
-            </Form.Group>
+                <div className="absolute z-20 p-4 w-full flex justify-between">
+                  <div
+                    className={`d-flex align-items-center gap-2 px-3 py-2 rounded-lg text-sm fw-medium ${
+                      readyState === ReadyState.OPEN
+                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                        : readyState === ReadyState.CONNECTING
+                        ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                        : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                    }`}
+                  >
+                    {readyState === ReadyState.OPEN ? <Wifi size={16} /> : <WifiOff size={16} />}
+                    <span>{connectionStatus}</span>
+                  </div>
+                  <Button variant="destructive" size="sm" onClick={onEndSession}>
+                    End Session
+                  </Button>
+                </div>
 
+                {pixelStreamingSettings ? (
+                  <PixelStreamingWrapper
+                    initialSettings={pixelStreamingSettings}
+                    style={{
+                      position: 'relative',
+                      top: 0,
+                      left: 0,
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-slate-800/50" />
+                )}
 
+                {(!sessionValid || sessionError) && (
+                  <div
+                    className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm d-flex align-items-center justify-content-center"
+                    style={{ zIndex: 5 }}
+                  >
+                    <div className="text-center text-slate-300">
+                      <div className="text-slate-400 mb-3">📺</div>
+                      <p className="fs-6 fw-medium">Video Stream Unavailable</p>
+                      <p className="small text-slate-400">
+                        {sessionError ? 'Session has ended' : 'Validating session...'}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
+                {!isAgentReady && (
+                  <div
+                    className="absolute inset-0 top-0 start-0 w-100 h-100 bg-slate-900/80 backdrop-blur-sm d-flex align-items-center justify-content-center"
+                    style={{ zIndex: 10 }}
+                  >
+                    <div className="text-center text-slate-300">
+                      {sessionError ? (
+                        <>
+                          <div className="text-red-400 mb-3">⚠️</div>
+                          <p className="fs-5 fw-medium text-red-400">Session Error</p>
+                          <p className="small text-red-300">{sessionError}</p>
+                          <p className="small text-slate-400 mt-2">WebSocket connection status: {connectionStatus}</p>
+                          <div className="mt-3">
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => (window.location.hash = '/console/conversational-ai')}
+                            >
+                              Create New Session
+                            </Button>
+                          </div>
+                        </>
+                      ) : !sessionValid ? (
+                        <>
+                          <Loader2 className="animate-spin text-accent-mint mb-3 mx-auto" size={32} />
+                          <p className="fs-5 fw-medium">Validating Session...</p>
+                          <p className="small text-slate-400">Checking session: {livestreamId}</p>
+                        </>
+                      ) : (
+                        <>
+                          <Loader2 className="animate-spin text-accent-mint mb-3 mx-auto" size={32} />
+                          <p className="fs-5 fw-medium">Initializing Interactive Agent...</p>
+                          <p className="small text-slate-400">Waiting for agent connection</p>
+                          {readyState !== ReadyState.OPEN && (
+                            <p className="text-red-400 small mt-2">Connection Status: {connectionStatus}</p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
 
-
-            <div className="text-end mt-1">
-              <small className={readyState !== ReadyState.OPEN ? 'text-success' : 'text-danger'}>
-                {ReadyState.OPEN ? <Wifi /> : <WifiOff />}
-                {connectionStatus}
-              </small>
-              &nbsp;
-              <Button onClick={() => handleEndSession(livestreamId)} variant="danger" size="sm">End Session</Button>
+                {/* UI Overlay - Floating Input */}
+                <UIOverlay
+                  messageInput={messageInput}
+                  setMessageInput={setMessageInput}
+                  handleClickSendMessage={handleClickSendMessage}
+                  readyState={readyState}
+                  ReadyState={ReadyState}
+                  sendMessage={sendMessage}
+                  MicRef={MicRef}
+                />
+              </div>
             </div>
-          </Card.Footer>
-        </Col>
-      </Row>
-    </Container>
+          </Col>
+        </Row>
+
+        {/* Chat History Below Video */}
+        <Row className="m-0" style={{ height: '25vh' }}>
+          <Col className="p-1">
+            <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-xl p-4 h-100">
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <h5 className="text-white mb-0 fw-medium">Chat History</h5>
+                <div className="d-flex align-items-center gap-2 small">
+                  <div
+                    className={`rounded-circle ${readyState === ReadyState.OPEN ? 'bg-green-400' : 'bg-red-400'}`}
+                    style={{ width: '8px', height: '8px' }}
+                  ></div>
+                  <span className="text-white/60">{readyState === ReadyState.OPEN ? 'Connected' : 'Disconnected'}</span>
+                </div>
+              </div>
+              <div className="overflow-auto pe-2" style={{ height: 'calc(100% - 60px)' }}>
+                {messages.map((msg, index) => (
+                  <div key={index} className="small mb-2">
+                    <span className="text-white/60 fw-medium">{msg.user}:</span>
+                    <span className="text-white/90 ms-2">{msg.text}</span>
+                  </div>
+                ))}
+                {messages.length === 0 && (
+                  <div className="text-white/40 small fst-italic text-center py-4">
+                    No messages yet. Start a conversation!
+                  </div>
+                )}
+              </div>
+            </div>
+          </Col>
+        </Row>
+      </Container>
+      <ConfigSidebar visual voice a2f llm isLiveSession sendMessage={sendMessage} />
+    </>
   );
 };
 
-
-const styles = {
-
-  rightSidebar: {
-    position: 'fixed',
-    top: 0,
-    right: 0,
-    width: '480px',
-    height: '100vh',
-    backgroundColor: '#ffffff',
-    borderLeft: '1px solid #e9ecef',
-    padding: '20px',
-    overflowY: 'auto',
-    zIndex: 900
-  },
-  mainContent: {
-
-    // width:  '100%',
-    paddingRight: '480px',
-
-  }
+const LiveStreamWithSidebar = ({ livestreamId, onEndSession }) => {
+  return (
+    <div className="relative w-full h-full">
+      <div className="relative w-full">
+        <LiveStreamInner livestreamId={livestreamId} onEndSession={onEndSession} />
+      </div>
+      {/* End Session button now handled inside video area */}
+    </div>
+  );
 };
 
-const LiveStreamPage = ({ characters }) => {
-  const [status, setStatus] = useState('checking_storage');
-  const [livestreamId, setLivestreamId] = useState(null);
-  const [loadingMessage, setLoadingMessage] = useState('Checking for existing livestream...');
+const LiveStreamPage = () => {
+  const { config } = useConfig();
+  const { sessionId } = useParams();
+  const navigate = useNavigate();
+  const {
+    // New improved API
+    sessionState,
+    statusMessage,
+    connectionProgress,
+    lastError,
+    clearError,
+    // Legacy API for backward compatibility
+    activeLivestream,
+    endLivestream,
+    livestreamStatus,
+    livestreamId,
+    launchLivestream,
+    connectToExistingSession,
+  } = useAvatarLivestream();
+  const selectedAvatar = activeLivestream?.config?.avatar;
 
-  const recheckTime = 500;
-
-  const [config, setConfig] = useState({
-    avatar: characters[0].id,
-    environment: 'Map_Env_Original_01', //TODO
-    a2f_config: characters[0].a2f_config,
-    voice_config: characters[0].voice_config,
-    llm_config: characters[0].llm_config,
-  });
-  const [activeTab, setActiveTab] = useState('visual');
-
-
-  const updateConfig = (key, value) => {
-    if (key === 'avatar') {
-      for (const character of characters) {
-        if (character.id === value) {
-          setConfig(prevConfig => ({
-            ...prevConfig,
-            [key]: value,
-            a2f_config: character.a2f_config,
-            voice_config: character.voice_config,
-            llm_config: character.llm_config
-          }));
-          break;
-        }
-      }
-    } else {
-      if (key.includes('.')) {
-        // Handle nested keys (like 'voice_config.voice_id.some_property')
-        const keys = key.split('.');
-        setConfig(prev => {
-          const newConfig = { ...prev };
-          let current = newConfig;
-
-          for (let i = 0; i < keys.length - 1; i++) {
-            const currentKey = keys[i];
-            if (!current[currentKey]) {
-              current[currentKey] = {};
-            }
-            current = current[currentKey];
-          }
-
-          current[keys[keys.length - 1]] = value;
-          return newConfig;
-        });
-      } else {
-        // Handle flat keys
-        setConfig(prev => ({ ...prev, [key]: value }));
-      }
-    }
-  };
-
-  // Check for existing livestream on mount
+  // Effect to handle URL-based session connection
   useEffect(() => {
-    const storedLivestream = localStorage.getItem('current_livestream');
+    console.log('LiveStream: URL effect triggered - sessionId:', sessionId, 'livestreamId:', livestreamId);
 
-    if (storedLivestream && typeof storedLivestream === 'string' && storedLivestream !== 'undefined' && storedLivestream.includes('-')) {
-      setLivestreamId(storedLivestream);
-      setStatus('checking_readiness');
-      setLoadingMessage('Verifying livestream status...');
-
-    } else {
-      setStatus('needs_request');
-      setLoadingMessage('No active livestream found');
+    if (sessionId && sessionId !== livestreamId) {
+      // Try to connect to the session specified in the URL
+      console.log('LiveStream: Connecting to existing session from URL:', sessionId);
+      connectToExistingSession(sessionId);
+    } else if (!sessionId && activeLivestream) {
+      // If we're on base route but have an active session, clear it
+      console.log('LiveStream: On base route with active session, clearing it');
+      endLivestream();
+    } else if (!sessionId) {
+      console.log('LiveStream: On base route with no active session - ready to create new session');
     }
-  }, []);
+  }, [sessionId, livestreamId, connectToExistingSession, activeLivestream, endLivestream]);
 
-  // Poll livestream readiness when we have an ID
+  // Effect to update URL when session changes (only if we're on the base route)
   useEffect(() => {
-    if (status !== 'checking_readiness' || !livestreamId) return;
+    if (livestreamId && !sessionId && window.location.hash === '#/console/conversational-ai') {
+      // Update URL to include the session ID only if we're on the base route
+      console.log('LiveStream: Updating URL to include session ID:', livestreamId);
+      navigate(`/console/conversational-ai/${livestreamId}`, { replace: true });
+    }
+  }, [livestreamId, sessionId, navigate]);
 
-    const checkLivestream = async () => {
-      try {
-        const renderjob = await getRenderJob(livestreamId);
-        if (renderjob === undefined) {
-          localStorage.removeItem('current_livestream');
-          window.location.reload();
-        } else if (renderjob.ended_at !== null) {
-          localStorage.removeItem('current_livestream');
-          window.location
-        } else if (renderjob.jobstatus === 1) {
-          setStatus('ready');
-        } else if (renderjob.jobstatus >= 6) {
-          setLoadingMessage('Waiting streaming client')
-          setTimeout(checkLivestream, recheckTime);
-        } else if (renderjob.jobstatus >= 4 && renderjob.jobstatus < 6) {
-          setLoadingMessage('Streaming finished');
-          localStorage.removeItem('current_livestream');
-          setStatus('needs_request');
-        } else {
-          setTimeout(checkLivestream, recheckTime);
-        }
-      } catch (error) {
-        console.error('Error checking livestream:', error);
-        setTimeout(checkLivestream, recheckTime);
-      }
-    };
-
-    const timer = setTimeout(checkLivestream, recheckTime);
-    return () => clearTimeout(timer);
-  }, [status, livestreamId]);
-
-  const requestLivestream = async () => {
-    setStatus('requesting');
-    setLoadingMessage('Requesting new livestream...');
+  const handleRequestLivestream = async () => {
+    console.log('LiveStream: Requesting new livestream with config:', config);
 
     try {
-      const renderJob = await insertRenderJob('live', config)
+      const session = await launchLivestream(config);
 
-      localStorage.setItem('current_livestream', renderJob);
-      setLivestreamId(renderJob);
-      setStatus('checking_readiness');
-      setLoadingMessage('Livestream created, verifying status...');
+      console.log('LiveStream: Session response:', session);
+      console.log('LiveStream: Session keys:', session ? Object.keys(session) : 'null');
+
+      // Check for session ID in the returned object
+      const sessionId = session?.id || session?.session_id || session?.livestream_id;
+
+      if (sessionId) {
+        console.log('LiveStream: Session created successfully, redirecting to:', sessionId);
+        // Navigate to the session-specific URL
+        navigate(`/console/conversational-ai/${sessionId}`, { replace: true });
+      } else {
+        console.error('LiveStream: Session creation failed - no session ID found in response:', session);
+      }
     } catch (error) {
-      console.error('Error requesting livestream:', error);
-      setStatus('needs_request');
-      setLoadingMessage('Failed to create livestream. Please try again.');
+      console.error('LiveStream: Failed to create session:', error);
     }
   };
 
-  if (status === 'ready') {
-    // return <Alert variant="success">Ready!</Alert>;
-    return <LiveStream livestreamId={livestreamId} />;
+  const handleCreateNewSession = () => {
+    console.log('LiveStream: Creating new session - navigating to base route');
+    // Navigate to base route without session ID to allow creating new sessions
+    navigate('/console/conversational-ai');
+  };
+
+  const handleEndSession = async () => {
+    console.log('LiveStream: Ending session and navigating to base route');
+    await endLivestream();
+    // Navigate back to base route to allow creating new sessions
+    navigate('/console/conversational-ai');
+  };
+
+  // Always show sidebar except when in active streaming mode
+  const showSidebar = livestreamStatus !== 'ready';
+  const isInStreamingMode = livestreamStatus === 'ready';
+
+  if (isInStreamingMode) {
+    return <LiveStreamWithSidebar livestreamId={sessionId || livestreamId} onEndSession={handleEndSession} />;
   }
 
+  // For loading/waiting states, show full width with sidebar space when sidebar is visible
   return (
-    <div >
-      <div style={styles.mainContent}>
-        {/* <Spinner animation="border" role="status" className="mb-3">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner> */}
-        <p>
-          <Broadcast className="me-2" />
-          {loadingMessage}
-        </p>
-
-        {/* <pre>{JSON.stringify(config, null, 4)}</pre> */}
-
-        {status === 'needs_request' && (
-          <button
-            className="btn btn-primary"
-            onClick={requestLivestream}
-            disabled={status === 'requesting'}
-          >
-            {status === 'requesting' ? 'Requesting...' : 'Create Livestream'}
-          </button>
-        )}
-        {status !== 'needs_request' && (
-          <Button onClick={() => handleEndSession(livestreamId)} variant="danger" size="sm">End Session</Button>
-        )}
-
-        <h2>{livestreamId}</h2>
-
-        <pre>
-          {JSON.stringify(config, null, 2)}
-        </pre>
-
-      </div>
-
-      {/* Right Settings Sidebar */}
-      <div style={styles.rightSidebar}>
-        <div className="d-flex border-bottom pb-2 mb-3">
-
-          <Button
-            variant={activeTab === 'visual' ? 'primary' : 'light'}
-            className="me-2 py-1 px-2"
-            onClick={() => setActiveTab('visual')}
-            size="sm"
-          >
-            Visual
-          </Button>
-
-          <Button
-            variant={activeTab === 'voice' ? 'primary' : 'light'}
-            className="me-2 py-1 px-2"
-            onClick={() => setActiveTab('voice')}
-            size="sm"
-          >
-            Voice
-          </Button>
-          <Button
-            variant={activeTab === 'a2f' ? 'primary' : 'light'}
-            className="me-2 py-1 px-2"
-            onClick={() => setActiveTab('a2f')}
-            size="sm"
-          >
-            A2F Config
-          </Button>
-          <Button
-            variant={activeTab === 'llm' ? 'primary' : 'light'}
-            className="me-2 py-1 px-2"
-            onClick={() => setActiveTab('llm')}
-            size="sm"
-          >
-            LLM Config
-          </Button>
-
+    <div className={`relative ${showSidebar ? 'pr-[480px]' : ''} overflow-hidden w-full h-full`}>
+      <div className="relative w-full overflow-y-auto">
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="gradient-text text-3xl font-bold">Interactive Agent</h2>
+              {selectedAvatar && (
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="w-3 h-3 bg-accent-mint rounded-full animate-pulse"></div>
+                  <div>
+                    <p className="text-text-secondary">
+                      Active Session: <span className="text-accent-mint font-medium">{selectedAvatar.name}</span>
+                    </p>
+                    {activeLivestream && (
+                      <>
+                        <p className="text-slate-400 text-xs">
+                          Started: {new Date(activeLivestream.created_at).toLocaleTimeString()}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-slate-400 text-xs">Session ID: {livestreamId}</p>
+                          <button
+                            onClick={() => {
+                              const sessionUrl = `${window.location.origin}${window.location.pathname}#/console/conversational-ai/${livestreamId}`;
+                              navigator.clipboard.writeText(sessionUrl);
+                            }}
+                            className="text-xs text-slate-400 hover:text-accent-mint transition-colors"
+                            title="Copy session URL"
+                          >
+                            📋
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            {activeLivestream && (
+              <Button variant="secondary" onClick={handleEndSession}>
+                End Session
+              </Button>
+            )}
+          </div>
         </div>
 
-        {activeTab === 'voice' && (
-          <VoiceConfigTab updateConfig={updateConfig} config={config} />
-        )}
+        {/* Enhanced livestream placeholder with progress */}
+        <div className="w-full relative mb-6">
+          <div
+            className="bg-slate-800/20 backdrop-blur-sm border border-slate-700/50 rounded-xl relative overflow-hidden transition-all duration-300"
+            style={{ paddingBottom: '56.25%' }} // 16:9 Aspect Ratio
+          >
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-slate-400 max-w-md">
+                {/* Icon based on state */}
+                <div className="mb-4">
+                  {sessionState === 'connecting' ? (
+                    <Loader2 className="animate-spin text-accent-mint mx-auto" size={48} />
+                  ) : sessionState === 'error' ? (
+                    <AlertCircle className="text-red-400 mx-auto" size={48} />
+                  ) : sessionState === 'connected' ? (
+                    <CheckCircle className="text-green-400 mx-auto" size={48} />
+                  ) : (
+                    <Broadcast className="text-slate-400 mx-auto" size={48} />
+                  )}
+                </div>
 
-        {activeTab === 'a2f' && (
-          <A2FConfigTab updateConfig={updateConfig} config={config} />
-        )}
+                {/* Status message */}
+                <h3 className="text-xl font-semibold text-slate-200 mb-2">
+                  {sessionState === 'idle' && !sessionId
+                    ? 'Ready to Create Session'
+                    : sessionState === 'error' && lastError
+                    ? 'Connection Error'
+                    : statusMessage}
+                </h3>
 
-        {activeTab === 'visual' && (
-          <VisualConfigTab characters={characters} updateConfig={updateConfig} config={config} />
-        )}
+                {/* Progress bar for connecting state */}
+                {sessionState === 'connecting' && (
+                  <div className="w-full max-w-sm mx-auto mb-4">
+                    <div className="bg-slate-700/50 rounded-full h-2 mb-2">
+                      <div
+                        className="bg-gradient-to-r from-accent-mint to-green-400 h-2 rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${connectionProgress}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-slate-400">{Math.round(connectionProgress)}% complete</p>
+                  </div>
+                )}
 
-        {activeTab === 'llm' && (
-          <LLMConfigTab characters={characters} updateConfig={updateConfig} config={config} />
-        )}
+                {/* Error details */}
+                {sessionState === 'error' && lastError && (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">
+                    <p className="text-red-300 text-sm font-medium mb-1">{lastError.context}</p>
+                    <p className="text-red-400 text-xs">{lastError.message}</p>
+                    {lastError.context === 'Session connection' && (
+                      <p className="text-slate-400 text-xs mt-2">
+                        The session may have expired or been ended by another user.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Session info */}
+                {(sessionId || livestreamId) && (
+                  <div className="mb-4">
+                    <p className="text-sm text-slate-500">
+                      Session: <span className="font-mono text-slate-400">{sessionId || livestreamId}</span>
+                      {(sessionId || livestreamId) && (
+                        <button
+                          onClick={() => {
+                            const sessionUrl = `${window.location.origin}${
+                              window.location.pathname
+                            }#/console/conversational-ai/${sessionId || livestreamId}`;
+                            navigator.clipboard.writeText(sessionUrl);
+                          }}
+                          className="ml-2 text-xs text-slate-400 hover:text-accent-mint transition-colors"
+                          title="Copy session URL"
+                        >
+                          📋
+                        </button>
+                      )}
+                    </p>
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                <div className="flex justify-center gap-3">
+                  {sessionState === 'idle' && (
+                    <Button
+                      variant="primary"
+                      onClick={handleRequestLivestream}
+                      disabled={sessionState === 'connecting'}
+                      className="flex items-center gap-2"
+                    >
+                      <Play size={16} />
+                      Create Session
+                    </Button>
+                  )}
+
+                  {sessionState === 'error' && (
+                    <>
+                      <Button variant="secondary" onClick={clearError} size="sm">
+                        Try Again
+                      </Button>
+                      <Button variant="primary" onClick={handleCreateNewSession} size="sm">
+                        New Session
+                      </Button>
+                    </>
+                  )}
+
+                  {sessionState === 'connecting' && (
+                    <Button variant="secondary" onClick={handleEndSession} size="sm">
+                      Cancel
+                    </Button>
+                  )}
+
+                  {sessionState === 'connected' && (
+                    <Button onClick={handleEndSession} variant="secondary" size="sm">
+                      End Session
+                    </Button>
+                  )}
+                </div>
+
+                {/* Connection tips for errors */}
+                {sessionState === 'error' && (
+                  <div className="mt-4 text-xs text-slate-500">
+                    <details>
+                      <summary className="cursor-pointer hover:text-slate-400">Troubleshooting Tips</summary>
+                      <ul className="mt-2 text-left space-y-1 list-disc list-inside">
+                        <li>Check your internet connection</li>
+                        <li>Try refreshing the page</li>
+                        <li>Clear browser cache and cookies</li>
+                        <li>Try a different browser or incognito mode</li>
+                      </ul>
+                    </details>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 mb-4">
+          <h3 className="text-slate-300 text-xl font-bold mb-2">Configuration</h3>
+          <JsonEditor
+            data={config}
+            collapse={false}
+            rootName={false}
+            restrictEdit={true}
+            restrictDelete={true}
+            enableClipboard={false}
+            restrictAdd={true}
+            theme={githubDarkTheme}
+            maxWidth={'100%'}
+            className="w-full"
+          />
+        </div>
       </div>
+      {/* Show sidebar only when not waiting for streaming client */}
+      {showSidebar && <ConfigSidebar visual voice a2f llm isLiveSession={false} />}
     </div>
-
   );
 };
-
-
-// const LiveStreamPage = () => {
-
-
-// };
-
 
 export default LiveStreamPage;

@@ -2,7 +2,7 @@
 FROM node:22.15-alpine AS builder
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm install --legacy-peer-deps
+RUN npm install
 COPY . .
 COPY staging.env .env
 RUN npm run build

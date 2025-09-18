@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'react'
-import { Container, Spinner } from 'react-bootstrap';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL, setSessionObj } from './postgrestAPI';
 import { AlphaCard } from './Components/ComingSoon';
-import 'bootstrap/dist/css/bootstrap.min.css';
-
+import { Loader2 } from 'lucide-react';
 
 // Login.jsx
 export const Login = () => {
@@ -57,63 +55,75 @@ export const Login = () => {
       setSessionObj(data);
       window.location.reload();
       navigate('/');
-
     } catch (error) {
       setError(error.message);
     }
   };
 
   return (
-    <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
-      <div className="w-100" style={{ maxWidth: '400px' }}>
-      <AlphaCard /><br />
-        <h2 className="text-center mb-4">Sign in to your account</h2>
-        {error && <div className="alert alert-danger">{error}</div>}
-        <form onSubmit={handleLogin}>
-          <div className="mb-3">
-            <input
-              type="email"
-              className="form-control"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email address"
-              required
-            />
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        <AlphaCard />
+        <div className="mt-6 bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-8">
+          <h2 className="text-center text-2xl font-bold text-white mb-6">Sign in to your account</h2>
+          {error && (
+            <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-3 mb-4">
+              <p className="text-red-300 text-sm">{error}</p>
+            </div>
+          )}
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <input
+                type="email"
+                className="w-full bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-lg transition-all duration-300 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25 focus:outline-none"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email address"
+                required
+              />
+            </div>
+            <div>
+              <input
+                type="password"
+                className="w-full bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-lg transition-all duration-300 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25 focus:outline-none"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-gradient-to-r from-emerald-400 to-green-500 text-slate-900 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-emerald-400/25 transition-all duration-300"
+            >
+              Sign in
+            </button>
+          </form>
+          <div className="text-center mt-6 space-x-2">
+            <a href="#/register" className="text-emerald-400 hover:text-emerald-300 transition-colors">
+              Register
+            </a>
+            <span className="text-slate-500">|</span>
+            <a href="#/reset-password" className="text-emerald-400 hover:text-emerald-300 transition-colors">
+              Forgot password?
+            </a>
           </div>
-          <div className="mb-3">
-            <input
-              type="password"
-              className="form-control"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              required
-            />
+          <div className="text-right mt-4">
+            <small className="text-slate-500">Api: {API_BASE_URL}</small>
           </div>
-          <button type="submit" className="btn btn-primary w-100">
-            Sign in
-          </button>
-        </form>
-        <div className="text-center mt-3">
-          <a href="#/register" className="text-decoration-none me-2">Register</a>
-          |
-          <a href="#/reset-password" className="text-decoration-none ms-2">Forgot password?</a>
+          {loading ? (
+            <div className="flex items-center mt-2">
+              <Loader2 className="animate-spin text-emerald-400 mr-2" size={16} />
+              <small className="text-slate-400">Checking status...</small>
+            </div>
+          ) : (
+            <div className="mt-2">
+              <small className="text-slate-500">Status: {JSON.stringify(apiStatus)}</small>
+            </div>
+          )}
         </div>
-        <div className="text-right mt-3">
-          <small className="text-muted">Api: {API_BASE_URL}</small>
-        </div>
-        {loading ? (
-          <Spinner animation="border" size="sm" />
-        ) : (
-          <div className="mt-2">
-            <small className="text-muted">
-              Status: {JSON.stringify(apiStatus)}
-            </small>
-          </div>
-        )}
       </div>
-      
-    </Container>
+    </div>
   );
 };
 
@@ -121,81 +131,33 @@ export const Login = () => {
 export const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState("Registration currently by invite only");
+  const [error, setError] = useState('Registration currently by invite only');
   const [success, setSuccess] = useState(null);
-  const [currentUrl, setCurrentUrl] = useState('');
-  const navigate = useNavigate(); // Initialize useNavigate
-
-  // useEffect(() => {
-  //   // Get the current URL when the component mounts
-  //   setCurrentUrl(window.location.href);
-  // }, []); 
-
-  // useEffect(() => {
-  //   let timer;
-  //   if (success) {
-  //     timer = setTimeout(() => {
-  //       navigate('/'); // Redirect to homepage after 5 seconds
-  //     }, 5000);
-  //   }
-  //   return () => clearTimeout(timer); // Cleanup timer on component unmount
-  // }, [success, navigate]);
-
-  // const handleRegister = async (e) => {
-  //   e.preventDefault();
-  //   try {
-  //     const { error } = await supabase.auth.signUp({
-  //       email,
-  //       password,
-  //       options: {
-  //         emailRedirectTo: currentUrl
-  //       }
-  //     });
-  //     if (error) throw error;
-  //     setSuccess('Registration successful! Please check your email to confirm your account.');
-  //     setError(null);
-  //   } catch (error) {
-  //     setError(error.message);
-  //   }
-  // };
+  const navigate = useNavigate();
 
   return (
-    <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
-      <div className="w-100" style={{ maxWidth: '400px' }}>
-        <h2 className="text-center mb-4">Create your account</h2>
-        {error && <div className="alert alert-danger">{error}</div>}
-        {success && (<div className="alert alert-success mt-3" role="alert">{success}</div>)}
-
-        {/* <form onSubmit={handleRegister}>
-            <div className="mb-3">
-              <input
-                type="email"
-                className="form-control"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email address"
-                required
-              />
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-8">
+          <h2 className="text-center text-2xl font-bold text-white mb-6">Create your account</h2>
+          {error && (
+            <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-3 mb-4">
+              <p className="text-red-300 text-sm">{error}</p>
             </div>
-            <div className="mb-3">
-              <input
-                type="password"
-                className="form-control"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                required
-              />
+          )}
+          {success && (
+            <div className="bg-green-900/20 border border-green-700/50 rounded-lg p-3 mb-4">
+              <p className="text-green-300 text-sm">{success}</p>
             </div>
-            <button type="submit" className="btn btn-primary w-100">
-              Register
-            </button>
-          </form> */}
-        <div className="text-center mt-3">
-          <a href="#/login" className="text-decoration-none">Already have an account? Sign in</a>
+          )}
+          <div className="text-center mt-6">
+            <a href="#/login" className="text-emerald-400 hover:text-emerald-300 transition-colors">
+              Already have an account? Sign in
+            </a>
+          </div>
         </div>
       </div>
-    </Container>
+    </div>
   );
 };
 
@@ -218,30 +180,45 @@ export const ResetPassword = () => {
   };
 
   return (
-    <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
-      <div className="w-100" style={{ maxWidth: '400px' }}>
-        <h2 className="text-center mb-4">Reset your password</h2>
-        {error && <div className="alert alert-danger">{error}</div>}
-        {message && <div className="alert alert-success">{message}</div>}
-        <form onSubmit={handleResetPassword}>
-          <div className="mb-3">
-            <input
-              type="email"
-              className="form-control"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email address"
-              required
-            />
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-8">
+          <h2 className="text-center text-2xl font-bold text-white mb-6">Reset your password</h2>
+          {error && (
+            <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-3 mb-4">
+              <p className="text-red-300 text-sm">{error}</p>
+            </div>
+          )}
+          {message && (
+            <div className="bg-green-900/20 border border-green-700/50 rounded-lg p-3 mb-4">
+              <p className="text-green-300 text-sm">{message}</p>
+            </div>
+          )}
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <div>
+              <input
+                type="email"
+                className="w-full bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-lg transition-all duration-300 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25 focus:outline-none"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email address"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-gradient-to-r from-emerald-400 to-green-500 text-slate-900 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-emerald-400/25 transition-all duration-300"
+            >
+              Send reset link
+            </button>
+          </form>
+          <div className="text-center mt-6">
+            <a href="#/login" className="text-emerald-400 hover:text-emerald-300 transition-colors">
+              Back to login
+            </a>
           </div>
-          <button type="submit" className="btn btn-primary w-100">
-            Send reset link
-          </button>
-        </form>
-        <div className="text-center mt-3">
-          <a href="#/login" className="text-decoration-none">Back to login</a>
         </div>
       </div>
-    </Container>
+    </div>
   );
 };

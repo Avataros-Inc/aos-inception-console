@@ -9,7 +9,9 @@ const Videos = ({ characters }) => {
   const [error, setError] = useState(null);
 
   const getCurrentDomain = () => {
-    return `${window.location.protocol}//${window.location.hostname}${window.location.port ? ':' + window.location.port : ''}`;
+    return `${window.location.protocol}//${window.location.hostname}${
+      window.location.port ? ':' + window.location.port : ''
+    }`;
   };
 
   const createURL = (filepart) => {
@@ -21,7 +23,7 @@ const Videos = ({ characters }) => {
       try {
         const response = await fetch(`${API_BASE_URL}/renderjobs?jobtype=neq.live&jobstatus=eq.3`, {
           headers: {
-            'Authorization': `Bearer ${getSessionToken()}`,
+            Authorization: `Bearer ${getSessionToken()}`,
           },
           method: 'GET',
         });
@@ -61,33 +63,39 @@ const Videos = ({ characters }) => {
 
   return (
     <Container>
-      <h1>Videos</h1>
+      <h1 className="gradient-text text-3xl font-bold mb-6">Videos</h1>
       <Row>
         {videos.map((video) => (
           <Col key={video.id} md={4} className="mb-4">
-            <Card>
+            <Card className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl hover:border-emerald-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-400/10 hover:-translate-y-1 w-full max-w-md overflow-hidden">
               <a href={createURL(`${getOrgId()}/${video.id}/video_out.mp4`)} target="_blank" rel="noopener noreferrer">
-                <Card.Img variant="top" src="https://placehold.co/640x360?text=Hello+World" />
+                <Card.Img
+                  variant="top"
+                  src="https://placehold.co/640x360?text=Hello+World"
+                  className="aspect-video object-cover"
+                />
               </a>
-              <Card.Body>
-                <Card.Title>{video.jobtype}</Card.Title>
+              <Card.Body className="p-4">
+                <Card.Title className="text-xl font-semibold mb-3">{video.jobtype}</Card.Title>
                 <Card.Text>
-                  <strong>Avatar:</strong> {characters.find(char => char.id === video.config.avatar)?.name || video.config.avatar}<br />
-                  <strong>Environment:</strong> {video.config.environment}<br />
-                  <strong>Content:</strong> {video.config.content ? (
-
+                  <strong>Avatar:</strong>{' '}
+                  {characters.find((char) => char.id === video.config.avatar)?.name || video.config.avatar}
+                  <br />
+                  <strong>Environment:</strong> {video.config.environment}
+                  <br />
+                  <strong>Content:</strong>{' '}
+                  {video.config.content ? (
                     video.config.content
-
+                  ) : video.config.audio_key ? (
+                    <a href={createURL(video.config.audio_key)} target="_blank" rel="noopener noreferrer">
+                      Audio File
+                    </a>
                   ) : (
-                    video.config.audio_key ? (
-                      <a href={createURL(video.config.audio_key)} target="_blank" rel="noopener noreferrer">
-                        Audio File
-                      </a>
-                    ) : (
-                      'No content available'
-                    )
-                  )}<br />
-                  <strong>Duration:</strong> {video.config.duration} seconds<br />
+                    'No content available'
+                  )}
+                  <br />
+                  <strong>Duration:</strong> {video.config.duration} seconds
+                  <br />
                 </Card.Text>
               </Card.Body>
             </Card>

@@ -1,190 +1,41 @@
-import React, { useState, useEffect  } from 'react';
-import { HashRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
-import { Container, Nav, Navbar, Button, Card, Form, Row, Col, Spinner } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { HashRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import TextToAvatar from './TextToAvatar';
 import AudioToAvatar from './AudioToAvatar';
 import AccountSettings from './AccountSettings';
-import Videos from  './Videos'
+import Videos from './Videos';
 import CharPage from './CharPage';
 import AssetFetcher from './AssetFetcher';
-import { getCharacters, getSessionToken, API_BASE_URL } from './postgrestAPI';
-import { RenderQueue } from './Renders';
-import { ComingSoonCard, AlphaCard} from './Components/ComingSoon';
-import { Login, Register, ResetPassword} from './LoginRegister'
+import { getCharacters, getSessionToken, API_BASE_URL, onAuthError, removeSession } from './postgrestAPI';
 import { jwtDecode } from 'jwt-decode';
+import { RenderQueue } from './Renders';
+import { ComingSoonCard, AlphaCard } from './Components/ComingSoon';
+import { Login, Register, ResetPassword } from './LoginRegister';
 import ApiKeys from './ApiKeys';
 import LiveStreamPage from './LiveStream';
+import { Sidebar } from './Components/Sidebar';
+import { Header } from './Components/Header';
+import { ConfigProvider } from './contexts/ConfigContext';
+import { AvatarLivestreamProvider } from './contexts/AvatarLivestreamContext';
 
-import 'bootstrap/dist/css/bootstrap.min.css';
-import { 
-  HouseDoor, 
-  Mic, 
-  Tv, 
-  Film, 
-  ChatSquareText, 
-  ArrowLeftRight, 
-  PersonBadge,
+import {
+  Home,
+  Mic,
+  MonitorPlay,
+  Video,
+  MessageSquare,
+  ArrowLeftRight,
+  Users,
   Receipt,
-  PersonCircle,
+  User as UserIcon,
   Key,
-  Easel,
-  Globe 
-} from 'react-bootstrap-icons';
-
-// CSS for the sidebar and content
-const styles = {
-
-  container: {
-    // width: '100%',
-    // display: 'flex',
-  },
-
-  sidebar: {
-    width: '180px',
-    position: 'fixed',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: '#ffffff',
-    borderRight: '1px solid #e9ecef',
-    display: 'flex',
-    flexDirection: 'column',
-    overflowY: 'auto',
-    zIndex: 1000,
-  },
-  logo: {
-    padding: '15px',
-    fontSize: '20px',
-    borderBottom: '1px solid #e9ecef',
-  },
-  content: {
-    marginLeft: '180px',
-    padding: '20px',
-    width: 'calc(100% - 180px)',
-    // width: '100%',
-    minHeight: '100vh',
-    
-  },
-  navGroup: {
-    marginBottom: '10px',
-    padding: '10px 0',
-  },
-  navGroupTitle: {
-    fontSize: '12px',
-    color: '#6c757d',
-    padding: '0 15px',
-    marginBottom: '8px',
-  },
-  navLink: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '8px 15px',
-    textDecoration: 'none',
-    color: '#495057',
-    fontWeight: 500,
-    fontSize: '14px',
-    borderRadius: 0,
-  },
-  navIcon: {
-    marginRight: '10px',
-    width: '20px',
-    height: '20px',
-  },
-
-};
-
-// Sidebar component
-const Sidebar = () => {
-  return (
-    <div style={styles.sidebar}>
-      <div style={styles.logo}>
-          AvatarOS
-      </div>
-
-      <Nav className="flex-column mt-3">
-        <Nav.Link as={Link} to="/" style={styles.navLink}>
-          <HouseDoor style={styles.navIcon} />
-          Home
-        </Nav.Link>      
-      </Nav>
-
-      <div style={styles.navGroup}>
-        <div style={styles.navGroupTitle}>Characters</div>
-        <Nav className="flex-column">
-          <Nav.Link as={Link} to="/console/characters" style={styles.navLink}>
-            <PersonBadge style={styles.navIcon} />
-            Avatar Editor
-          </Nav.Link>
-          <Nav.Link as={Link} to="/console/trainer" style={styles.navLink}>
-            <ChatSquareText style={styles.navIcon} />
-            Avatar Trainer
-          </Nav.Link>
-        </Nav>
-      </div>
-
-      <div style={styles.navGroup}>
-        <div style={styles.navGroupTitle}>Scenes</div>
-        <Nav className="flex-column">
-          <Nav.Link as={Link} to="/console/scenes" style={styles.navLink}>
-            <Globe style={styles.navIcon} />
-            My Scenes
-          </Nav.Link>
-          <Nav.Link as={Link} to="/console/scene-editor" style={styles.navLink}>
-            <Easel style={styles.navIcon} />
-            Scene Editor
-          </Nav.Link>
-        </Nav>
-      </div>
-      
-      <div style={styles.navGroup}>
-        <div style={styles.navGroupTitle}>Playground</div>
-        <Nav className="flex-column">
-          <Nav.Link as={Link} to="/console/text-to-avatar" style={styles.navLink}>
-            <ArrowLeftRight style={styles.navIcon} />
-            Text to Avatar
-          </Nav.Link>
-          <Nav.Link as={Link} to="/console/audio-to-avatar" style={styles.navLink}>
-            <Mic style={styles.navIcon} />
-            Audio to Avatar
-          </Nav.Link>
-          <Nav.Link as={Link} to="/console/conversational-ai" style={styles.navLink}>
-            <ChatSquareText style={styles.navIcon} />
-            Interactive Agent
-          </Nav.Link>
-        </Nav>
-      </div>
-      
-      <div style={styles.navGroup}>
-        <div style={styles.navGroupTitle}>Settings</div>
-        <Nav className="flex-column">
-          <Nav.Link as={Link} to="/console/renders" style={styles.navLink}>
-            <Tv style={styles.navIcon} />
-            Render Queue
-          </Nav.Link>
-          <Nav.Link as={Link} to="/console/videos" style={styles.navLink}>
-            <Film style={styles.navIcon} />
-            Videos
-          </Nav.Link>
-          <Nav.Link as={Link} to="/console/apikeys" style={styles.navLink}>
-            <Key style={styles.navIcon} />
-            API Keys
-          </Nav.Link>
-          <Nav.Link as={Link} to="/console/billing" style={styles.navLink}>
-            <Receipt style={styles.navIcon} />
-            Billing
-          </Nav.Link>
-          <Nav.Link as={Link} to="/console/account" style={styles.navLink}>
-            <PersonCircle style={styles.navIcon} />
-            Account
-          </Nav.Link>          
-        </Nav>
-      </div>
-    </div>
-  );
-};
+  Palette,
+  Globe,
+  Loader2,
+} from 'lucide-react';
 
 // Home Page Component
-const HomePage = ({characters}) => {
+const HomePage = () => {
   const [apiStatus, setApiStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -209,85 +60,194 @@ const HomePage = ({characters}) => {
   }, []);
 
   return (
-    <div>
-      <h2>Welcome to the AvatarOS Console</h2>
-      <div className="text-right mt-3">
-        <small className="text-muted">Api: {API_BASE_URL}</small>
-        {loading ? (
-          <Spinner animation="border" size="sm" />
-        ) : (
-          <div className="mt-2">
-            <small className="text-muted">
-              Status: {JSON.stringify(apiStatus)}
-            </small>
-          </div>
-        )}
+    <div className="p-6 bg-background">
+      <div className="mb-6">
+        <h1 className="text-4xl font-bold bg-accent-mint bg-clip-text text-transparent mb-2">
+          Welcome to AvatarOS Console
+        </h1>
+        <p className="text-slate-400 text-lg">The future of AI-powered avatar creation and interaction</p>
       </div>
-      <AlphaCard />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl p-6 hover:border-accent-mint/50 transition-all duration-300 hover:shadow-lg hover:shadow-accent-mint/10 hover:-translate-y-1 flex flex-col">
+          <div className="flex items-center mb-4">
+            <Users className="mr-3 text-accent-mint" size={24} />
+            <h3 className="text-xl font-semibold text-white">Avatar Creation</h3>
+          </div>
+          <p className="text-slate-400 mb-4 flex-grow">
+            Create and customize lifelike 3D avatars with our advanced editor
+          </p>
+          <Link to="/console/characters">
+            <button className="bg-accent-mint text-slate-900 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-accent-mint/25 transition-all duration-300">
+              Get Started
+            </button>
+          </Link>
+        </div>
+
+        <div className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl p-6 hover:border-accent-mint/50 transition-all duration-300 hover:shadow-lg hover:shadow-accent-mint/10 hover:-translate-y-1 flex flex-col">
+          <div className="flex items-center mb-4">
+            <Mic className="mr-3 text-accent-mint" size={24} />
+            <h3 className="text-xl font-semibold text-white">AI Generation</h3>
+          </div>
+          <p className="text-slate-400 mb-4 flex-grow">Transform text and audio into expressive avatar content</p>
+          <Link to="/console/text-to-avatar">
+            <button className="bg-accent-mint text-slate-900 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-accent-mint/25 transition-all duration-300">
+              Explore Tools
+            </button>
+          </Link>
+        </div>
+
+        <div className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl p-6 hover:border-accent-mint/50 transition-all duration-300 hover:shadow-lg hover:shadow-accent-mint/10 hover:-translate-y-1 flex flex-col">
+          <div className="flex items-center mb-4">
+            <MessageSquare className="mr-3 text-accent-mint" size={24} />
+            <h3 className="text-xl font-semibold text-white">Interactive Agents</h3>
+          </div>
+          <p className="text-slate-400 mb-4 flex-grow">Deploy conversational AI avatars across any platform</p>
+          <Link to="/console/conversational-ai">
+            <button className="bg-accent-mint text-slate-900 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-accent-mint/25 transition-all duration-300">
+              Deploy Now
+            </button>
+          </Link>
+        </div>
+      </div>
+
+      <div className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl p-6">
+        <div className="flex items-center mb-4">
+          <MonitorPlay className="mr-3 text-accent-mint" size={24} />
+          <h3 className="text-xl font-semibold text-white">System Status</h3>
+        </div>
+        <div className="flex justify-between items-center">
+          <div>
+            <span className="text-sm text-slate-400">API Endpoint: {API_BASE_URL}</span>
+          </div>
+          <div className="flex items-center">
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin mr-2 text-accent-mint" size={16} />
+                <span className="text-sm text-slate-400">Checking status...</span>
+              </>
+            ) : (
+              <div className="flex items-center">
+                <div
+                  className={`px-2 py-1 rounded text-xs font-medium mr-2 ${
+                    apiStatus?.status === 'healthy' || apiStatus
+                      ? 'bg-brand-500 text-brand-950'
+                      : 'bg-red-500 text-red-900'
+                  }`}
+                >
+                  {apiStatus?.status === 'healthy' || apiStatus ? 'Online' : 'Offline'}
+                </div>
+                <span className="text-sm text-slate-400">
+                  {apiStatus?.status === 'error' ? apiStatus.message : 'System operational'}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <AlphaCard />
+      </div>
     </div>
   );
 };
 
-
-
 // Main App Component
 const Console = () => {
-
   const [characters, setCharacters] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   useEffect(() => {
     const loadCharacters = async () => {
       try {
         const data = await getCharacters();
         setCharacters(data);
       } catch (error) {
-        console.error("Failed to load characters:", error);
+        console.error('Failed to load characters:', error);
       } finally {
         setLoading(false);
       }
     };
-    
+
     loadCharacters();
   }, []);
 
   if (loading) {
     return (
-      <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
-      <Spinner animation="border" />
-    </Container>
+      <div className="flex items-center justify-center min-h-screen bg-slate-900">
+        <Loader2 className="animate-spin text-accent-mint" size={32} />
+      </div>
     );
   }
 
   return (
-    <div style={styles.container}>
-      <Sidebar />
-      <div style={styles.content}>
-        <Routes>
-          <Route path="/" element={<HomePage characters={characters} />} />
-          <Route path="/characters" element={<CharPage characters={characters} />} />
-          <Route path="/text-to-avatar" element={<TextToAvatar characters={characters} />} />
-          <Route path="/audio-to-avatar" element={<AudioToAvatar characters={characters} />} />
-          <Route path="/scenes" element={<div><h2>My Scenes</h2><ComingSoonCard /></div>} />
-          <Route path="/scene-editor" element={<div><h2>Scene Editor</h2><ComingSoonCard /></div>} />
-          <Route path="/trainer" element={<div><h2>Avatar Trainer</h2><ComingSoonCard /></div>} />
-          <Route path="/renders" element={<RenderQueue characters={characters} />}  />
-          <Route path="/videos" element={<Videos characters={characters} />} />
-          <Route path="/conversational-ai" element={<LiveStreamPage characters={characters} />} />
-          <Route path="/apikeys" element={<ApiKeys />} />
-          <Route path="/billing" element={<div><h2>Billing</h2><ComingSoonCard /></div>} />
-          <Route path="/account" element={<AccountSettings />} />
-          <Route path="/fetch-asset/:org/:job/:filename" element={<AssetFetcher />} />
-        </Routes>
-      </div>
-    </div>
+    <AvatarLivestreamProvider>
+      <ConfigProvider characters={characters}>
+        <div className="min-h-screen bg-background">
+          <div className="fixed top-3 left-4 text-3xl">HelloAvatarOS</div>
+          <Header />
+          <Sidebar />
+          <div className="ml-0 lg:ml-64 pl-4 pr-4 pt-16 min-h-screen " style={{ backgroundColor: 'var(--bg-primary)' }}>
+            <Routes>
+              <Route path="/" element={<CharPage characters={characters} />} />
+              <Route path="/characters" element={<CharPage characters={characters} />} />
+              <Route path="/text-to-avatar" element={<TextToAvatar />} />
+              <Route path="/audio-to-avatar" element={<AudioToAvatar />} />
+              <Route
+                path="/scenes"
+                element={
+                  <div>
+                    <h2 className="gradient-text text-3xl font-bold text-white mb-4">My Scenes</h2>
+                    <ComingSoonCard />
+                  </div>
+                }
+              />
+              <Route
+                path="/scene-editor"
+                element={
+                  <div>
+                    <h2 className="gradient-text text-3xl font-bold text-white mb-4">Scene Editor</h2>
+                    <ComingSoonCard />
+                  </div>
+                }
+              />
+              <Route
+                path="/trainer"
+                element={
+                  <div>
+                    <h2 className="gradient-text text-3xl font-bold text-white mb-4">Avatar Trainer</h2>
+                    <ComingSoonCard />
+                  </div>
+                }
+              />
+              <Route path="/renders" element={<RenderQueue />} />
+              <Route path="/videos" element={<Videos />} />
+              <Route path="/conversational-ai" element={<LiveStreamPage />} />
+              <Route path="/conversational-ai/:sessionId" element={<LiveStreamPage />} />
+              <Route path="/apikeys" element={<ApiKeys />} />
+              <Route
+                path="/billing"
+                element={
+                  <div>
+                    <h2 className="gradient-text text-3xl font-bold mb-6">Billing</h2>
+                    <ComingSoonCard />
+                  </div>
+                }
+              />
+              <Route path="/account" element={<AccountSettings />} />
+              <Route path="/fetch-asset/:org/:job/:filename" element={<AssetFetcher />} />
+            </Routes>
+          </div>
+        </div>
+      </ConfigProvider>
+    </AvatarLivestreamProvider>
   );
 };
 
 function App() {
   const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true); // Add loading state
-
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const sessionToken = getSessionToken();
@@ -297,12 +257,14 @@ function App() {
         // Check if token is expired
         if (decoded.exp && decoded.exp * 1000 < Date.now()) {
           setSession(null);
+          removeSession();
         } else {
-          setSession(decoded)
+          setSession(decoded);
         }
       } catch (error) {
-        console.error("Invalid token:", error);
+        console.error('Invalid token:', error);
         setSession(null);
+        removeSession();
       }
     } else {
       setSession(null);
@@ -310,11 +272,22 @@ function App() {
     setLoading(false);
   }, []);
 
+  useEffect(() => {
+    // Listen for authentication errors from API calls
+    const unsubscribe = onAuthError((event) => {
+      console.log('Authentication error detected:', event.detail);
+      setSession(null);
+      // The redirect to login is already handled in the authenticatedFetch function
+    });
+
+    return unsubscribe;
+  }, []);
+
   if (loading) {
     return (
-      <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
-        <Spinner animation="border" />
-      </Container>
+      <div className="flex items-center justify-center min-h-screen bg-slate-900">
+        <Loader2 className="animate-spin text-accent-mint" size={32} />
+      </div>
     );
   }
 
@@ -325,7 +298,7 @@ function App() {
         <Route path="/register" element={!session ? <Register /> : <Navigate to="/console" />} />
         <Route path="/reset-password" element={!session ? <ResetPassword /> : <Navigate to="/console" />} />
         <Route path="/console/*" element={session ? <Console session={session} /> : <Navigate to="/login" />} />
-        <Route path="/" element={<Navigate to={session ? "/console" : "/login"} />} />
+        <Route path="/" element={<Navigate to={session ? '/console' : '/login'} />} />
       </Routes>
     </Router>
   );
