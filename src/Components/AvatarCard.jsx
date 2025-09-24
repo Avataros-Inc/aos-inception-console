@@ -109,9 +109,18 @@ export function AvatarCard({ avatar, onEdit, onPlay, onDelete, onDuplicate, onUp
   return (
     <div className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl transition-all duration-300 hover:border-accent-mint/50 hover:shadow-lg hover:shadow-accent-mint/10 hover:-translate-y-1 overflow-hidden">
       {/* Avatar Preview */}
-      <div className="aspect-video relative bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
-        {/* Placeholder for 3D avatar - could be replaced with actual 3D viewer */}
-        <div className="w-24 h-24 bg-gradient-to-br from-accent-mint to-teal-400 rounded-full flex items-center justify-center">
+      <div className="aspect-video relative bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center overflow-hidden">
+        <img
+          src={`/thumbnails/characters/${avatar.name.toLowerCase()}.png`}
+          alt={avatar.name}
+          className="w-full h-full object-contain"
+          onError={(e) => {
+            e.target.style.display = 'none';
+            e.target.nextSibling.style.display = 'flex';
+          }}
+        />
+        {/* Fallback placeholder for missing thumbnails */}
+        <div className="hidden w-full h-full bg-gradient-to-br from-accent-mint to-teal-400 items-center justify-center">
           <User size={32} className="text-white" />
         </div>
         <div className="absolute top-2 right-2 bg-bg-secondary/80 backdrop-blur-sm px-2 py-1 rounded text-xs font-medium text-text-secondary">
