@@ -10,7 +10,7 @@ import { getCharacters, getSessionToken, API_BASE_URL, onAuthError, removeSessio
 import { jwtDecode } from 'jwt-decode';
 import { RenderQueue } from './Renders';
 import { ComingSoonCard, AlphaCard } from './Components/ComingSoon';
-import { Login, Register, ResetPassword } from './LoginRegister';
+import { Login, Register, ResetPassword, ResetPasswordConfirm } from './LoginRegister';
 import ApiKeys from './ApiKeys';
 import LiveStreamPage from './LiveStream';
 import { Sidebar } from './Components/Sidebar';
@@ -297,6 +297,7 @@ function App() {
         <Route path="/login" element={!session ? <Login /> : <Navigate to="/console" />} />
         <Route path="/register" element={!session ? <Register /> : <Navigate to="/console" />} />
         <Route path="/reset-password" element={!session ? <ResetPassword /> : <Navigate to="/console" />} />
+        <Route path="/reset-password-confirm" element={!session ? <ResetPasswordConfirm /> : <Navigate to="/console" />} />
         <Route path="/console/*" element={session ? <Console session={session} /> : <Navigate to="/login" />} />
         <Route path="/" element={<Navigate to={session ? '/console' : '/login'} />} />
       </Routes>

@@ -170,10 +170,23 @@ export const ResetPassword = () => {
   const handleResetPassword = async (e) => {
     e.preventDefault();
     try {
-      // TODO: ensure redirects to the correct page
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
-      if (error) throw error;
-      setMessage('Check your email for the password reset link');
+      const returnUrl = `${window.location.origin}/#/reset-password-confirm`;
+
+      const response = await fetch(API_BASE_URL + '/passwordReset', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, returnUrl }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send reset email');
+      }
+
+      setMessage(data.message || 'Check your email for the password reset link');
     } catch (error) {
       setError(error.message);
     }
@@ -212,6 +225,113 @@ export const ResetPassword = () => {
               Send reset link
             </button>
           </form>
+          <div className="text-center mt-6">
+            <a href="#/login" className="text-emerald-400 hover:text-emerald-300 transition-colors">
+              Back to login
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ResetPasswordConfirm.jsx
+export const ResetPasswordConfirm = () => {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [message, setMessage] = useState(null);
+  const [error, setError] = useState(null);
+  const [token, setToken] = useState('');
+
+  useEffect(() => {
+    // Extract token from URL hash parameters
+    const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
+    const tokenParam = urlParams.get('token');
+    if (tokenParam) {
+      setToken(tokenParam);
+    }
+  }, []);
+
+  const handleResetPasswordConfirm = async (e) => {
+    e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    try {
+      const response = await fetch(API_BASE_URL + 'passwordReset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          token,
+          password 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to reset password');
+      }
+
+      setMessage('Password reset successfully! You can now login with your new password.');
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-8">
+          <h2 className="text-center text-2xl font-bold text-white mb-6">Reset your password</h2>
+          {error && (
+            <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-3 mb-4">
+              <p className="text-red-300 text-sm">{error}</p>
+            </div>
+          )}
+          {message && (
+            <div className="bg-green-900/20 border border-green-700/50 rounded-lg p-3 mb-4">
+              <p className="text-green-300 text-sm">{message}</p>
+            </div>
+          )}
+          {token ? (
+            <form onSubmit={handleResetPasswordConfirm} className="space-y-4">
+              <div>
+                <input
+                  type="password"
+                  className="w-full bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-lg transition-all duration-300 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25 focus:outline-none"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="New password"
+                  required
+                />
+              </div>
+              <div>
+                <input
+                  type="password"
+                  className="w-full bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-lg transition-all duration-300 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25 focus:outline-none"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-gradient-to-r from-emerald-400 to-green-500 text-slate-900 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-emerald-400/25 transition-all duration-300"
+              >
+                Reset password
+              </button>
+            </form>
+          ) : (
+            <p className="text-slate-300 text-center">Invalid or missing reset token.</p>
+          )}
           <div className="text-center mt-6">
             <a href="#/login" className="text-emerald-400 hover:text-emerald-300 transition-colors">
               Back to login
