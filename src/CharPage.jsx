@@ -13,15 +13,14 @@ import { Form } from 'react-bootstrap';
 import { Loader2, UserPlus, Plus, X, Copy } from 'lucide-react';
 import { Button } from '@/Components/Button';
 import { AvatarCard, CreateAvatarCard } from '@/Components/AvatarCard';
-import { useAvatarLivestream } from './contexts/AvatarLivestreamContext';
 import { useConfig } from './contexts/ConfigContext';
 
 // Embed Modal Component
 const EmbedModal = ({ avatar, onClose }) => {
-  const { getEmbedCode } = useAvatarLivestream();
   const [copied, setCopied] = useState(false);
 
-  const embedCode = getEmbedCode(avatar);
+  // Simple embed code for now - can be enhanced later
+  const embedCode = `<iframe src="${API_BASE_URL}/embed/${avatar.id}" width="800" height="600"></iframe>`;
   const handleCopy = () => {
     navigator.clipboard.writeText(embedCode);
     setCopied(true);
@@ -224,7 +223,6 @@ const CharCreator = ({ onClose, onCharacterCreated }) => {
 
 const CharPage = () => {
   const navigate = useNavigate();
-  const { launchLivestream } = useAvatarLivestream();
   const { applyAvatarSession } = useConfig();
   const [characters, setcharacters] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -271,25 +269,54 @@ const CharPage = () => {
         unreal_config: avatar.unreal_config || {},
       };
 
-      console.log('CharPage: Updated config for launching session:', updatedConfig);
+      // Transform config to match API expectations 
+      const apiConfig = {
+        avatar_id: updatedConfig.avatar,
+        camera: updatedConfig.camera,
+        lipsync: updatedConfig.a2f_config,
+        voice: updatedConfig.voice_config,
+        llm: updatedConfig.llm_config,
+      };
+
+      // Only include environment_id if it's a valid UUID (not the fallback string)
+      if (updatedConfig.environment && updatedConfig.environment !== 'Map_Env_ltOliverDefault_v01' && 
+          updatedConfig.environment.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+        apiConfig.environment_id = updatedConfig.environment;
+      }
+
+      console.log('CharPage: Updated config for launching session:', apiConfig);
 
       // Launch session with the updated config and WAIT for it to complete
       console.log('CharPage: Creating session...');
-      const session = await launchLivestream(updatedConfig);
+      const response = await fetch(`${API_BASE_URL}/api/v1/live`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getSessionToken()}`,
+        },
+        body: JSON.stringify(apiConfig),
+      });
 
-      console.log('CharPage: Session response:', session);
-      console.log('CharPage: Session keys:', session ? Object.keys(session) : 'null');
+      if (response.ok) {
+        const session = await response.json();
+        console.log('CharPage: Session response:', session);
+        console.log('CharPage: Session keys:', session ? Object.keys(session) : 'null');
 
-      // Check for session ID in the returned object
-      const sessionId = session?.id || session?.session_id || session?.livestream_id;
+        // Check for session ID in the returned object
+        const sessionId = session?.id || session?.session_id || session?.livestream_id;
 
-      if (sessionId) {
-        console.log('CharPage: Session created successfully with ID:', sessionId);
-        // Navigate to the session-specific URL
-        navigate(`/console/conversational-ai/${sessionId}`);
+        if (sessionId) {
+          console.log('CharPage: Session created successfully with ID:', sessionId);
+          // Navigate to the session-specific URL
+          navigate(`/console/conversational-ai/${sessionId}`);
+        } else {
+          console.error('CharPage: Session creation failed - no session ID found in response:', session);
+          // Still navigate but without session ID
+          navigate('/console/conversational-ai');
+        }
       } else {
-        console.error('CharPage: Session creation failed - no session ID found in response:', session);
-        // Still navigate but without session ID
+        console.error('CharPage: Failed to create session:', response.status);
+        // Still allow navigation but without session
         navigate('/console/conversational-ai');
       }
     } catch (error) {

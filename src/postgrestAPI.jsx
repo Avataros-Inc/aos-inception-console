@@ -563,10 +563,17 @@ export const createLivestream = async (config) => {
 
 // Delete a livestream session using the Swagger API
 export const deleteLivestream = async (jobId) => {
+  console.log('deleteLivestream: Starting DELETE request for jobId:', jobId);
+  console.log('deleteLivestream: API URL:', `${API_BASE_URL}/api/v1/live/${jobId}`);
+  
   try {
+    console.log('deleteLivestream: Making authenticated DELETE request...');
     const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/live/${jobId}`, {
       method: 'DELETE',
     });
+    
+    console.log('deleteLivestream: Response received, status:', response.status);
+    console.log('deleteLivestream: Response ok:', response.ok);
 
     if (response.ok) {
       // Successful deletion
@@ -609,12 +616,20 @@ export const deleteLivestream = async (jobId) => {
       }
     }
   } catch (error) {
-    console.error(`Error deleting livestream ${jobId}:`, error);
+    console.error(`deleteLivestream: Error deleting livestream ${jobId}:`, error);
+    console.error('deleteLivestream: Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
     // Don't re-throw auth errors to prevent logout
     if (error.message.includes('Authentication failed')) {
-      console.warn('Authentication error on DELETE - ignoring to prevent logout');
+      console.warn('deleteLivestream: Authentication error - ignoring to prevent logout');
       return { success: false, error: 'Authentication failed' };
     }
+    
+    console.error('deleteLivestream: Re-throwing error');
     throw error;
   }
 };

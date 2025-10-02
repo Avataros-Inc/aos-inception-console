@@ -13,4 +13,21 @@ export default defineConfig({
   css: {
     postcss: './postcss.config.js',
   },
+  server: {
+    proxy: {
+      // Proxy WebSocket endpoints to staging server for local development
+      '/api/v1/livestream': {
+        target: 'wss://staging-api.avataros.xyz',
+        ws: true,
+        changeOrigin: true,
+        secure: true,
+      },
+      '/api/v1/ws': {
+        target: 'wss://staging-api.avataros.xyz',
+        ws: true,
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
 });
