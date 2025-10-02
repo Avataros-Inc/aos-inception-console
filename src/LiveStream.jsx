@@ -101,12 +101,8 @@ const LiveStreamPage = () => {
         llm: config.llm_config,
       };
 
-      // Only include environment_id if it's a valid UUID (not the fallback string)
-      if (
-        config.environment &&
-        config.environment !== 'Map_Env_ltOliverDefault_v01' &&
-        config.environment.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
-      ) {
+      // Always include environment_id if available
+      if (config.environment) {
         apiConfig.environment_id = config.environment;
       }
 
