@@ -27,9 +27,9 @@ export const RenderQueue = () => {
 
   // Helper function to get avatar name from avatar_id
   const getAvatarName = (avatarId) => {
-    if (!avatarId || !characters) return 'Unknown Avatar';
+    if (!avatarId || !characters) return 'N/A';
     const character = characters.find((char) => char.id === avatarId);
-    return character ? character.name : 'Unknown Avatar';
+    return character ? character.name : 'N/A';
   };
 
   // Helper function to check if session can be cancelled
@@ -37,7 +37,7 @@ export const RenderQueue = () => {
     return [0, 1, 6].includes(status); // Unknown, Active, Pending
   };
 
-  // Helper function to check if session is linkable
+  // Helper function to check if session is linkable (not completed, cancelled or failed)
   const isSessionLinkable = (status) => {
     return ![2, 3, 4].includes(status); // Not Cancelled, Completed, or Failed
   };

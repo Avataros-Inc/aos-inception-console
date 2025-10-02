@@ -22,6 +22,11 @@ export const removeSession = () => {
   localStorage.removeItem('session');
 };
 
+export const logout = () => {
+  removeSession();
+  window.location.hash = '/login';
+};
+
 export const getOrgId = () => {
   const sessionObj = getSession();
   return sessionObj?.org_id || null;
