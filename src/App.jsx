@@ -33,6 +33,7 @@ import {
   Loader2
 } from 'lucide-react';
 import BillingPage from './pages/Billing';
+import CreditsCard from './pages/CreditsCard';
 
 // Home Page Component
 const HomePage = () => {
@@ -227,6 +228,7 @@ const Console = () => {
               <Route path="/conversational-ai/:sessionId" element={<LiveStreamPage />} />
               <Route path="/apikeys" element={<ApiKeys />} />
               <Route path="/billing" element={<BillingPage />} />
+              <Route path="/credits" element={<CreditsCard />} />
               <Route path="/account" element={<AccountSettings />} />
               <Route path="/fetch-asset/:org/:job/:filename" element={<AssetFetcher />} />
             </Routes>

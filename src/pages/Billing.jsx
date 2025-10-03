@@ -43,17 +43,10 @@ const BillingPage = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Billing & Subscription</h1>
-        <button
-          onClick={toggleCreditsVisibility}
-          className="bg-white border text-black border-gray-200 rounded p-2 flex items-center justify-center hover:bg-gray-50 transition-colors"
-          aria-label={isCreditsVisible ? 'Hide usage' : 'See usage'}
-        >
-          {isCreditsVisible ? 'Hide Usage' : 'Show Usage'}
-        </button>
       </div>
       {/* Usage Summary */}
 
-      <CreditsCard usage={usage} isVisible={isCreditsVisible} />
+      {/* <CreditsCard usage={usage} isVisible={isCreditsVisible} /> */}
       {/* Subscription Plans */}
       <div>
         <h2 className="text-xl font-semibold mb-4">Choose a Plan</h2>
@@ -120,33 +113,33 @@ const Features = ({ plans }) => {
           <div className="overflow-hidden">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-neutral-700">
-                  <th className="border border-neutral-600 p-4 text-left font-bold text-lg"></th>
-                  <th className="border border-neutral-600 p-4 text-center font-bold text-lg">SD</th>
-                  <th className="border border-neutral-600 p-4 text-center font-bold text-lg">HD</th>
-                  <th className="border border-neutral-600 p-4 text-center font-bold text-lg">4K</th>
+                <tr className="bg-white">
+                  <th className="border text-black border-neutral-600 p-4 text-left font-bold text-lg"></th>
+                  <th className="border text-black border-neutral-600 p-4 text-center font-bold text-lg">SD</th>
+                  <th className="border text-black border-neutral-600 p-4 text-center font-bold text-lg">HD</th>
+                  <th className="border text-black border-neutral-600 p-4 text-center font-bold text-lg">4K</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td className="border border-neutral-600 bg-neutral-700 p-4 font-bold text-center">
+                  <td className="border text-black border-neutral-600 bg-white p-4 font-bold text-center">
                     Generative
                     <br />
                     (Video)
                   </td>
-                  <td className="border border-neutral-600 bg-black p-4 text-center text-lg">1 credit/minute</td>
-                  <td className="border border-neutral-600 bg-black p-4 text-center text-lg">2 credits/minute</td>
-                  <td className="border border-neutral-600 bg-black p-4 text-center text-lg">4 credits/minute</td>
+                  <td className="border text-white border-neutral-600 p-4 text-center text-lg">1 credit/minute</td>
+                  <td className="border text-white border-neutral-600 p-4 text-center text-lg">2 credits/minute</td>
+                  <td className="border text-white border-neutral-600 p-4 text-center text-lg">4 credits/minute</td>
                 </tr>
                 <tr>
-                  <td className="border border-neutral-600 bg-neutral-700 p-4 font-bold text-center">
+                  <td className="border text-black border-neutral-600 bg-white p-4 font-bold text-center">
                     Interactive
                     <br />
                     (LIVE)
                   </td>
-                  <td className="border border-neutral-600 bg-black p-4 text-center text-lg">2 credits/minute</td>
-                  <td className="border border-neutral-600 bg-black p-4 text-center text-lg">4 credits/minute</td>
-                  <td className="border border-neutral-600 bg-black p-4 text-center text-lg">8 credits/minute</td>
+                  <td className="border text-white border-neutral-600 p-4 text-center text-lg">2 credits/white</td>
+                  <td className="border text-white border-neutral-600 p-4 text-center text-lg">4 credits/minute</td>
+                  <td className="border text-white border-neutral-600 p-4 text-center text-lg">8 credits/minute</td>
                 </tr>
               </tbody>
             </table>
@@ -159,10 +152,13 @@ const Features = ({ plans }) => {
           <div className="overflow-hidden">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-neutral-700">
-                  <th className="border border-neutral-600 p-4 text-left font-bold text-lg"></th>
+                <tr className="bg-white">
+                  <th className="border text-black border-neutral-600 p-4 text-left font-bold text-lg"></th>
                   {sortedPlans.map((plan) => (
-                    <th key={plan.id} className="border border-neutral-600 p-4 text-center font-bold text-lg">
+                    <th
+                      key={plan.id}
+                      className="border text-black border-neutral-600 p-4 text-center font-bold text-lg"
+                    >
                       {getPlanType(plan.name)}
                     </th>
                   ))}
@@ -170,52 +166,54 @@ const Features = ({ plans }) => {
               </thead>
               <tbody>
                 <tr>
-                  <td className="border border-neutral-600 bg-neutral-700 p-4 font-bold text-center">Credits</td>
+                  <td className="border text-black border-neutral-600 bg-white p-4 font-bold text-center">Credits</td>
                   {sortedPlans.map((plan) => (
-                    <td key={plan.id} className="border border-neutral-600 bg-black p-4 text-center text-lg">
+                    <td key={plan.id} className="border border-[#74ecc8] p-4 text-center text-lg">
                       {parseInt(plan.metadata.monthly_credits).toLocaleString()}
                     </td>
                   ))}
                 </tr>
                 <tr>
-                  <td className="border border-neutral-600 bg-neutral-700 p-4 font-bold text-center">Avatars</td>
+                  <td className="border text-black border-neutral-600 bg-white p-4 font-bold text-center">Avatars</td>
                   {sortedPlans.map((plan) => (
-                    <td key={plan.id} className="border border-neutral-600 bg-black p-4 text-center text-lg">
+                    <td key={plan.id} className="border border-[#74ecc8] p-4 text-center text-lg">
                       {plan.metadata.avatars}
                     </td>
                   ))}
                 </tr>
                 <tr>
-                  <td className="border border-neutral-600 bg-neutral-700 p-4 font-bold text-center">
+                  <td className="border text-black border-neutral-600 bg-white p-4 font-bold text-center">
                     Branding &<br />
                     Customizations
                   </td>
                   {sortedPlans.map((plan) => (
-                    <td key={plan.id} className="border border-neutral-600 bg-black p-4 text-center text-lg">
+                    <td key={plan.id} className="border border-[#74ecc8] p-4 text-center text-lg">
                       {plan.metadata.customization}
                     </td>
                   ))}
                 </tr>
                 <tr>
-                  <td className="border border-neutral-600 bg-neutral-700 p-4 font-bold text-center">Resolution</td>
+                  <td className="border text-black border-neutral-600 bg-white p-4 font-bold text-center">
+                    Resolution
+                  </td>
                   {sortedPlans.map((plan) => (
-                    <td key={plan.id} className="border border-neutral-600 bg-black p-4 text-center text-lg">
+                    <td key={plan.id} className="border border-[#74ecc8] p-4 text-center text-lg">
                       {plan.metadata.Resolution}
                     </td>
                   ))}
                 </tr>
                 <tr>
-                  <td className="border border-neutral-600 bg-neutral-700 p-4 font-bold text-center">Support</td>
+                  <td className="border text-black border-neutral-600 bg-white p-4 font-bold text-center">Support</td>
                   {sortedPlans.map((plan) => (
-                    <td key={plan.id} className="border border-neutral-600 bg-black p-4 text-center text-lg">
+                    <td key={plan.id} className="border border-[#74ecc8] p-4 text-center text-lg">
                       {plan.metadata.Support}
                     </td>
                   ))}
                 </tr>
                 <tr>
-                  <td className="border border-neutral-600 bg-neutral-700 p-4 font-bold text-center">Price</td>
+                  <td className="border text-black border-neutral-600 bg-white p-4 font-bold text-center">Price</td>
                   {sortedPlans.map((plan) => (
-                    <td key={plan.id} className="border border-neutral-600 bg-black p-4 text-center text-lg">
+                    <td key={plan.id} className="border border-[#74ecc8] p-4 text-center text-lg">
                       ${(plan.default_price.unit_amount / 100).toFixed(2)}/mo
                     </td>
                   ))}
@@ -229,117 +227,121 @@ const Features = ({ plans }) => {
   );
 };
 
-function CreditsCard({ usage, isVisible }) {
-  // Calculate total usage from the API data
-  const calculateTotalUsage = () => {
-    if (!usage || !Array.isArray(usage)) return { totalJobs: 0, totalMinutes: 0 };
+// function CreditsCard({ usage, isVisible }) {
+//   // Calculate total usage from the API data
+//   const calculateTotalUsage = () => {
+//     if (!usage || !Array.isArray(usage)) return { totalJobs: 0, totalMinutes: 0 };
 
-    return usage.reduce(
-      (acc, item) => ({
-        totalJobs: acc.totalJobs + (item.total_jobs || 0),
-        totalMinutes: acc.totalMinutes + (item.billed_minutes || 0),
-      }),
-      { totalJobs: 0, totalMinutes: 0 }
-    );
-  };
+//     return usage.reduce(
+//       (acc, item) => ({
+//         totalJobs: acc.totalJobs + (item.total_jobs || 0),
+//         totalMinutes: acc.totalMinutes + (item.billed_minutes || 0),
+//       }),
+//       { totalJobs: 0, totalMinutes: 0 }
+//     );
+//   };
 
-  const { totalJobs, totalMinutes } = calculateTotalUsage();
+//   const { totalJobs, totalMinutes } = calculateTotalUsage();
 
-  // For now, using placeholder values for credits until we get the multiplier
-  const totalCredits = 1000; // Will be updated with actual value
-  const usedCredits = totalMinutes * 2; // Simple multiplier for now
-  const remainingCredits = Math.max(0, totalCredits - usedCredits);
-  const percentage = Math.min(100, Math.max(0, (usedCredits / totalCredits) * 100));
+//   // For now, using placeholder values for credits until we get the multiplier
+//   const totalCredits = 1000; // Will be updated with actual value
+//   const usedCredits = totalMinutes * 2; // Simple multiplier for now
+//   const remainingCredits = Math.max(0, totalCredits - usedCredits);
+//   const percentage = Math.min(100, Math.max(0, (usedCredits / totalCredits) * 100));
 
-  const circumference = 2 * Math.PI * 8;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+//   const circumference = 2 * Math.PI * 8;
+//   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
-  // Format date for display
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
+//   // Format date for display
+//   const formatDate = (dateString) => {
+//     const date = new Date(dateString);
+//     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+//   };
 
-  return (
-    <div className={`max-w-md mb-8 transition-all duration-300 ${isVisible ? 'block' : 'hidden'}`}>
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            {/* Circular Progress Chart */}
-            <div className="relative w-5 h-5">
-              <svg className="w-5 h-5 transform -rotate-90" viewBox="0 0 20 20">
-                <circle cx="10" cy="10" r="8" stroke="#e5e7eb" strokeWidth="2.5" fill="none" />
-                <circle
-                  cx="10"
-                  cy="10"
-                  r="8"
-                  stroke="#3b82f6"
-                  strokeWidth="2.5"
-                  fill="none"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={strokeDashoffset}
-                  strokeLinecap="round"
-                  className="transition-all duration-300"
-                />
-              </svg>
-            </div>
-            <span className="text-gray-900 font-medium">Monthly Usage</span>
-          </div>
-          <button
-            className="bg-black text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-gray-800 transition-colors"
-            onClick={() => document.getElementById('billing-plans').scrollIntoView({ behavior: 'smooth' })}
-          >
-            Upgrade
-          </button>
-        </div>
+//   return (
+//     <div
+//       className={`max-w-md rounded-lg mb-8 border  border-gray-500 hover:border-[#74ecc8] transition-all duration-300 ${
+//         isVisible ? 'block' : 'hidden'
+//       }`}
+//     >
+//       <div className="shadow-sm  p-6">
+//         {/* Header */}
+//         <div className="flex items-center justify-between mb-6">
+//           <div className="flex items-center gap-2">
+//             {/* Circular Progress Chart */}
+//             <div className="relative w-5 h-5">
+//               <svg className="w-5 h-5 transform -rotate-90" viewBox="0 0 20 20">
+//                 <circle cx="10" cy="10" r="8" stroke="#74ecc8" strokeWidth="2.5" fill="none" />
+//                 <circle
+//                   cx="10"
+//                   cy="10"
+//                   r="8"
+//                   stroke="#74ecc8"
+//                   strokeWidth="2.5"
+//                   fill="none"
+//                   strokeDasharray={circumference}
+//                   strokeDashoffset={strokeDashoffset}
+//                   strokeLinecap="round"
+//                   className="transition-all duration-300"
+//                 />
+//               </svg>
+//             </div>
+//             <span className="text-white font-medium">Monthly Usage</span>
+//           </div>
+//           <button
+//             className="bg-white text-black px-4 py-1.5 rounded-md text-sm font-medium hover:bg-gray-300 transition-colors"
+//             onClick={() => document.getElementById('billing-plans').scrollIntoView({ behavior: 'smooth' })}
+//           >
+//             Upgrade
+//           </button>
+//         </div>
 
-        {/* Usage Summary */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-500 text-sm">Billed Minutes</span>
-              <span className="text-gray-900 font-semibold">{totalMinutes.toLocaleString()} min</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-500 text-sm">Total Jobs</span>
-              <span className="text-gray-900 font-semibold">{totalJobs.toLocaleString()}</span>
-            </div>
-          </div>
+//         {/* Usage Summary */}
+//         <div className="space-y-4">
+//           <div className="space-y-2">
+//             <div className="flex justify-between items-center">
+//               <span className="text-white text-sm">Billed Minutes</span>
+//               <span className="text-white font-semibold">{totalMinutes.toLocaleString()} min</span>
+//             </div>
+//             <div className="flex justify-between items-center">
+//               <span className="text-white text-sm">Total Jobs</span>
+//               <span className="text-white font-semibold">{totalJobs.toLocaleString()}</span>
+//             </div>
+//           </div>
 
-          <div className="border-t border-gray-100 pt-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-gray-500 text-sm">Credits Used</span>
-              <span className="text-gray-900 font-semibold">
-                {usedCredits.toLocaleString()} / {totalCredits.toLocaleString()}
-              </span>
-            </div>
-            <div className="w-full bg-gray-100 rounded-full h-2">
-              <div
-                className="bg-blue-500 h-2 rounded-full transition-all duration-500"
-                style={{ width: `${percentage}%` }}
-              />
-            </div>
-          </div>
+//           <div className="border-t border-gray-100 pt-4">
+//             <div className="flex justify-between items-center mb-2">
+//               <span className="text-white text-sm">Credits Used</span>
+//               <span className="text-white font-semibold">
+//                 {usedCredits.toLocaleString()} / {totalCredits.toLocaleString()}
+//               </span>
+//             </div>
+//             <div className="w-full bg-gray-100 rounded-full h-2">
+//               <div
+//                 className="bg-[#74ecc8] h-2 rounded-full transition-all duration-500"
+//                 style={{ width: `${percentage}%` }}
+//               />
+//             </div>
+//           </div>
 
-          {/* Recent Activity */}
-          {usage && usage.length > 0 && (
-            <div className="mt-4">
-              <h4 className="text-sm font-medium text-gray-500 mb-2">Recent Activity</h4>
-              <div className="space-y-2">
-                {usage.slice(0, 3).map((item, index) => (
-                  <div key={index} className="flex justify-between text-sm">
-                    <span className="text-gray-500">{formatDate(item.day)}</span>
-                    <span className="font-medium text-gray-900">{item.billed_minutes} min</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+//           {/* Recent Activity */}
+//           {usage && usage.length > 0 && (
+//             <div className="mt-4">
+//               <h4 className="text-sm font-medium text-white mb-2">Recent Activity</h4>
+//               <div className="space-y-2">
+//                 {usage.slice(0, 3).map((item, index) => (
+//                   <div key={index} className="flex justify-between text-sm">
+//                     <span className="text-white">{formatDate(item.day)}</span>
+//                     <span className="font-medium text-white">{item.billed_minutes} min</span>
+//                   </div>
+//                 ))}
+//               </div>
+//             </div>
+//           )}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
 
 export default BillingPage;

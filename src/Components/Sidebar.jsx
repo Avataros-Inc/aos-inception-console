@@ -8,9 +8,9 @@ const navItems = [
     key: 'characters',
     label: 'Characters',
     icon: User,
-    path: '/console/characters', // Now shows My Avatars
+    path: '/console/characters',
     subsections: [
-      { key: 'agent-window', label: 'Avatar Editor', path: '/console/conversational-ai' }, // Now shows interactive agent window
+      { key: 'agent-window', label: 'Avatar Editor', path: '/console/conversational-ai' },
       { key: 'avatar-trainer', label: 'Avatar Trainer', path: '/console/trainer' },
     ],
   },
@@ -23,12 +23,12 @@ const navItems = [
       { key: 'videos', label: 'Videos', path: '/console/videos' },
       { key: 'api-keys', label: 'API Keys', path: '/console/apikeys' },
       { key: 'billing', label: 'Billing', path: '/console/billing' },
+      { key: 'credits', label: 'Credits', path: '/console/credits' },
     ],
   },
 ];
 
 const settingsItems = [{ key: 'account', label: 'Account', icon: LogOut, path: '/console/account' }];
-
 export const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
