@@ -70,7 +70,7 @@ const PlanCard = ({ plan }) => {
 
   return (
     <div className="flex flex-col group h-full border-2 border-gray-600 rounded-lg hover:border-[#74ecc8]">
-      <button className="bg-white text-xl font-[500] group-hover:bg-[#74ecc8] group-hover:border-[#74ecc8] w-full text-black px-4 py-5 rounded-lg ">
+      <button className="bg-slate-800/50   text-xl font-[500] group-hover:bg-[#74ecc8] group-hover:border-[#74ecc8] w-full text-white px-4 py-5 rounded-lg ">
         {name}
       </button>
       <div className="flex  justify-around mt-10 mb-10">
@@ -113,33 +113,33 @@ const Features = ({ plans }) => {
           <div className="overflow-hidden">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-white">
-                  <th className="border text-black border-neutral-600 p-4 text-left font-bold text-lg"></th>
-                  <th className="border text-black border-neutral-600 p-4 text-center font-bold text-lg">SD</th>
-                  <th className="border text-black border-neutral-600 p-4 text-center font-bold text-lg">HD</th>
-                  <th className="border text-black border-neutral-600 p-4 text-center font-bold text-lg">4K</th>
+                <tr className="bg-slate-800/50  border ">
+                  <th className="border text-white border-[#74ecc8] p-4 text-left font-bold text-lg"></th>
+                  <th className="border text-white border-[#74ecc8] p-4 text-center font-bold text-lg">SD</th>
+                  <th className="border text-white border-[#74ecc8] p-4 text-center font-bold text-lg">HD</th>
+                  <th className="border text-white border-[#74ecc8] p-4 text-center font-bold text-lg">4K</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td className="border text-black border-neutral-600 bg-white p-4 font-bold text-center">
+                  <td className="border text-white border-[#74ecc8] bg-slate-800/50   p-4 font-bold text-center">
                     Generative
                     <br />
                     (Video)
                   </td>
-                  <td className="border text-white border-neutral-600 p-4 text-center text-lg">1 credit/minute</td>
-                  <td className="border text-white border-neutral-600 p-4 text-center text-lg">2 credits/minute</td>
-                  <td className="border text-white border-neutral-600 p-4 text-center text-lg">4 credits/minute</td>
+                  <td className="border text-white border-[#74ecc8] p-4 text-center text-lg">1 credit/minute</td>
+                  <td className="border text-white border-[#74ecc8] p-4 text-center text-lg">2 credits/minute</td>
+                  <td className="border text-white border-[#74ecc8] p-4 text-center text-lg">4 credits/minute</td>
                 </tr>
                 <tr>
-                  <td className="border text-black border-neutral-600 bg-white p-4 font-bold text-center">
+                  <td className="border text-white border-[#74ecc8] bg-slate-800/50   p-4 font-bold text-center">
                     Interactive
                     <br />
                     (LIVE)
                   </td>
-                  <td className="border text-white border-neutral-600 p-4 text-center text-lg">2 credits/white</td>
-                  <td className="border text-white border-neutral-600 p-4 text-center text-lg">4 credits/minute</td>
-                  <td className="border text-white border-neutral-600 p-4 text-center text-lg">8 credits/minute</td>
+                  <td className="border text-white border-[#74ecc8] p-4 text-center text-lg">2 credits/white</td>
+                  <td className="border text-white border-[#74ecc8] p-4 text-center text-lg">4 credits/minute</td>
+                  <td className="border text-white border-[#74ecc8] p-4 text-center text-lg">8 credits/minute</td>
                 </tr>
               </tbody>
             </table>
@@ -152,13 +152,10 @@ const Features = ({ plans }) => {
           <div className="overflow-hidden">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-white">
-                  <th className="border text-black border-neutral-600 p-4 text-left font-bold text-lg"></th>
+                <tr className="bg-slate-800/50  ">
+                  <th className="border text-white border-[#74ecc8] p-4 text-left font-bold text-lg"></th>
                   {sortedPlans.map((plan) => (
-                    <th
-                      key={plan.id}
-                      className="border text-black border-neutral-600 p-4 text-center font-bold text-lg"
-                    >
+                    <th key={plan.id} className="border text-white border-[#74ecc8] p-4 text-center font-bold text-lg">
                       {getPlanType(plan.name)}
                     </th>
                   ))}
@@ -166,7 +163,9 @@ const Features = ({ plans }) => {
               </thead>
               <tbody>
                 <tr>
-                  <td className="border text-black border-neutral-600 bg-white p-4 font-bold text-center">Credits</td>
+                  <td className="border text-white border-[#74ecc8] bg-slate-800/50   p-4 font-bold text-center">
+                    Credits
+                  </td>
                   {sortedPlans.map((plan) => (
                     <td key={plan.id} className="border border-[#74ecc8] p-4 text-center text-lg">
                       {parseInt(plan.metadata.monthly_credits).toLocaleString()}
@@ -174,7 +173,9 @@ const Features = ({ plans }) => {
                   ))}
                 </tr>
                 <tr>
-                  <td className="border text-black border-neutral-600 bg-white p-4 font-bold text-center">Avatars</td>
+                  <td className="border text-white border-[#74ecc8] bg-slate-800/50   p-4 font-bold text-center">
+                    Avatars
+                  </td>
                   {sortedPlans.map((plan) => (
                     <td key={plan.id} className="border border-[#74ecc8] p-4 text-center text-lg">
                       {plan.metadata.avatars}
@@ -182,7 +183,7 @@ const Features = ({ plans }) => {
                   ))}
                 </tr>
                 <tr>
-                  <td className="border text-black border-neutral-600 bg-white p-4 font-bold text-center">
+                  <td className="border text-white border-[#74ecc8] bg-slate-800/50   p-4 font-bold text-center">
                     Branding &<br />
                     Customizations
                   </td>
@@ -193,7 +194,7 @@ const Features = ({ plans }) => {
                   ))}
                 </tr>
                 <tr>
-                  <td className="border text-black border-neutral-600 bg-white p-4 font-bold text-center">
+                  <td className="border text-white border-[#74ecc8] bg-slate-800/50   p-4 font-bold text-center">
                     Resolution
                   </td>
                   {sortedPlans.map((plan) => (
@@ -203,7 +204,9 @@ const Features = ({ plans }) => {
                   ))}
                 </tr>
                 <tr>
-                  <td className="border text-black border-neutral-600 bg-white p-4 font-bold text-center">Support</td>
+                  <td className="border text-white border-[#74ecc8] bg-slate-800/50   p-4 font-bold text-center">
+                    Support
+                  </td>
                   {sortedPlans.map((plan) => (
                     <td key={plan.id} className="border border-[#74ecc8] p-4 text-center text-lg">
                       {plan.metadata.Support}
@@ -211,7 +214,9 @@ const Features = ({ plans }) => {
                   ))}
                 </tr>
                 <tr>
-                  <td className="border text-black border-neutral-600 bg-white p-4 font-bold text-center">Price</td>
+                  <td className="border text-white border-[#74ecc8] bg-slate-800/50   p-4 font-bold text-center">
+                    Price
+                  </td>
                   {sortedPlans.map((plan) => (
                     <td key={plan.id} className="border border-[#74ecc8] p-4 text-center text-lg">
                       ${(plan.default_price.unit_amount / 100).toFixed(2)}/mo
@@ -289,7 +294,7 @@ const Features = ({ plans }) => {
 //             <span className="text-white font-medium">Monthly Usage</span>
 //           </div>
 //           <button
-//             className="bg-white text-black px-4 py-1.5 rounded-md text-sm font-medium hover:bg-gray-300 transition-colors"
+//             className="bg-slate-800/50   text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-gray-300 transition-colors"
 //             onClick={() => document.getElementById('billing-plans').scrollIntoView({ behavior: 'smooth' })}
 //           >
 //             Upgrade

@@ -92,7 +92,7 @@ function CreditsCard() {
             <span className="text-white font-medium">Monthly Usage</span>
           </div>
           <button
-            className="bg-white text-black px-4 py-1.5 rounded-md text-sm font-medium hover:bg-gray-300 transition-colors"
+            className="justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent-mint focus:ring-offset-2 focus:ring-offset-bg-primary disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-accent-mint to-emerald-600 text-bg-primary hover:from-emerald-600 hover:to-accent-mint hover:shadow-lg hover:shadow-accent-mint/20 px-4 py-2 flex items-center gap-2"
             onClick={() => document.getElementById('billing-plans').scrollIntoView({ behavior: 'smooth' })}
           >
             Upgrade
