@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
 import { getProducts, getUsage } from '../services/billingService';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../Components/Card';
+import PaymentForm from '../components/PaymentForm';
+
+// Initialize Stripe with your publishable key
+const stripePromise = loadStripe('your_publishable_key_here');
 
 const BillingPage = () => {
   const [plans, setPlans] = useState([]);
@@ -8,6 +14,8 @@ const BillingPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCreditsVisible, setIsCreditsVisible] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [clientSecret, setClientSecret] = useState('');
 
   const toggleCreditsVisibility = () => {
     setIsCreditsVisible(!isCreditsVisible);
@@ -39,38 +47,74 @@ const BillingPage = () => {
     );
   }
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Billing & Subscription</h1>
-      </div>
-      {/* Usage Summary */}
+  const handlePlanSelect = (plan) => {
+    setSelectedPlan(plan);
+  };
 
-      {/* <CreditsCard usage={usage} isVisible={isCreditsVisible} /> */}
-      {/* Subscription Plans */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Choose a Plan</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* reverse order of array last one first */}
-          {plans.reverse().map((plan) => (
-            <PlanCard key={plan.id} plan={plan} />
-          ))}
+  const handlePaymentSuccess = (paymentIntent) => {
+    console.log('Payment successful:', paymentIntent);
+    // You can add additional success handling here, like showing a success message
+    // or redirecting to a success page
+  };
+
+  const handlePaymentCancel = () => {
+    setSelectedPlan(null);
+  };
+
+  return (
+    <Elements stripe={stripePromise}>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold">Billing & Subscription</h1>
         </div>
+
+        {selectedPlan ? (
+          <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-bold mb-6">Complete Your Purchase</h2>
+            <div className="bg-gray-700 p-4 rounded-lg mb-6">
+              <h3 className="text-lg font-semibold">{selectedPlan.name}</h3>
+              <p className="text-2xl font-bold">
+                ${(selectedPlan.default_price.unit_amount / 100).toFixed(2)}{' '}
+                <span className="text-sm font-normal text-gray-400">/month</span>
+              </p>
+            </div>
+            <PaymentForm plan={selectedPlan} onSuccess={handlePaymentSuccess} onCancel={handlePaymentCancel} />
+          </div>
+        ) : (
+          <>
+            {/* Subscription Plans */}
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Choose a Plan</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[...plans].reverse().map((plan) => (
+                  <PlanCard key={plan.id} plan={plan} onSelect={handlePlanSelect} />
+                ))}
+              </div>
+            </div>
+            <Features plans={plans} />
+          </>
+        )}
       </div>
-      <Features plans={plans} />
-    </div>
+    </Elements>
   );
 };
 
-const PlanCard = ({ plan }) => {
+const PlanCard = ({ plan, onSelect }) => {
   const price = plan.default_price?.unit_amount / 100 || 0;
   const currency = plan.default_price?.currency?.toUpperCase() || 'USD';
   const features = plan.metadata || {};
   const name = plan.name || '';
 
+  const handleClick = () => {
+    onSelect(plan);
+  };
+
   return (
     <div className="flex flex-col group h-full border-2 border-gray-600 rounded-lg hover:border-[#74ecc8]">
-      <button className="bg-slate-800/50   text-xl font-[500] group-hover:bg-[#74ecc8] group-hover:border-[#74ecc8] w-full text-white px-4 py-5 rounded-lg ">
+      <button
+        onClick={handleClick}
+        className="bg-slate-800/50 text-xl font-[500] group-hover:bg-[#74ecc8] group-hover:border-[#74ecc8] w-full text-white px-4 py-5 rounded-lg hover:text-gray-800 transition-colors"
+      >
         {name}
       </button>
       <div className="flex  justify-around mt-10 mb-10">
