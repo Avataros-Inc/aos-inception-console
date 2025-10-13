@@ -15,7 +15,7 @@ const BillingPage = () => {
   const [error, setError] = useState(null);
   const [isCreditsVisible, setIsCreditsVisible] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
-  const [clientSecret, setClientSecret] = useState('');
+  // const [clientSecret, setClientSecret] = useState('');
 
   const toggleCreditsVisibility = () => {
     setIsCreditsVisible(!isCreditsVisible);
