@@ -3,7 +3,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { getProducts, getUsage } from '../services/billingService';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../Components/Card';
-import PaymentForm from '../components/PaymentForm';
+import PaymentForm from '../Components/PaymentForm';
 
 // Initialize Stripe with your publishable key
 const stripePromise = loadStripe('your_publishable_key_here');
