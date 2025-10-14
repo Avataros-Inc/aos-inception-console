@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { User, Code, Settings, CreditCard, LogOut, Video, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/Button';
+import CreditsCardCred from '../pages/SideBardCred';
 
 const navItems = [
   {
@@ -101,7 +102,7 @@ export const Sidebar = () => {
             );
           })}
         </nav>
-
+        <CreditsCardCred />
         {/* Settings section */}
         <div className="p-4 border-t border-border-subtle space-y-2">
           {settingsItems.map((item) => (
