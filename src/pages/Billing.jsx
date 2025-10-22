@@ -5,8 +5,8 @@ import { getProducts, getUsage } from '../services/billingService';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../Components/Card';
 import PaymentForm from '../Components/PaymentForm';
 
-// Initialize Stripe with your publishable key
-const stripePromise = loadStripe('your_publishable_key_here');
+// Initialize Stripe with publishable key from env
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 const BillingPage = () => {
   const [plans, setPlans] = useState([]);

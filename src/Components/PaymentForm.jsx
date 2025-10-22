@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { API_BASE_URL, getSessionToken } from '../postgrestAPI';
 
 const PaymentForm = ({ plan, onSuccess, onCancel }) => {
   const stripe = useStripe();
@@ -17,17 +18,19 @@ const PaymentForm = ({ plan, onSuccess, onCancel }) => {
 
     setProcessing(true);
     setError(null);
-
     try {
       // Create payment intent on your server
-      const response = await fetch('/api/create-payment-intent', {
+      const response = await fetch(`${API_BASE_URL}/api/v1/billing/intent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${getSessionToken()}`,
         },
         body: JSON.stringify({
           priceId: plan.default_price.id,
           planId: plan.id,
+          currency: 'usd',
+          amount: plan.default_price.unit_amount,
         }),
       });
 
