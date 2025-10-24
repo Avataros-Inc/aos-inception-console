@@ -45,6 +45,8 @@ export const Login = () => {
         body: JSON.stringify({ email, password }),
       });
 
+      console.log(response);
+
       const data = await response.json();
 
       if (!response.ok) {
@@ -255,7 +257,7 @@ export const ResetPasswordConfirm = () => {
 
   const handleResetPasswordConfirm = async (e) => {
     e.preventDefault();
-    
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -267,9 +269,9 @@ export const ResetPasswordConfirm = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           token,
-          password 
+          password
         }),
       });
 

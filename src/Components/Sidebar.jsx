@@ -2,15 +2,16 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { User, Code, Settings, CreditCard, LogOut, Video, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/Button';
+import CreditsCardCred from '../pages/SideBardCred';
 
 const navItems = [
   {
     key: 'characters',
     label: 'Characters',
     icon: User,
-    path: '/console/characters', // Now shows My Avatars
+    path: '/console/characters',
     subsections: [
-      { key: 'agent-window', label: 'Avatar Editor', path: '/console/conversational-ai' }, // Now shows interactive agent window
+      { key: 'agent-window', label: 'Avatar Editor', path: '/console/conversational-ai' },
       { key: 'avatar-trainer', label: 'Avatar Trainer', path: '/console/trainer' },
     ],
   },
@@ -23,6 +24,7 @@ const navItems = [
       { key: 'videos', label: 'Videos', path: '/console/videos' },
       { key: 'api-keys', label: 'API Keys', path: '/console/apikeys' },
       { key: 'billing', label: 'Billing', path: '/console/billing' },
+      { key: 'credits', label: 'Credits', path: '/console/credits' },
     ],
   },
 ];
@@ -101,7 +103,7 @@ export const Sidebar = () => {
             );
           })}
         </nav>
-
+        <CreditsCardCred />
         {/* Settings section */}
         <div className="p-4 border-t border-border-subtle space-y-2">
           {settingsItems.map((item) => (
