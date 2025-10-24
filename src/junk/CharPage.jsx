@@ -1,3 +1,5 @@
+//FELIPES BULLSHIT BEFORE I CLEANED
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -65,8 +67,162 @@ const EmbedModal = ({ avatar, onClose }) => {
   );
 };
 
+const CharCreator = ({ onClose, onCharacterCreated }) => {
+  const [newChar, setNewChar] = useState({
+    name: '',
+    unreal_config: '{}',
+    llm_config: '{}',
+    voice_config: '{}',
+    a2f_config: '{}',
+    available: false,
+  });
 
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
+  const createCharacter = async (characterData) => {
+    try {
+      setError(null);
+      setSuccess(null);
+
+      // Validate JSON fields
+      const jsonFields = ['unreal_config', 'llm_config', 'voice_config', 'a2f_config'];
+      for (const field of jsonFields) {
+        JSON.parse(characterData[field]); // Will throw if invalid
+      }
+
+      characterData.creator_id = getSession().org_id;
+      console.log(characterData);
+
+      const response = await fetch(`${API_BASE_URL}/characters`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getSessionToken()}`,
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify(characterData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create character');
+      }
+
+      const createdCharacter = await response.json();
+      setSuccess(`Character "${createdCharacter[0]?.name}" created successfully!`);
+
+      // Reset form after creation
+      setNewChar({
+        name: '',
+        unreal_config: '{}',
+        llm_config: '{}',
+        voice_config: '{}',
+        a2f_config: '{}',
+        available: false,
+      });
+
+      // Notify parent component and close
+      if (onCharacterCreated) {
+        onCharacterCreated(createdCharacter[0]);
+      }
+
+      // Close after a short delay to show success message
+      setTimeout(() => {
+        if (onClose) {
+          onClose();
+        }
+      }, 1500);
+
+      return createdCharacter;
+    } catch (error) {
+      setError(error.message);
+      throw error;
+    }
+  };
+
+  const handleCreateChar = async () => {
+    try {
+      await createCharacter(newChar);
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
+  return (
+    <div className="mt-6">
+      <div className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl">
+        <div className="border-b border-border-subtle p-4 flex justify-between items-center">
+          <h3 className="flex items-center text-accent-mint font-semibold mb-0">
+            <UserPlus className="mr-2" size={20} />
+            Create New Avatar
+          </h3>
+          {onClose && (
+            <button onClick={onClose} className="text-text-secondary hover:text-text-primary transition-colors">
+              <X size={20} />
+            </button>
+          )}
+        </div>
+        <div className="p-6">
+          {error && (
+            <div className="bg-red-900/20 border border-red-700/50 rounded-xl p-4 mb-4">
+              <p className="text-red-300 mb-0">{error}</p>
+            </div>
+          )}
+          {success && (
+            <div className="bg-green-900/20 border border-green-700/50 rounded-xl p-4 mb-4">
+              <p className="text-green-300 mb-0">{success}</p>
+            </div>
+          )}
+
+          <Form>
+            <Form.Group className="mb-4">
+              <Form.Label className="block text-text-secondary font-medium mb-2">Name</Form.Label>
+              <Form.Control
+                type="text"
+                value={newChar.name}
+                onChange={(e) => setNewChar({ ...newChar, name: e.target.value })}
+                placeholder="Enter avatar name"
+                className="w-full px-3 py-2 bg-bg-secondary border border-border-subtle rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-mint focus:border-accent-mint"
+              />
+            </Form.Group>
+
+            {['unreal_config', 'llm_config', 'voice_config', 'a2f_config'].map((configKey) => (
+              <Form.Group key={configKey} className="mb-4">
+                <Form.Label className="block text-text-secondary font-medium mb-2">
+                  {configKey.replace('_', ' ').toUpperCase()}
+                </Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={3}
+                  value={newChar[configKey]}
+                  onChange={(e) => setNewChar({ ...newChar, [configKey]: e.target.value })}
+                  placeholder={`Enter valid JSON for ${configKey}`}
+                  className="w-full px-3 py-2 bg-bg-secondary border border-border-subtle rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-mint focus:border-accent-mint font-mono text-sm"
+                />
+              </Form.Group>
+            ))}
+
+            <Form.Group className="mb-4">
+              <Form.Check
+                type="switch"
+                id="available-switch"
+                label="Available"
+                checked={newChar.available}
+                onChange={(e) => setNewChar({ ...newChar, available: e.target.checked })}
+                className="text-text-secondary"
+              />
+            </Form.Group>
+
+            <Button variant="primary" onClick={handleCreateChar}>
+              Create Avatar
+            </Button>
+          </Form>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const CharPage = () => {
   const navigate = useNavigate();
@@ -74,6 +230,7 @@ const CharPage = () => {
   const { applyAvatarSession } = useConfig();
   const [characters, setcharacters] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [showEmbedModal, setShowEmbedModal] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState(null);
 
@@ -145,6 +302,55 @@ const CharPage = () => {
     }
   };
 
+  const handleDelete = async (avatarId) => {
+    if (confirm('Are you sure you want to delete this avatar?')) {
+      try {
+        const response = await authenticatedFetch(`${API_BASE_URL}/characters?id=eq.${avatarId}`, {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          setcharacters((prev) => prev.filter((char) => char.id !== avatarId));
+          invalidateCharacterCache();
+        }
+      } catch (error) {
+        console.error('Failed to delete avatar:', error);
+      }
+    }
+  };
+
+  const handleDuplicate = async (avatar) => {
+    try {
+      const response = await authenticatedFetch(`${API_BASE_URL}/characters`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify({
+          ...avatar,
+          name: `${avatar.name} (Copy)`,
+          id: undefined, // Remove ID so it gets auto-generated
+        }),
+      });
+      if (response.ok) {
+        const newChar = await response.json();
+        setcharacters((prev) => [...prev, ...newChar]);
+        invalidateCharacterCache();
+      }
+    } catch (error) {
+      console.error('Failed to duplicate avatar:', error);
+    }
+  };
+
+  const handleUpdateName = async (avatarId, name) => {
+    try {
+      await updateCharacter(avatarId, 'name', name);
+      setcharacters((prev) => prev.map((char) => (char.id === avatarId ? { ...char, name } : char)));
+    } catch (error) {
+      console.error('Failed to update name:', error);
+    }
+  };
+
   const handleCreate = () => {
     // Navigate to Interactive Agent page for avatar creation and settings
     navigate('/console/trainer');
@@ -185,6 +391,9 @@ const CharPage = () => {
               avatar={character}
               onEdit={handleEdit}
               onPlay={handlePlay}
+              onDelete={handleDelete}
+              onDuplicate={handleDuplicate}
+              onUpdateName={handleUpdateName}
             />
           ))}
 
@@ -205,6 +414,12 @@ const CharPage = () => {
         </div>
       )}
 
+      {/* Create Form Modal/Expandable Section */}
+      {showCreateForm && (
+        <div className="mt-8">
+          <CharCreator onClose={() => setShowCreateForm(false)} onCharacterCreated={handleCharacterCreated} />
+        </div>
+      )}
 
       {/* Embed Modal */}
       {showEmbedModal && selectedAvatar && (
