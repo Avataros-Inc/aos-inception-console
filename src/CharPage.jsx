@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   updateCharacter,
   API_BASE_URL,
+  VITE_BASE_URL,
   getSessionToken,
   getSession,
   getCharacters,
@@ -18,10 +19,15 @@ import { useConfig } from './contexts/ConfigContext';
 
 // Embed Modal Component
 const EmbedModal = ({ avatar, onClose }) => {
-  const { getEmbedCode } = useAvatarLivestream();
   const [copied, setCopied] = useState(false);
 
-  const embedCode = getEmbedCode(avatar);
+  const embedCode = `<iframe
+  src="${VITE_BASE_URL}/embed/${avatar.id}"
+  width="800"
+  height="600"
+  frameborder="0"
+  allowfullscreen>
+</iframe>`;
   const handleCopy = () => {
     navigator.clipboard.writeText(embedCode);
     setCopied(true);
@@ -70,7 +76,7 @@ const EmbedModal = ({ avatar, onClose }) => {
 
 const CharPage = () => {
   const navigate = useNavigate();
-  const { launchLivestream } = useAvatarLivestream();
+  const { createSession } = useAvatarLivestream();
   const { applyAvatarSession } = useConfig();
   const [characters, setcharacters] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -99,49 +105,24 @@ const CharPage = () => {
   };
 
   const handlePlay = async (avatar) => {
-    console.log('CharPage: handlePlay called for avatar:', avatar.name);
-
     try {
-      // Apply avatar configuration first - this updates the ConfigContext
       applyAvatarSession(avatar);
 
-      // Create the updated config based on the avatar
-      const updatedConfig = {
+      const config = {
         avatar: avatar.id,
-        environment: 'Map_Env_ltOliverDefault_v01', // Keep default environment
-        camera: { preset: 'Preset1' }, // Keep default camera
+        environment: 'Map_Env_ltOliverDefault_v01',
+        camera: { preset: 'Preset1' },
         a2f_config: avatar.a2f_config || {},
         voice_config: avatar.voice_config || {},
         llm_config: avatar.llm_config || {},
         unreal_config: avatar.unreal_config || {},
       };
 
-      console.log('CharPage: Updated config for launching session:', updatedConfig);
-
-      // Launch session with the updated config and WAIT for it to complete
-      console.log('CharPage: Creating session...');
-      const session = await launchLivestream(updatedConfig);
-
-      console.log('CharPage: Session response:', session);
-      console.log('CharPage: Session keys:', session ? Object.keys(session) : 'null');
-
-      // Check for session ID in the returned object
-      const sessionId = session?.id || session?.session_id || session?.livestream_id;
-
-      if (sessionId) {
-        console.log('CharPage: Session created successfully with ID:', sessionId);
-        // Navigate to the session-specific URL
-        navigate(`/console/conversational-ai/${sessionId}`);
-      } else {
-        console.error('CharPage: Session creation failed - no session ID found in response:', session);
-        // Still navigate but without session ID
-        navigate('/console/conversational-ai');
-      }
+      const sessionId = await createSession(config);
+      navigate(`/console/conversational-ai/${sessionId}`);
     } catch (error) {
-      console.error('CharPage: Failed to launch session:', error);
-      // Show error but still allow navigation
+      console.error('Failed to create session:', error);
       alert(`Failed to create session: ${error.message}`);
-      navigate('/console/conversational-ai');
     }
   };
 
