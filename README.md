@@ -41,9 +41,6 @@ This ensures that both the submodule pointer and npm dependencies are updated to
 
 # Build
 
-docker build -t git.avataros.xyz/avataros/avatarpipelineinterface:console-latest .
-docker run -p 6666:80 git.avataros.xyz/avataros/avatarpipelineinterface:console-latest
+docker build -t git.avataros.xyz/avataros/aos-inception-console:latest .
 
-
-docker build -t git.avataros.xyz/avataros/avatarpipelineinterface:console-latest . && \
-docker push git.avataros.xyz/avataros/avatarpipelineinterface:console-latest
+docker push git.avataros.xyz/avataros/aos-inception-console:latest
