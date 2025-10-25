@@ -719,3 +719,138 @@ export const updateLiveSession = async (sessionId, updates) => {
     throw error;
   }
 };
+
+// File management API functions
+
+/**
+ * Get all files accessible by the authenticated user/organization
+ * @param {Object} options - Query options
+ * @param {string} options.org_id - Filter by organization ID
+ * @param {string} options.user_id - Filter by user ID
+ * @param {number} options.limit - Maximum number of files to return (default 100)
+ * @param {number} options.offset - Number of files to skip for pagination (default 0)
+ * @param {string} options.order_by - Field to order by (default "created_at")
+ * @param {string} options.order_direction - Order direction "asc" or "desc" (default "desc")
+ * @returns {Promise<Array>} Promise resolving to array of file metadata
+ */
+export const getFiles = async (options = {}) => {
+  try {
+    const {
+      org_id,
+      user_id,
+      limit = 100,
+      offset = 0,
+      order_by = 'created_at',
+      order_direction = 'desc',
+    } = options;
+
+    // Build query string
+    const params = new URLSearchParams();
+    if (org_id) params.append('org_id', org_id);
+    if (user_id) params.append('user_id', user_id);
+    params.append('limit', limit.toString());
+    params.append('offset', offset.toString());
+    params.append('order_by', order_by);
+    params.append('order_direction', order_direction);
+
+    const response = await authenticatedFetch(
+      `${API_BASE_URL}/api/v1/files?${params.toString()}`,
+      {
+        method: 'GET',
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const files = await response.json();
+    return files;
+  } catch (error) {
+    console.error('Error fetching files:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get a file's metadata and presigned URL by ID
+ * @param {string} fileId - The file ID
+ * @returns {Promise<Object>} Promise resolving to file metadata with presigned URL
+ */
+export const getFileById = async (fileId) => {
+  try {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/file/${fileId}`, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const file = await response.json();
+    return file;
+  } catch (error) {
+    console.error(`Error fetching file ${fileId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a file by ID
+ * @param {string} fileId - The file ID to delete
+ * @returns {Promise<Object>} Promise resolving to success response
+ */
+export const deleteFile = async (fileId) => {
+  try {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/file/${fileId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error(`Error deleting file ${fileId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Upload a new file
+ * @param {File} file - The file to upload
+ * @param {string} prettyName - Optional user-friendly name for the file
+ * @returns {Promise<Object>} Promise resolving to file metadata
+ */
+export const uploadFile = async (file, prettyName = null) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (prettyName) {
+      formData.append('pretty_name', prettyName);
+    }
+
+    // Note: Don't set Content-Type header for FormData - the browser will automatically
+    // set it with the proper boundary for multipart/form-data
+    const token = getSessionToken();
+    const response = await fetch(`${API_BASE_URL}/api/v1/file`, {
+      method: 'POST',
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const fileMetadata = await response.json();
+    return fileMetadata;
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    throw error;
+  }
+};

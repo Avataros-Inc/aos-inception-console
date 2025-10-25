@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Edit, Play, MoreHorizontal, Copy, Trash2, User, Plus } from 'lucide-react';
 import { Button } from './Button';
+import { Card, CardPreview, CardContent, CardBadge, CardActions } from './Card';
 
 // Simple Select component since we don't have shadcn/ui
 const Select = ({ defaultValue, className }) => {
@@ -107,9 +108,9 @@ export function AvatarCard({ avatar, onEdit, onPlay, onDelete, onDuplicate, onUp
   };
 
   return (
-    <div className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl transition-all duration-300 hover:border-accent-mint/50 hover:shadow-lg hover:shadow-accent-mint/10 hover:-translate-y-1 overflow-hidden">
+    <Card>
       {/* Avatar Preview */}
-      <div className="aspect-video relative bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center overflow-hidden">
+      <CardPreview>
         <img
           src={`/thumbnails/characters/${avatar.name.toLowerCase()}.png`}
           alt={avatar.name}
@@ -123,13 +124,13 @@ export function AvatarCard({ avatar, onEdit, onPlay, onDelete, onDuplicate, onUp
         <div className="hidden w-full h-full bg-gradient-to-br from-accent-mint to-teal-400 items-center justify-center">
           <User size={32} className="text-white" />
         </div>
-        <div className="absolute top-2 right-2 bg-bg-secondary/80 backdrop-blur-sm px-2 py-1 rounded text-xs font-medium text-text-secondary">
+        <CardBadge className="absolute top-2 right-2">
           3D
-        </div>
-      </div>
+        </CardBadge>
+      </CardPreview>
 
       {/* Avatar Info */}
-      <div className="p-4">
+      <CardContent>
         {/* Name */}
         {isEditingName ? (
           <input
@@ -153,7 +154,7 @@ export function AvatarCard({ avatar, onEdit, onPlay, onDelete, onDuplicate, onUp
         <Select defaultValue="Original" className="mb-3" />
 
         {/* Action Buttons */}
-        <div className="flex items-center space-x-2">
+        <CardActions className="space-x-2">
           <Button variant="secondary" size="sm" className="flex-1" onClick={() => onEdit(avatar)}>
             <Edit className="w-4 h-4 mr-1" />
             Embed
@@ -185,29 +186,29 @@ export function AvatarCard({ avatar, onEdit, onPlay, onDelete, onDuplicate, onUp
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-      </div>
-    </div>
+        </CardActions>
+      </CardContent>
+    </Card>
   );
 }
 
 export function CreateAvatarCard({ onCreate }) {
   return (
-    <div
-      className="bg-bg-secondary backdrop-blur-sm border-2 border-dashed border-border-subtle rounded-xl cursor-pointer group hover:border-accent-mint transition-all duration-300 hover:shadow-lg hover:shadow-accent-mint/10 hover:-translate-y-1 overflow-hidden"
+    <Card
       onClick={onCreate}
+      className="border-2 border-dashed cursor-pointer group"
     >
-      <div className="aspect-video flex items-center justify-center">
+      <CardPreview>
         <div className="text-center">
           <div className="w-16 h-16 bg-accent-mint/20 rounded-full flex items-center justify-center mb-3 mx-auto group-hover:bg-accent-mint/30 transition-colors">
             <User className="w-8 h-8 text-accent-mint" />
           </div>
           <p className="text-text-secondary font-medium">Create New Avatar</p>
         </div>
-      </div>
-      <div className="p-4">
+      </CardPreview>
+      <CardContent>
         <p className="text-center text-sm text-text-secondary">Click to start creating your next 3D avatar</p>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -21,7 +21,7 @@ const navItems = [
     icon: Code,
     subsections: [
       { key: 'live-sessions', label: 'Live Sessions', path: '/console/renders' },
-      { key: 'videos', label: 'Videos', path: '/console/videos' },
+      { key: 'files', label: 'Files', path: '/console/files' },
       { key: 'api-keys', label: 'API Keys', path: '/console/apikeys' },
       { key: 'billing', label: 'Billing', path: '/console/billing' },
       { key: 'credits', label: 'Credits', path: '/console/credits' },

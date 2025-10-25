@@ -20,7 +20,8 @@ const LiveStreamPage = () => {
   };
 
   const handleEndSession = async () => {
-    await endSession();
+    console.log("endSession",sessionId)
+    await endSession(sessionId);
     navigate('/console/conversational-ai');
   };
 
@@ -35,6 +36,7 @@ const LiveStreamPage = () => {
         </div>
 
         <AvatarPixelStreaming
+          style={{ height: '80vh', backgroundColor: 'red', border: '10px solid yellow', padding: '50px' }}
           sessionId={sessionId}
           authToken={getSessionToken()}
           apiBaseUrl={API_BASE_URL}
