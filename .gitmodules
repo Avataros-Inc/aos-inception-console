@@ -1,0 +1,3 @@
+[submodule "submodules/streamer"]
+	path = submodules/streamer
+	url = https://git.avataros.xyz/avataros/inception-stream-component.git
