@@ -20,9 +20,10 @@ export const AvatarLivestreamProvider = ({ children }) => {
     return sessionId;
   };
 
-  const endSession = async () => {
-    if (activeSessionId) {
-      await deleteLivestream(activeSessionId);
+  const endSession = async (sessionId) => {
+    const idToDelete = sessionId || activeSessionId;
+    if (idToDelete) {
+      await deleteLivestream(idToDelete);
       setActiveSessionId(null);
     }
   };
