@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Form } from 'react-bootstrap';
 import { cn } from '@/lib/utils';
 import { getEnvironments } from '../postgrestAPI';
@@ -75,6 +75,11 @@ const VisualConfigTab = ({ characters, updateConfig, config }) => {
   const cameraPreset = config.camera?.preset || 'Preset1';
   const selectedEnvironment = config.environment || 'Map_Env_ltOliverDefault_v01';
   const selectedCharacter = characters.find((char) => char.id === config.avatar);
+
+  // Memoize the selected environment object to avoid repeated lookups
+  const selectedEnvironmentObj = useMemo(() => {
+    return environments.find((env) => env.id === selectedEnvironment);
+  }, [environments, selectedEnvironment]);
 
   return (
     <div className="space-y-6">
@@ -229,21 +234,29 @@ const VisualConfigTab = ({ characters, updateConfig, config }) => {
             onClick={() => toggleSection('environment')}
           >
             <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-600">
-              <img
-                src={`/thumbnails/environment/${environments.find((env) => env.id === selectedEnvironment)?.path}.png`}
-                alt={environments.find((env) => env.id === selectedEnvironment)?.name || 'Environment'}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'flex';
-                }}
-              />
-              <div className="hidden w-full h-full bg-slate-700 items-center justify-center text-slate-400 text-xs">
-                No Preview
-              </div>
+              {selectedEnvironmentObj ? (
+                <>
+                  <img
+                    src={`/thumbnails/environment/${selectedEnvironmentObj.path}.png`}
+                    alt={selectedEnvironmentObj.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                  <div className="hidden w-full h-full bg-slate-700 items-center justify-center text-slate-400 text-xs">
+                    No Preview
+                  </div>
+                </>
+              ) : (
+                <div className="w-full h-full bg-slate-700 flex items-center justify-center text-slate-400 text-xs">
+                  Loading...
+                </div>
+              )}
             </div>
             <span className="text-slate-300 text-sm flex-1">
-              {environments.find((env) => env.id === selectedEnvironment)?.name || 'Select Environment'}
+              {selectedEnvironmentObj?.name || 'Select Environment'}
             </span>
             <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
