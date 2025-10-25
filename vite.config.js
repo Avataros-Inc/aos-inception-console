@@ -13,6 +13,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, 'src'),
+      'inception-stream-component': path.resolve(import.meta.dirname, 'submodules/streamer/v2/lib/index.js'),
     },
   },
   css: {

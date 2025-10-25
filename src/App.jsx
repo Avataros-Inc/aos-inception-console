@@ -3,7 +3,7 @@ import { HashRouter as Router, Routes, Route, Link, Navigate } from 'react-route
 import TextToAvatar from './TextToAvatar';
 import AudioToAvatar from './AudioToAvatar';
 import AccountSettings from './AccountSettings';
-import Videos from './Videos';
+import Files from './Files';
 import CharPage from './CharPage';
 import AssetFetcher from './AssetFetcher';
 import { getCharacters, getSessionToken, API_BASE_URL, onAuthError, removeSession } from './postgrestAPI';
@@ -106,12 +106,7 @@ const Console = () => {
                 }
               />
               <Route path="/renders" element={<RenderQueue />} />
-              <Route path="/videos" element={
-                                  <div>
-                    <h2 className="gradient-text text-3xl font-bold text-white mb-4">Videos</h2>
-                    <ComingSoonCard />
-                  </div>
-              } />
+              <Route path="/files" element={<Files />} />
               <Route path="/conversational-ai" element={<LiveStreamPage />} />
               <Route path="/conversational-ai/:sessionId" element={<LiveStreamPage />} />
               <Route path="/apikeys" element={<ApiKeys />} />
