@@ -796,6 +796,35 @@ export const getFileById = async (fileId) => {
 };
 
 /**
+ * Update a file's metadata (e.g., pretty name)
+ * @param {string} fileId - The file ID to update
+ * @param {Object} updates - The updates to apply
+ * @param {string} updates.pretty_name - New pretty name for the file
+ * @returns {Promise<Object>} Promise resolving to updated file metadata
+ */
+export const updateFile = async (fileId, updates) => {
+  try {
+    const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/file/${fileId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error(`Error updating file ${fileId}:`, error);
+    throw error;
+  }
+};
+
+/**
  * Delete a file by ID
  * @param {string} fileId - The file ID to delete
  * @returns {Promise<Object>} Promise resolving to success response

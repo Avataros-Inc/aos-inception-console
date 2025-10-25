@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getFiles, getFileById, deleteFile, uploadFile, API_BASE_URL } from './postgrestAPI';
+import { useNavigate } from 'react-router-dom';
+import { getFiles, getFileById, deleteFile, uploadFile, updateFile, API_BASE_URL } from './postgrestAPI';
 import {
   File as FileIcon,
   FileVideo,
@@ -13,11 +14,15 @@ import {
   XCircle,
   Upload,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  MoreHorizontal,
+  Mic,
+  Edit2
 } from 'lucide-react';
 import { Card, CardPreview, CardContent, CardBadge, CardActions, CardTitle, CardDescription } from './Components/Card';
 import { Button } from './Components/Button';
 import { Modal, ModalHeader, ModalContent, ModalFooter } from './Components/Modal';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from './Components/Dropdown';
 
 // Helper to get file icon based on content type
 const getFileIcon = (contentType, extension) => {
@@ -53,17 +58,36 @@ const formatFileSize = (bytes) => {
   return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 };
 
-const FileCard = ({ file, onDelete }) => {
+const FileCard = ({ file, onDelete, onUpdate }) => {
+  const navigate = useNavigate();
   const [fileUrl, setFileUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [thumbnailError, setThumbnailError] = useState(false);
   const [thumbnailLoading, setThumbnailLoading] = useState(true);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempName, setTempName] = useState(file.pretty_name || file.id);
 
   const FileIconComponent = getFileIcon(file.content_type, file.extension);
 
+  // Update tempName when file changes
+  useEffect(() => {
+    setTempName(file.pretty_name || file.id);
+  }, [file.pretty_name, file.id]);
+
   // Check if file has a thumbnail (based on API documentation, it's available for files)
   const hasThumbnail = file.thumbnail || file.id;
+
+  // Check if file is audio or video
+  const isAudioOrVideo = () => {
+    const type = file.content_type?.toLowerCase() || '';
+    const ext = file.extension?.toLowerCase() || '';
+    return (
+      type.startsWith('audio/') ||
+      type.startsWith('video/') ||
+      ['mp3', 'wav', 'ogg', 'm4a', 'mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext)
+    );
+  };
 
   const handleDownload = async () => {
     try {
@@ -101,16 +125,68 @@ const FileCard = ({ file, onDelete }) => {
     }
   };
 
+  const handleUseAsAudioToAvatar = async () => {
+    try {
+      // Get the file with presigned URL if we don't have it yet
+      if (!fileUrl) {
+        const fileData = await getFileById(file.id);
+        setFileUrl(fileData.url);
+        // Navigate to audio-to-avatar page with the file URL
+        navigate('/console/audio-to-avatar', { state: { audioUrl: fileData.url, fileName: file.pretty_name || file.id } });
+      } else {
+        navigate('/console/audio-to-avatar', { state: { audioUrl: fileUrl, fileName: file.pretty_name || file.id } });
+      }
+    } catch (err) {
+      console.error('Failed to get file URL:', err);
+      alert('Failed to load file. Please try again.');
+    }
+  };
+
+  const handleNameSubmit = async () => {
+    if (tempName === file.pretty_name || tempName.trim() === '') {
+      setTempName(file.pretty_name || file.id);
+      setIsEditingName(false);
+      return;
+    }
+
+    try {
+      await updateFile(file.id, { pretty_name: tempName.trim() });
+      // Update the file in the parent component
+      if (onUpdate) {
+        onUpdate(file.id, { ...file, pretty_name: tempName.trim() });
+      }
+      setIsEditingName(false);
+    } catch (err) {
+      console.error('Failed to update file name:', err);
+      alert('Failed to rename file. Please try again.');
+      setTempName(file.pretty_name || file.id);
+      setIsEditingName(false);
+    }
+  };
+
+  const handleNameKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleNameSubmit();
+    } else if (e.key === 'Escape') {
+      setTempName(file.pretty_name || file.id);
+      setIsEditingName(false);
+    }
+  };
+
+  const handleRename = () => {
+    setIsEditingName(true);
+  };
+
   return (
     <Card>
-      {/* Preview section */}
-      <CardPreview>
+      {/* Preview section - smaller aspect ratio for thumbnails */}
+      <CardPreview aspectRatio="aspect-[4/3]">
         {hasThumbnail && !thumbnailError ? (
           <>
             {/* Loading spinner while thumbnail streams from backend */}
             {thumbnailLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-700 to-slate-800">
-                <Loader2 className="text-accent-mint animate-spin" size={32} />
+                <Loader2 className="text-accent-mint animate-spin" size={24} />
               </div>
             )}
 
@@ -131,81 +207,115 @@ const FileCard = ({ file, onDelete }) => {
             {/* Fallback background if image doesn't load */}
             {!thumbnailLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-700 to-slate-800 -z-10">
-                <FileIconComponent className="text-accent-mint" size={48} />
+                <FileIconComponent className="text-accent-mint" size={32} />
               </div>
             )}
           </>
         ) : (
           <div className="flex items-center justify-center">
-            <FileIconComponent className="text-accent-mint" size={48} />
+            <FileIconComponent className="text-accent-mint" size={32} />
           </div>
         )}
         {file.extension && (
-          <CardBadge className="absolute top-2 right-2">
+          <CardBadge className="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5">
             {file.extension.toUpperCase()}
           </CardBadge>
         )}
       </CardPreview>
 
-      {/* Content section */}
-      <CardContent>
-        <CardTitle className="mb-1 truncate" title={file.pretty_name || file.id}>
-          {file.pretty_name || file.id}
-        </CardTitle>
-        <CardDescription className="mb-3">
+      {/* Content section - more compact */}
+      <CardContent className="p-3">
+        {/* Editable name */}
+        {isEditingName ? (
+          <input
+            value={tempName}
+            onChange={(e) => setTempName(e.target.value)}
+            onBlur={handleNameSubmit}
+            onKeyDown={handleNameKeyDown}
+            className="w-full text-sm font-semibold mb-0.5 bg-bg-secondary border border-border-subtle rounded px-1 py-0.5 text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-mint"
+            autoFocus
+          />
+        ) : (
+          <CardTitle
+            className="mb-0.5 truncate text-sm cursor-pointer hover:text-accent-mint transition-colors"
+            title={file.pretty_name || file.id}
+            onClick={() => setIsEditingName(true)}
+          >
+            {file.pretty_name || file.id}
+          </CardTitle>
+        )}
+        <CardDescription className="mb-2 text-xs truncate">
           {file.content_type || 'Unknown type'}
         </CardDescription>
 
-        {/* File details */}
-        <div className="space-y-2 mb-4">
-          <div className="flex justify-between text-sm">
+        {/* File details - more compact */}
+        <div className="space-y-1 mb-3">
+          <div className="flex justify-between text-xs">
             <span className="text-text-secondary">Size</span>
             <span className="text-text-primary">{formatFileSize(file.size)}</span>
           </div>
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-xs">
             <span className="text-text-secondary">Created</span>
-            <span className="text-text-primary">{new Date(file.created_at).toLocaleString()}</span>
+            <span className="text-text-primary">{new Date(file.created_at).toLocaleDateString()}</span>
           </div>
-          {file.created_by && (
-            <div className="flex justify-between text-sm">
-              <span className="text-text-secondary">Created by</span>
-              <span className="text-text-primary truncate ml-2" title={file.created_by}>
-                {file.created_by}
-              </span>
-            </div>
-          )}
         </div>
 
-        {/* Actions */}
-        <div className="pt-4 border-t border-border-subtle">
-          <CardActions>
+        {/* Actions - more compact */}
+        <div className="pt-2 border-t border-border-subtle">
+          <CardActions className="gap-1">
             <Button
               variant="secondary"
               size="sm"
               onClick={handleDownload}
               disabled={loading}
-              className="flex-1"
+              className="flex-1 h-7 text-xs px-2"
             >
               {loading ? (
-                <Loader2 size={16} className="mr-1 animate-spin" />
+                <Loader2 size={14} className="mr-1 animate-spin" />
               ) : (
-                <Download size={16} className="mr-1" />
+                <Download size={14} className="mr-1" />
               )}
               Download
             </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleDelete}
-              disabled={deleting}
-              className="text-red-400 hover:text-red-300"
-            >
-              {deleting ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Trash2 size={16} />
-              )}
-            </Button>
+
+            {/* More Options Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <Button variant="secondary" size="sm" className="h-7 px-2">
+                  <MoreHorizontal className="w-3.5 h-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={handleDownload}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={handleRename}>
+                  <Edit2 className="w-4 h-4 mr-2" />
+                  Rename
+                </DropdownMenuItem>
+
+                {isAudioOrVideo() && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleUseAsAudioToAvatar}>
+                      <Mic className="w-4 h-4 mr-2" />
+                      Use as Audio-to-Avatar
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleDelete}
+                  className="text-red-400 hover:text-red-300"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </CardActions>
         </div>
       </CardContent>
@@ -244,6 +354,10 @@ const Files = () => {
 
   const handleDeleteFile = (fileId) => {
     setFiles(prevFiles => prevFiles.filter(f => f.id !== fileId));
+  };
+
+  const handleUpdateFile = (fileId, updatedFile) => {
+    setFiles(prevFiles => prevFiles.map(f => f.id === fileId ? updatedFile : f));
   };
 
   const handleFileUpload = async (filesToUpload) => {
@@ -662,9 +776,9 @@ const Files = () => {
           <p className="text-slate-500 text-sm">Click or drag files here to upload</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
           {filteredFiles.map(file => (
-            <FileCard key={file.id} file={file} onDelete={handleDeleteFile} />
+            <FileCard key={file.id} file={file} onDelete={handleDeleteFile} onUpdate={handleUpdateFile} />
           ))}
         </div>
       )}
