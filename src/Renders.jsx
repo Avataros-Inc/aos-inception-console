@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getLiveSessions, deleteLivestream } from './postgrestAPI';
 import { MonitorPlay, Play, Square, RotateCcw, Clock, Loader2, RefreshCw } from 'lucide-react';
 
@@ -14,7 +15,8 @@ const LIVE_STATUS = {
   7: { text: 'Starting', variant: 'info', icon: Loader2, bgColor: 'bg-purple-500', textColor: 'text-purple-100' },
 };
 
-export const RenderQueue = () => {
+export const RenderQueue = ({ characters = [] }) => {
+  const navigate = useNavigate();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,20 +29,6 @@ export const RenderQueue = () => {
       setError(null);
 
       const data = await getLiveSessions();
-      console.log('Fetched live sessions:', data);
-
-      // Log each session's status details for debugging
-      data.forEach((session, index) => {
-        console.log(`Session ${index + 1}:`, {
-          id: session.id,
-          jobstatus: session.jobstatus,
-          ended_at: session.ended_at,
-          ended_at_type: typeof session.ended_at,
-          ended_at_null: session.ended_at === null,
-          ended_at_empty: session.ended_at === '',
-        });
-      });
-
       setSessions(data);
       setLastUpdated(new Date());
     } catch (err) {
@@ -68,10 +56,18 @@ export const RenderQueue = () => {
     };
   }, [autoRefresh]);
 
+  // Helper function to get character name by ID
+  const getCharacterName = (avatarId) => {
+    if (!avatarId) return 'N/A';
+    const character = characters.find((char) => char.id === avatarId);
+    if (character && character.name) {
+      return character.name.charAt(0).toUpperCase() + character.name.slice(1);
+    }
+    return character ? character.name : avatarId;
+  };
+
   const handleEnd = async (sessionId) => {
     try {
-      console.log('Ending live session:', sessionId);
-
       await deleteLivestream(sessionId);
       // Refresh the session list after successful termination
       await fetchSessions();
@@ -158,7 +154,6 @@ export const RenderQueue = () => {
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-700/50">
-                <th className="text-left p-4 text-slate-300 font-medium">#</th>
                 <th className="text-left p-4 text-slate-300 font-medium">Session ID</th>
                 <th className="text-left p-4 text-slate-300 font-medium">Avatar</th>
                 <th className="text-left p-4 text-slate-300 font-medium">Status</th>
@@ -171,24 +166,25 @@ export const RenderQueue = () => {
                 const status = LIVE_STATUS[session.jobstatus] || LIVE_STATUS[0];
                 const IconComponent = status.icon;
 
-                // Debug logging for each session
-                console.log(`Rendering session ${session.id}:`, {
-                  jobstatus: session.jobstatus,
-                  status_text: status.text,
-                  ended_at: session.ended_at,
-                  display_status: status,
-                });
+                // Check if session is active (not ended, completed, or failed)
+                const isActiveSession = ![2, 3, 4].includes(session.jobstatus);
 
                 return (
                   <tr key={session.id} className="border-b border-slate-700/30 hover:bg-slate-700/20 transition-colors">
                     <td className="p-4">
-                      <span className="font-medium text-white">#{index + 1}</span>
+                      {isActiveSession ? (
+                        <button
+                          onClick={() => navigate(`/conversational-ai/${session.id}`)}
+                          className="font-semibold text-accent-mint hover:text-emerald-400 text-sm font-mono underline cursor-pointer transition-colors"
+                        >
+                          {session.id}
+                        </button>
+                      ) : (
+                        <div className="font-semibold text-slate-400 text-sm font-mono">{session.id}</div>
+                      )}
                     </td>
                     <td className="p-4">
-                      <div className="font-semibold text-white text-sm font-mono">{session.id}</div>
-                    </td>
-                    <td className="p-4">
-                      <div className="text-slate-300">{session.avatar_id || 'N/A'}</div>
+                      <div className="text-slate-300">{getCharacterName(session.config?.avatar)}</div>
                     </td>
                     <td className="p-4">
                       <span
@@ -202,7 +198,7 @@ export const RenderQueue = () => {
                       <span className="text-sm text-slate-400">{new Date(session.created_at).toLocaleString()}</span>
                     </td>
                     <td className="p-4">
-                      {session.jobstatus === 1 ? (
+                      {[0, 1, 6].includes(session.jobstatus) ? (
                         <button
                           onClick={() => handleEnd(session.id)}
                           className="inline-flex items-center gap-1 px-3 py-1 text-sm border border-red-500 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
@@ -210,19 +206,19 @@ export const RenderQueue = () => {
                           <Square size={12} />
                           End Session
                         </button>
+                      ) : [2, 3, 4].includes(session.jobstatus) ? (
+                        <span className="text-slate-500 text-sm">
+                          {session.jobstatus === 2 ? 'Cancelled' : session.jobstatus === 3 ? 'Completed' : 'Failed'}
+                        </span>
                       ) : session.jobstatus >= 5 ? (
                         <span className="text-cyan-400 text-sm flex items-center gap-1">
                           <Loader2 size={12} className="animate-spin" />
                           {session.jobstatus === 5
                             ? 'Processing...'
-                            : session.jobstatus === 6
-                            ? 'Initializing...'
                             : session.jobstatus === 7
                             ? 'Starting...'
                             : 'Loading...'}
                         </span>
-                      ) : session.jobstatus === 2 || session.jobstatus === 4 ? (
-                        <span className="text-slate-500 text-sm">Session Ended</span>
                       ) : (
                         <span className="text-slate-500 text-sm">-</span>
                       )}
@@ -232,7 +228,7 @@ export const RenderQueue = () => {
               })}
               {sessions.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="text-center py-8">
+                  <td colSpan="5" className="text-center py-8">
                     <div className="text-slate-400">
                       <MonitorPlay size={48} className="mb-3 mx-auto opacity-50" />
                       <p>No live sessions found. Start a livestream to see sessions here.</p>
