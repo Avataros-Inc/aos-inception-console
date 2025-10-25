@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Spinner, Form, Alert } from 'react-bootstrap';
-import { API_BASE_URL, getSessionToken, getSession } from './postgrestAPI';
+import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL, getSessionToken, getSession, removeSession } from './postgrestAPI';
 import UpdatePassword from './Account/UpdatePassword';
 import OrgUsers from './Account/OrgUsers';
-import { User, Shield, Users, Loader2 } from 'lucide-react';
+import { User, Shield, Users, Loader2, LogOut } from 'lucide-react';
 import { Button } from '@/Components/Button';
 
 const AccountSettings = () => {
+  const navigate = useNavigate();
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -63,6 +65,11 @@ const AccountSettings = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    removeSession();
+    navigate('/');
   };
 
   if (!userData) {
@@ -135,7 +142,7 @@ const AccountSettings = () => {
       </div>
 
       {/* Organization Users Section */}
-      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl">
+      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl mb-6">
         <div className="border-b border-slate-700/50 p-4">
           <h3 className="flex items-center text-accent-mint font-semibold mb-0">
             <Users className="mr-2" size={20} />
@@ -144,6 +151,23 @@ const AccountSettings = () => {
         </div>
         <div className="p-6">
           <OrgUsers />
+        </div>
+      </div>
+
+      {/* Logout Section */}
+      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl">
+        <div className="border-b border-slate-700/50 p-4">
+          <h3 className="flex items-center text-red-400 font-semibold mb-0">
+            <LogOut className="mr-2" size={20} />
+            Logout
+          </h3>
+        </div>
+        <div className="p-6">
+          <p className="text-slate-400 mb-4">Sign out of your account and return to the login page.</p>
+          <Button variant="destructive" onClick={handleLogout} className="flex items-center gap-2">
+            <LogOut size={16} />
+            Logout
+          </Button>
         </div>
       </div>
     </div>
