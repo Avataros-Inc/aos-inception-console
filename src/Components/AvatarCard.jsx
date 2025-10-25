@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Edit, Play, MoreHorizontal, Copy, Trash2, User, Plus } from 'lucide-react';
 import { Button } from './Button';
 import { Card, CardPreview, CardContent, CardBadge, CardActions } from './Card';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './Dropdown';
 
 // Simple Select component since we don't have shadcn/ui
 const Select = ({ defaultValue, className }) => {
@@ -30,57 +31,6 @@ const Select = ({ defaultValue, className }) => {
           </div>
         </div>
       )}
-    </div>
-  );
-};
-
-// Simple Dropdown component
-const DropdownMenu = ({ children }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div className="relative">
-      {React.Children.map(children, (child, index) => {
-        if (index === 0) {
-          return React.cloneElement(child, {
-            onClick: () => setIsOpen(!isOpen),
-          });
-        }
-        if (index === 1 && isOpen) {
-          return React.cloneElement(child, {
-            onItemClick: () => setIsOpen(false),
-          });
-        }
-        return null;
-      })}
-    </div>
-  );
-};
-
-const DropdownMenuTrigger = ({ children, onClick }) => {
-  return React.cloneElement(children, { onClick });
-};
-
-const DropdownMenuContent = ({ children, onItemClick }) => {
-  return (
-    <div className="absolute right-0 top-full mt-1 bg-bg-secondary border border-border-subtle rounded-lg py-1 z-20 min-w-48">
-      {React.Children.map(children, (child) => React.cloneElement(child, { onItemClick }))}
-    </div>
-  );
-};
-
-const DropdownMenuItem = ({ children, onClick, className = '', onItemClick }) => {
-  const handleClick = () => {
-    onClick && onClick();
-    onItemClick && onItemClick();
-  };
-
-  return (
-    <div
-      className={`px-3 py-2 hover:bg-accent-mint/10 cursor-pointer text-sm flex items-center ${className}`}
-      onClick={handleClick}
-    >
-      {children}
     </div>
   );
 };
