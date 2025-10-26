@@ -174,7 +174,7 @@ export const RenderQueue = ({ characters = [] }) => {
                     <td className="p-4">
                       {isActiveSession ? (
                         <button
-                          onClick={() => navigate(`/conversational-ai/${session.id}`)}
+                          onClick={() => navigate(`/console/conversational-ai/${session.id}`)}
                           className="font-semibold text-accent-mint hover:text-emerald-400 text-sm font-mono underline cursor-pointer transition-colors"
                         >
                           {session.id}
