@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 import path from 'path';
 
 // https://vite.dev/config/
@@ -9,6 +10,14 @@ export default defineConfig({
       // Include JSX processing for the inception-stream-component
       include: ['**/*.jsx', '**/*.js'],
     }),
+    viteStaticCopy({
+      targets: [
+        {
+          src: 'submodules/streamer/v2/public/thumbnails/*',
+          dest: 'thumbnails'
+        }
+      ]
+    })
   ],
   resolve: {
     alias: {

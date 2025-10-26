@@ -24,3 +24,24 @@ dist-ssr
 *.sw?
 
 .env
+
+# Git
+.git
+.gitignore
+.gitmodules
+
+# CI/CD
+Jenkinsfile
+.github
+
+# Documentation
+README.md
+*.md
+!package.json
+
+# Other
+.claude
+.prettierrc
+openapi.json
+dockerfile
+.dockerignore

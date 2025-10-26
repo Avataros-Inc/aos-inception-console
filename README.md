@@ -44,3 +44,6 @@ This ensures that both the submodule pointer and npm dependencies are updated to
 docker build -t git.avataros.xyz/avataros/aos-inception-console:latest .
 
 docker push git.avataros.xyz/avataros/aos-inception-console:latest
+
+
+docker run -p 8080:80 git.avataros.xyz/avataros/aos-inception-console:latest
