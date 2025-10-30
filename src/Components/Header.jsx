@@ -14,7 +14,10 @@ export function Header() {
   };
 
   return (
-    <header className="bg-card/80 backdrop-blur-md h-16 flex items-center px-4 lg:px-6 fixed top-0 left-0 right-0 z-50 header-gradient">
+    <header
+      className="bg-card/80 backdrop-blur-md h-16 flex items-center px-4 lg:px-6 fixed left-0 right-0 z-50 header-gradient"
+      style={{ top: 'var(--banner-offset, 0px)' }}
+    >
       <div className="flex items-center space-x-4">
         <div className="flex items-center space-x-3">
           <img src="/avataros-logo.png" alt="AVATAROS Logo" className="w-8 h-8 object-contain" />

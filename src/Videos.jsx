@@ -67,7 +67,7 @@ const Videos = ({ characters }) => {
       <Row>
         {videos.map((video) => (
           <Col key={video.id} md={4} className="mb-4">
-            <Card className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl hover:border-emerald-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-400/10 hover:-translate-y-1 w-full max-w-md overflow-hidden">
+            <Card className="bg-bg-secondary backdrop-blur-sm border border-border-subtle rounded-xl hover:border-[#74ECC7]/50 transition-all duration-300 hover:shadow-lg hover:shadow-[#74ECC7]/10 hover:-translate-y-1 w-full max-w-md overflow-hidden">
               <a href={createURL(`${getOrgId()}/${video.id}/video_out.mp4`)} target="_blank" rel="noopener noreferrer">
                 <Card.Img
                   variant="top"

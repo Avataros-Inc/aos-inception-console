@@ -4,7 +4,8 @@ import { Elements } from '@stripe/react-stripe-js';
 import { getProducts, getUsage } from '../services/billingService';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../Components/Card';
 import PaymentForm from '../Components/PaymentForm';
-
+import { getSessionToken } from '../postgrestAPI';
+import { API_BASE_URL } from '../postgrestAPI';
 // Initialize Stripe with publishable key from env
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -17,8 +18,15 @@ const BillingPage = () => {
   const [selectedPlan, setSelectedPlan] = useState(null);
   // const [clientSecret, setClientSecret] = useState('');
 
-  const toggleCreditsVisibility = () => {
+  const toggleCreditsVisibility = async () => {
     setIsCreditsVisible(!isCreditsVisible);
+    const pack = await fetch(`${API_BASE_URL}/webhooks/stripe`, {
+      headers: {
+        Authorization: `Bearer ${getSessionToken()}`,
+      },
+    });
+    const data = await pack.json();
+    console.log(data);
   };
 
   useEffect(() => {
@@ -37,6 +45,7 @@ const BillingPage = () => {
     };
 
     fetchData();
+    toggleCreditsVisibility();
   }, []);
 
   if (loading) {
