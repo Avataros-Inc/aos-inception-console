@@ -28,19 +28,21 @@ const LiveStreamPage = () => {
   // Show streaming view if we have a sessionId
   if (sessionId) {
     return (
-      <div className="relative w-full h-screen">
-        <div className="absolute top-4 right-4 z-50">
+      <div className="relative w-full h-screen overflow-hidden">
+        <div className="absolute top-4 left-4 z-50">
           <Button variant="destructive" size="sm" onClick={handleEndSession}>
             End Session
           </Button>
         </div>
 
-        <AvatarPixelStreaming
-          style={{ height: '80vh', backgroundColor: 'red', border: '10px solid yellow', padding: '50px' }}
-          sessionId={sessionId}
-          authToken={getSessionToken()}
-          apiBaseUrl={API_BASE_URL}
-        />
+        <div className="w-full h-full max-h-screen overflow-hidden">
+          <AvatarPixelStreaming
+            style={{ height: '75vh', maxHeight: '75vh', overflow: 'hidden' }}
+            sessionId={sessionId}
+            authToken={getSessionToken()}
+            apiBaseUrl={API_BASE_URL}
+          />
+        </div>
 
         <ConfigSidebar visual voice a2f llm isLiveSession />
       </div>
