@@ -1,17 +1,5 @@
 import React, { useState } from 'react';
 
-// const environments = [
-//   { id: 'Map_Env_ltOliverDefault_v01', name: 'Oliver Lighting' },
-//   { id: 'Map_Env_ltDefault', name: 'Default Lighting' },
-//   { id: 'Map_Env_ltHardLight', name: 'Hard Lighting' },
-//   { id: 'Map_Env_ltSideSoft_02', name: 'Soft Lighting' },
-//   { id: 'Map_Env_ltSubtleFrontLit', name: 'Intimate Lighting' },
-//   { id: 'Map_Env_ltWarmNatural', name: 'Warm Lighting' },
-//   { id: 'Map_Env_ltOriginal_01', name: 'Original Lighting' },
-//   { id: 'Map_Env_ltCreepySpotlight_01', name: 'Story Time' },
-//   { id: 'Map_Env_ltBalanced', name: 'Balanced Lighting' },
-//   { id: 'Map_Env_ltLoopLighting_02', name: 'Loop Lighting' },
-// ];
 
 const LiveControlsTab = ({ sendMessage = null }) => {
   // const [selectedEnvironment, setSelectedEnvironment] = useState(environments[0].id);

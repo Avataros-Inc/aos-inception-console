@@ -265,7 +265,7 @@ const CharPage = () => {
       // Create the updated config based on the avatar
       const updatedConfig = {
         avatar: avatar.id,
-        environment: 'Map_Env_ltOliverDefault_v01', // Keep default environment
+        environment: 'Map_Env_ltAvatarOS', // Keep default environment
         camera: { preset: 'Preset1' }, // Keep default camera
         a2f_config: avatar.a2f_config || {},
         voice_config: avatar.voice_config || {},

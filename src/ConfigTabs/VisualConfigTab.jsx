@@ -73,7 +73,7 @@ const VisualConfigTab = ({ characters, updateConfig, config }) => {
   };
 
   const cameraPreset = config.camera?.preset || 'Preset1';
-  const selectedEnvironment = config.environment || 'Map_Env_ltOliverDefault_v01';
+  const selectedEnvironment = config.environment || 'Map_Env_ltAvatarOS';
   const selectedCharacter = characters.find((char) => char.id === config.avatar);
 
   // Memoize the selected environment object to avoid repeated lookups

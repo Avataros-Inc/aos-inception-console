@@ -6,7 +6,7 @@ const ConfigContext = createContext();
 export const ConfigProvider = ({ children, characters }) => {
   const [config, setConfig] = useState({
     avatar: characters[0]?.id || '',
-    environment: 'Map_Env_ltOliverDefault_v01', // Will be updated to UUID once environments load
+    environment: 'Map_Env_ltAvatarOS', // Will be updated to UUID once environments load
     camera: { preset: 'Preset1', resolution: '1920x1080' },
     a2f_config: characters[0]?.a2f_config || {},
     voice_config: characters[0]?.voice_config || {},
@@ -22,9 +22,9 @@ export const ConfigProvider = ({ children, characters }) => {
           // Try to find the default environment by name/path
           const defaultEnv = environments.find(
             (env) =>
-              env.name === 'Map_Env_ltOliverDefault_v01' ||
-              env.path === 'Map_Env_ltOliverDefault_v01' ||
-              env.id === 'Map_Env_ltOliverDefault_v01'
+              env.name === 'Map_Env_ltAvatarOS' ||
+              env.path === 'Map_Env_ltAvatarOS' ||
+              env.id === 'Map_Env_ltAvatarOS'
           );
 
           // Use the found environment or fall back to the first one

@@ -110,7 +110,7 @@ const CharPage = () => {
 
       const config = {
         avatar: avatar.id,
-        environment: 'Map_Env_ltOliverDefault_v01',
+        environment: 'Map_Env_ltAvatarOS',
         camera: { preset: 'Preset1' },
         a2f_config: avatar.a2f_config || {},
         voice_config: avatar.voice_config || {},
