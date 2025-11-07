@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { getSessionToken, API_BASE_URL } from './postgrestAPI';
 import ConfigSidebar from '@/Components/ConfigSidebar';
 import { useConfig } from './contexts/ConfigContext';
@@ -13,6 +13,39 @@ const LiveStreamPage = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { createSession, endSession } = useAvatarLivestream();
+  const [permissionsGranted, setPermissionsGranted] = useState(false);
+  const [permissionError, setPermissionError] = useState(null);
+
+  // Function to request permissions
+  const requestPermissions = async () => {
+    if (!sessionId) {
+      setPermissionsGranted(false);
+      return;
+    }
+
+    try {
+      // Request microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: false
+      });
+
+      // Successfully got permissions, stop the stream as we just needed permission
+      stream.getTracks().forEach(track => track.stop());
+
+      setPermissionsGranted(true);
+      setPermissionError(null);
+    } catch (error) {
+      console.error('Permission error:', error);
+      setPermissionError(error.message || 'Microphone access is required for this feature. Please allow microphone access.');
+      setPermissionsGranted(false);
+    }
+  };
+
+  // Request permissions when sessionId is available
+  useEffect(() => {
+    requestPermissions();
+  }, [sessionId]);
 
   const handleCreateSession = async () => {
     const newSessionId = await createSession(config);
@@ -36,12 +69,37 @@ const LiveStreamPage = () => {
         </div>
 
         <div className="w-full h-full max-h-screen overflow-hidden">
-          <AvatarPixelStreaming
-            style={{ height: '75vh', maxHeight: '75vh', overflow: 'hidden' }}
-            sessionId={sessionId}
-            authToken={getSessionToken()}
-            apiBaseUrl={API_BASE_URL}
-          />
+          {permissionError ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center max-w-md p-6">
+                <h3 className="text-xl font-semibold text-red-400 mb-4">Permission Required</h3>
+                <p className="text-slate-300 mb-4">{permissionError}</p>
+                <div className="flex gap-3 justify-center">
+                  <Button variant="primary" onClick={requestPermissions}>
+                    Request Permission
+                  </Button>
+                  <Button variant="outline" onClick={() => window.location.reload()}>
+                    Reload Page
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : !permissionsGranted ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <h3 className="text-xl font-semibold text-slate-200 mb-4">Requesting Permissions...</h3>
+                <p className="text-slate-400">Please allow microphone access to continue</p>
+              </div>
+            </div>
+          ) : (
+            <AvatarPixelStreaming
+              style={{ height: '75vh', maxHeight: '75vh', overflow: 'hidden' }}
+              sessionId={sessionId}
+              authToken={getSessionToken()}
+              apiBaseUrl={API_BASE_URL}
+              autoplay={true}
+            />
+          )}
         </div>
 
         <ConfigSidebar visual voice a2f llm isLiveSession />
