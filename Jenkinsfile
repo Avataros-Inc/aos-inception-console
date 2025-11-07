@@ -9,10 +9,11 @@ pipeline {
         GIT_CREDENTIALS_ID = 'gitjenkins'
         IMAGE_NAME = "avataros/aos-inception-console"
         IMAGE_TAG = "${env.GIT_COMMIT.substring(0, 8)}-${env.BUILD_NUMBER}" // Using BUILD_ID for unique tags
-        FULL_IMAGE_NAME_AND_TAG = "${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+        DEPLOY_IMAGE_NAME_AND_TAG = "${DOCKER_REGISTRY}/${IMAGE_NAME}:latest"
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 script {
@@ -81,7 +82,19 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                echo "Image to deploy: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+                script {
+                    echo "Image to deploy: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+
+                    // Check if the current branch is 'main'
+                    if (env.BRANCH_NAME == 'main') {
+                        def DEPLOY_IMAGE_NAME_AND_TAG = "${DOCKER_REGISTRY}/${IMAGE_NAME}:latest"
+                        echo "Main branch detected. Tagging and pushing as 'latest': ${DEPLOY_IMAGE_NAME_AND_TAG}"
+                        sh "docker tag ${DOCKER_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} ${DEPLOY_IMAGE_NAME_AND_TAG}"
+                        sh "docker push ${DEPLOY_IMAGE_NAME_AND_TAG}"
+                    } else {
+                        echo "Not on main branch. 'latest' tag will not be updated."
+                    }
+                }
             }
         }
     }
