@@ -92,13 +92,25 @@ const LiveStreamPage = () => {
               </div>
             </div>
           ) : (
-            <AvatarPixelStreaming
-              style={{ height: '75vh', maxHeight: '75vh', overflow: 'hidden' }}
-              sessionId={sessionId}
-              authToken={getSessionToken()}
-              apiBaseUrl={API_BASE_URL}
-              autoplay={true}
-            />
+            <div className="relative w-full h-full">
+              {/* Background message */}
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50">
+                <div className="text-center">
+                  <h3 className="text-xl font-semibold text-slate-200 mb-2">Click to Connect</h3>
+                  <p className="text-slate-400">Click anywhere on the screen to start</p>
+                </div>
+              </div>
+              {/* Streaming component on top */}
+              <div className="relative z-10">
+                <AvatarPixelStreaming
+                  style={{ height: '75vh', maxHeight: '75vh', overflow: 'hidden' }}
+                  sessionId={sessionId}
+                  authToken={getSessionToken()}
+                  apiBaseUrl={API_BASE_URL}
+                  autoplay={true}
+                />
+              </div>
+            </div>
           )}
         </div>
 
