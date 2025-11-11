@@ -26,7 +26,11 @@ pipeline {
                              disableSubmodules: false,
                              parentCredentials: true,
                              recursiveSubmodules: true,
-                             trackingSubmodules: false]
+                             trackingSubmodules: false],
+                            // Add Git LFS pull extension
+                            [$class: 'LocalBranch',                             
+                             initialBranch: "${env.BRANCH_NAME}"],
+                            [$class: 'GitLFSPull']
                         ],
                         userRemoteConfigs: scm.userRemoteConfigs
                     ])
