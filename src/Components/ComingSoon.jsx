@@ -16,21 +16,23 @@ export const ComingSoonCard = () => {
 export const AlphaCard = () => {
   return (
     <div className="flex justify-center items-center">
-      <div className="bg-gray-800/50 backdrop-blur-sm border border-[#74ECC7]/50 rounded-xl p-8 shadow-xl max-w-md text-center">
-        <h2 className="text-4xl font-bold text-[#74ECC7] mb-3">
+      <div className="bg-emerald-900/20 border border-emerald-700/50 rounded-xl p-8 shadow-xl max-w-md text-center">
+        <h2 className="text-4xl font-bold text-emerald-400 mb-3">
           <span
             className="grayscale brightness-125 saturate-150"
             style={{ filter: 'hue-rotate(90deg) sepia(1) saturate(2) hue-rotate(90deg) brightness(1.2)' }}
           >
             ⚠️
           </span>{' '}
-          Early Access
+          Alpha Version
         </h2>
-
-        <p className="text-[#74ECC7] mb-6">
-          Please report issues to: <strong className="text-[#74ECC7]">tech@avataros.com</strong>
+        <h3 className="text-lg text-emerald-300 mb-4">This is an early alpha release</h3>
+        <p className="text-emerald-200 mb-6">
+          Expect broken functionality and incomplete features.
+          <br />
+          Please report issues to: <strong className="text-emerald-100">tech@avataros.com</strong>
         </p>
-        <div className="text-sm text-[#74ECC7] pt-4 border-t border-[#74ECC7]">Under active development</div>
+        <div className="text-sm text-emerald-600 pt-4 border-t border-emerald-700">Under active development</div>
       </div>
     </div>
   );

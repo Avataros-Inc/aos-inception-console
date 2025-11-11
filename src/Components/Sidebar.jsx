@@ -24,12 +24,12 @@ const navItems = [
       { key: 'videos', label: 'Videos', path: '/console/videos' },
       { key: 'api-keys', label: 'API Keys', path: '/console/apikeys' },
       { key: 'billing', label: 'Billing', path: '/console/billing' },
+      { key: 'credits', label: 'Credits', path: '/console/credits' },
     ],
   },
 ];
 
 const settingsItems = [{ key: 'account', label: 'Account', icon: LogOut, path: '/console/account' }];
-
 export const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();

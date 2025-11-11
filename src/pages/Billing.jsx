@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
-import { getProducts, getUsage } from '../services/billingService';
+import { getProducts, getUsage, getUserPlan } from '../services/billingService';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../Components/Card';
 import PaymentForm from '../Components/PaymentForm';
-import { getSessionToken } from '../postgrestAPI';
-import { API_BASE_URL } from '../postgrestAPI';
+
 // Initialize Stripe with publishable key from env
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -16,17 +15,26 @@ const BillingPage = () => {
   const [error, setError] = useState(null);
   const [isCreditsVisible, setIsCreditsVisible] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [userPlan, setUserPlan] = useState(null);
   // const [clientSecret, setClientSecret] = useState('');
 
-  const toggleCreditsVisibility = async () => {
+  const getPlan = async () => {
+    try {
+      const userPlan = await getUserPlan();
+      if (userPlan && userPlan.subscribed) {
+        setUserPlan(userPlan);
+      }
+    } catch (error) {
+      console.error('Error fetching user plan:', error);
+    }
+  };
+
+  useEffect(() => {
+    getPlan();
+  }, []);
+
+  const toggleCreditsVisibility = () => {
     setIsCreditsVisible(!isCreditsVisible);
-    const pack = await fetch(`${API_BASE_URL}/webhooks/stripe`, {
-      headers: {
-        Authorization: `Bearer ${getSessionToken()}`,
-      },
-    });
-    const data = await pack.json();
-    console.log(data);
   };
 
   useEffect(() => {
@@ -45,7 +53,6 @@ const BillingPage = () => {
     };
 
     fetchData();
-    toggleCreditsVisibility();
   }, []);
 
   if (loading) {
@@ -60,8 +67,11 @@ const BillingPage = () => {
     setSelectedPlan(plan);
   };
 
-  const handlePaymentSuccess = (paymentIntent) => {
+  const handlePaymentSuccess = async (paymentIntent) => {
     console.log('Payment successful:', paymentIntent);
+    // Refresh user plan data after successful payment
+    await getPlan();
+    setSelectedPlan(null);
     // You can add additional success handling here, like showing a success message
     // or redirecting to a success page
   };
@@ -96,7 +106,7 @@ const BillingPage = () => {
               <h2 className="text-xl font-semibold mb-4">Choose a Plan</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[...plans].reverse().map((plan) => (
-                  <PlanCard key={plan.id} plan={plan} onSelect={handlePlanSelect} />
+                  <PlanCard key={plan.id} plan={plan} onSelect={handlePlanSelect} userPlan={userPlan} />
                 ))}
               </div>
             </div>
@@ -108,21 +118,53 @@ const BillingPage = () => {
   );
 };
 
-const PlanCard = ({ plan, onSelect }) => {
+const PlanCard = ({ plan, onSelect, userPlan }) => {
   const price = plan.default_price?.unit_amount / 100 || 0;
   const currency = plan.default_price?.currency?.toUpperCase() || 'USD';
   const features = plan.metadata || {};
   const name = plan.name || '';
+  const isCurrentPlan = userPlan?.PlanID === plan.default_price?.id;
+  const currentPlanAmount = userPlan?.PriceUnitAmount || 0;
+  const isUpgrade = userPlan && !isCurrentPlan && plan.default_price?.unit_amount > currentPlanAmount;
+  const isDowngrade = userPlan && !isCurrentPlan && plan.default_price?.unit_amount < currentPlanAmount;
 
   const handleClick = () => {
-    onSelect(plan);
+    if (!isCurrentPlan) {
+      onSelect(plan);
+    }
   };
 
   return (
-    <div className="flex flex-col group h-full border-2 border-gray-600 rounded-lg hover:border-[#74ecc8]">
+    <div
+      className={`flex flex-col group h-full border-2 ${
+        isCurrentPlan ? 'border-[#74ecc8]' : 'border-gray-600 hover:border-[#74ecc8]'
+      } relative rounded-lg`}
+    >
+      {isCurrentPlan && (
+        <div className="absolute -top-3 right-4 bg-[#74ecc8] text-gray-800 text-xs font-bold px-3 py-1 rounded-full">
+          Current Plan
+        </div>
+      )}
+
+      {!isCurrentPlan && isUpgrade && (
+        <div className="absolute -top-3 right-4 bg-yellow-400 text-gray-800 text-xs font-bold px-3 py-1 rounded-full">
+          Upgrade
+        </div>
+      )}
+      {!isCurrentPlan && isDowngrade && (
+        <div className="absolute -top-3 right-4 bg-blue-400 text-gray-800 text-xs font-bold px-2 py-1 rounded-full">
+          Downgrade
+        </div>
+      )}
+
       <button
         onClick={handleClick}
-        className="bg-slate-800/50 text-xl font-[500] group-hover:bg-[#74ecc8] group-hover:border-[#74ecc8] w-full text-white px-4 py-5 rounded-lg hover:text-gray-800 transition-colors"
+        className={`text-xl font-[500] w-full px-4 py-5 rounded-lg transition-colors
+          ${
+            isCurrentPlan
+              ? 'bg-[#74ecc8] text-gray-800 cursor-default'
+              : 'bg-slate-800/50 text-white group-hover:bg-[#74ecc8] group-hover:text-gray-800'
+          }`}
       >
         {name}
       </button>
@@ -284,122 +326,5 @@ const Features = ({ plans }) => {
     </div>
   );
 };
-
-// function CreditsCard({ usage, isVisible }) {
-//   // Calculate total usage from the API data
-//   const calculateTotalUsage = () => {
-//     if (!usage || !Array.isArray(usage)) return { totalJobs: 0, totalMinutes: 0 };
-
-//     return usage.reduce(
-//       (acc, item) => ({
-//         totalJobs: acc.totalJobs + (item.total_jobs || 0),
-//         totalMinutes: acc.totalMinutes + (item.billed_minutes || 0),
-//       }),
-//       { totalJobs: 0, totalMinutes: 0 }
-//     );
-//   };
-
-//   const { totalJobs, totalMinutes } = calculateTotalUsage();
-
-//   // For now, using placeholder values for credits until we get the multiplier
-//   const totalCredits = 1000; // Will be updated with actual value
-//   const usedCredits = totalMinutes * 2; // Simple multiplier for now
-//   const remainingCredits = Math.max(0, totalCredits - usedCredits);
-//   const percentage = Math.min(100, Math.max(0, (usedCredits / totalCredits) * 100));
-
-//   const circumference = 2 * Math.PI * 8;
-//   const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-//   // Format date for display
-//   const formatDate = (dateString) => {
-//     const date = new Date(dateString);
-//     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-//   };
-
-//   return (
-//     <div
-//       className={`max-w-md rounded-lg mb-8 border  border-gray-500 hover:border-[#74ecc8] transition-all duration-300 ${
-//         isVisible ? 'block' : 'hidden'
-//       }`}
-//     >
-//       <div className="shadow-sm  p-6">
-//         {/* Header */}
-//         <div className="flex items-center justify-between mb-6">
-//           <div className="flex items-center gap-2">
-//             {/* Circular Progress Chart */}
-//             <div className="relative w-5 h-5">
-//               <svg className="w-5 h-5 transform -rotate-90" viewBox="0 0 20 20">
-//                 <circle cx="10" cy="10" r="8" stroke="#74ecc8" strokeWidth="2.5" fill="none" />
-//                 <circle
-//                   cx="10"
-//                   cy="10"
-//                   r="8"
-//                   stroke="#74ecc8"
-//                   strokeWidth="2.5"
-//                   fill="none"
-//                   strokeDasharray={circumference}
-//                   strokeDashoffset={strokeDashoffset}
-//                   strokeLinecap="round"
-//                   className="transition-all duration-300"
-//                 />
-//               </svg>
-//             </div>
-//             <span className="text-white font-medium">Monthly Usage</span>
-//           </div>
-//           <button
-//             className="bg-slate-800/50   text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-gray-300 transition-colors"
-//             onClick={() => document.getElementById('billing-plans').scrollIntoView({ behavior: 'smooth' })}
-//           >
-//             Upgrade
-//           </button>
-//         </div>
-
-//         {/* Usage Summary */}
-//         <div className="space-y-4">
-//           <div className="space-y-2">
-//             <div className="flex justify-between items-center">
-//               <span className="text-white text-sm">Billed Minutes</span>
-//               <span className="text-white font-semibold">{totalMinutes.toLocaleString()} min</span>
-//             </div>
-//             <div className="flex justify-between items-center">
-//               <span className="text-white text-sm">Total Jobs</span>
-//               <span className="text-white font-semibold">{totalJobs.toLocaleString()}</span>
-//             </div>
-//           </div>
-
-//           <div className="border-t border-gray-100 pt-4">
-//             <div className="flex justify-between items-center mb-2">
-//               <span className="text-white text-sm">Credits Used</span>
-//               <span className="text-white font-semibold">
-//                 {usedCredits.toLocaleString()} / {totalCredits.toLocaleString()}
-//               </span>
-//             </div>
-//             <div className="w-full bg-gray-100 rounded-full h-2">
-//               <div
-//                 className="bg-[#74ecc8] h-2 rounded-full transition-all duration-500"
-//                 style={{ width: `${percentage}%` }}
-//               />
-//             </div>
-//           </div>
-
-//           {/* Recent Activity */}
-//           {usage && usage.length > 0 && (
-//             <div className="mt-4">
-//               <h4 className="text-sm font-medium text-white mb-2">Recent Activity</h4>
-//               <div className="space-y-2">
-//                 {usage.slice(0, 3).map((item, index) => (
-//                   <div key={index} className="flex justify-between text-sm">
-//                     <span className="text-white">{formatDate(item.day)}</span>
-//                     <span className="font-medium text-white">{item.billed_minutes} min</span>
-//                   </div>
-//                 ))}
-//               </div>
-//             </div>
-//           )}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
 
 export default BillingPage;

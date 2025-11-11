@@ -85,7 +85,7 @@ export const RenderQueue = () => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-96">
-        <Loader2 className="animate-spin text-[#74ECC7] mb-3" size={32} />
+        <Loader2 className="animate-spin text-accent-mint mb-3" size={32} />
         <p className="text-slate-400">Loading live sessions...</p>
       </div>
     );
@@ -101,7 +101,7 @@ export const RenderQueue = () => {
         <p className="text-red-300 mb-4">{error}</p>
         <button
           onClick={fetchSessions}
-          className="bg-gradient-to-r from-brand-400 to-[#74ECC7] text-slate-900 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-[#74ECC7]/25 transition-all duration-300"
+          className="bg-gradient-to-r from-brand-400 to-accent-mint text-slate-900 px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-accent-mint/25 transition-all duration-300"
         >
           Retry
         </button>
@@ -114,28 +114,30 @@ export const RenderQueue = () => {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-[#74ECC7] to-green-500 bg-clip-text text-transparent mb-2">
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-green-500 bg-clip-text text-transparent mb-2">
               Live Sessions
             </h2>
             <p className="text-slate-400">Monitor and manage your active avatar live sessions</p>
           </div>
           <div className="flex items-center gap-3">
             {lastUpdated && (
-              <span className="text-sm text-slate-500">Last updated: {lastUpdated.toLocaleTimeString()}</span>
+              <span className="text-sm text-slate-500">
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </span>
             )}
             <label className="flex items-center gap-2 text-sm text-slate-300">
               <input
                 type="checkbox"
                 checked={autoRefresh}
                 onChange={(e) => setAutoRefresh(e.target.checked)}
-                className="rounded border-slate-600 bg-slate-700 text-[#74ECC7] focus:ring-[#74ECC7] focus:ring-offset-slate-800"
+                className="rounded border-slate-600 bg-slate-700 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-800"
               />
               Auto-refresh (10s)
             </label>
             <button
               onClick={fetchSessions}
               disabled={loading}
-              className="inline-flex items-center gap-2 px-3 py-2 bg-[#74ECC7] hover:bg-[#74ECC7] disabled:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
               Refresh
@@ -147,7 +149,7 @@ export const RenderQueue = () => {
       <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden">
         <div className="border-b border-slate-700/50 p-4">
           <h3 className="flex items-center text-white font-semibold">
-            <MonitorPlay className="mr-2 text-[#74ECC7]" size={20} />
+            <MonitorPlay className="mr-2 text-emerald-400" size={20} />
             Active Live Sessions
           </h3>
         </div>

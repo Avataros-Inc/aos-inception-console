@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Spinner, Form, Alert } from 'react-bootstrap';
-import { API_BASE_URL, getSessionToken, getSession, removeSession } from './postgrestAPI';
+import { API_BASE_URL, getSessionToken, getSession } from './postgrestAPI';
 import UpdatePassword from './Account/UpdatePassword';
 import OrgUsers from './Account/OrgUsers';
 import { User, Shield, Users, Loader2 } from 'lucide-react';
@@ -13,7 +12,6 @@ const AccountSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [userData, setUserData] = useState(null);
   const [name, setName] = useState('');
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -67,14 +65,6 @@ const AccountSettings = () => {
     }
   };
 
-  const handleLogout = () => {
-    try {
-      removeSession();
-    } finally {
-      navigate('/login');
-    }
-  };
-
   if (!userData) {
     return (
       <div className="flex flex-col items-center justify-center min-h-96">
@@ -86,13 +76,9 @@ const AccountSettings = () => {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h2 className="gradient-text text-3xl font-bold mb-6">Account Settings</h2>
-          <p className="text-slate-400">Manage your profile and organization settings</p>
-        </div>
-        {/* logout button here on right side */}
-        <Button onClick={handleLogout}>Logout</Button>
+      <div className="mb-6">
+        <h2 className="gradient-text text-3xl font-bold mb-6">Account Settings</h2>
+        <p className="text-slate-400">Manage your profile and organization settings</p>
       </div>
 
       {/* Profile Section */}

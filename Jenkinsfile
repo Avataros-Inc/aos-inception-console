@@ -13,36 +13,16 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                script {
-                    // Checkout code with submodules
-                    checkout([
-                        $class: 'GitSCM',
-                        branches: scm.branches,
-                        extensions: [
-                            [$class: 'SubmoduleOption',
-                             disableSubmodules: false,
-                             parentCredentials: true,
-                             recursiveSubmodules: true,
-                             trackingSubmodules: false]
-                        ],
-                        userRemoteConfigs: scm.userRemoteConfigs
-                    ])
-                }
-            }
-        }
-
         stage('Verify Docker Installation') {
             steps {
                 script {
                     // Check if Docker is available
                     def dockerAvailable = sh(script: 'which docker || command -v docker', returnStatus: true) == 0
-
+                    
                     if (!dockerAvailable) {
                         error 'Docker is not available. Please ensure Docker is pre-installed on this agent or use a different agent with Docker installed.'
                     }
-
+                    
                     // Verify Docker is working
                     sh 'docker --version'
                 }

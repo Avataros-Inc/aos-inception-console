@@ -16,7 +16,7 @@
   --bg-primary: rgb(12, 20, 29); /* #0f1419 */
   --bg-secondary: rgb(26, 33, 45); /* #1a1f2e */
   --bg-sidebar: hsl(210, 45%, 6%); /* #0a0f14 */
-  --accent-mint: #74ECC7; /* #74ecc7 */
+  --accent-mint: hsl(162, 73%, 68%); /* #74ecc7 */
   --text-primary: hsl(0, 0%, 100%); /* #ffffff */
   --text-secondary: hsl(240, 5%, 64%); /* #a1a1aa */
   --border-subtle: hsl(215, 20%, 20%); /* #2a2f3a */

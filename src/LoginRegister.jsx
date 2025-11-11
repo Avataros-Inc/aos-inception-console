@@ -77,7 +77,7 @@ export const Login = () => {
             <div>
               <input
                 type="email"
-                className="w-full bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-lg transition-all duration-300 focus:border-[#74ECC7] focus:ring-2 focus:ring-[#74ECC7]/25 focus:outline-none"
+                className="w-full bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-lg transition-all duration-300 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25 focus:outline-none"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email address"
@@ -87,7 +87,7 @@ export const Login = () => {
             <div>
               <input
                 type="password"
-                className="w-full bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-lg transition-all duration-300 focus:border-[#74ECC7] focus:ring-2 focus:ring-[#74ECC7]/25 focus:outline-none"
+                className="w-full bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-lg transition-all duration-300 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25 focus:outline-none"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
@@ -96,17 +96,17 @@ export const Login = () => {
             </div>
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-[#74ECC7] to-green-500 text-slate-900 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-[#74ECC7]/25 transition-all duration-300"
+              className="w-full bg-gradient-to-r from-emerald-400 to-green-500 text-slate-900 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-emerald-400/25 transition-all duration-300"
             >
               Sign in
             </button>
           </form>
           <div className="text-center mt-6 space-x-2">
-            <a href="#/register" className="text-[#74ECC7] hover:text-[#74ECC7] transition-colors">
+            <a href="#/register" className="text-emerald-400 hover:text-emerald-300 transition-colors">
               Register
             </a>
             <span className="text-slate-500">|</span>
-            <a href="#/reset-password" className="text-[#74ECC7] hover:text-[#74ECC7] transition-colors">
+            <a href="#/reset-password" className="text-emerald-400 hover:text-emerald-300 transition-colors">
               Forgot password?
             </a>
           </div>
@@ -115,7 +115,7 @@ export const Login = () => {
           </div>
           {loading ? (
             <div className="flex items-center mt-2">
-              <Loader2 className="animate-spin text-[#74ECC7] mr-2" size={16} />
+              <Loader2 className="animate-spin text-emerald-400 mr-2" size={16} />
               <small className="text-slate-400">Checking status...</small>
             </div>
           ) : (
@@ -153,7 +153,7 @@ export const Register = () => {
             </div>
           )}
           <div className="text-center mt-6">
-            <a href="#/login" className="text-[#74ECC7] hover:text-[#74ECC7] transition-colors">
+            <a href="#/login" className="text-emerald-400 hover:text-emerald-300 transition-colors">
               Already have an account? Sign in
             </a>
           </div>
@@ -213,7 +213,7 @@ export const ResetPassword = () => {
             <div>
               <input
                 type="email"
-                className="w-full bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-lg transition-all duration-300 focus:border-[#74ECC7] focus:ring-2 focus:ring-[#74ECC7]/25 focus:outline-none"
+                className="w-full bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-lg transition-all duration-300 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25 focus:outline-none"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email address"
@@ -222,13 +222,13 @@ export const ResetPassword = () => {
             </div>
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-[#74ECC7] to-green-500 text-slate-900 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-[#74ECC7]/25 transition-all duration-300"
+              className="w-full bg-gradient-to-r from-emerald-400 to-green-500 text-slate-900 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-emerald-400/25 transition-all duration-300"
             >
               Send reset link
             </button>
           </form>
           <div className="text-center mt-6">
-            <a href="#/login" className="text-[#74ECC7] hover:text-[#74ECC7] transition-colors">
+            <a href="#/login" className="text-emerald-400 hover:text-emerald-300 transition-colors">
               Back to login
             </a>
           </div>
@@ -257,7 +257,7 @@ export const ResetPasswordConfirm = () => {
 
   const handleResetPasswordConfirm = async (e) => {
     e.preventDefault();
-
+    
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -269,9 +269,9 @@ export const ResetPasswordConfirm = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
+        body: JSON.stringify({ 
           token,
-          password,
+          password 
         }),
       });
 
@@ -307,7 +307,7 @@ export const ResetPasswordConfirm = () => {
               <div>
                 <input
                   type="password"
-                  className="w-full bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-lg transition-all duration-300 focus:border-[#74ECC7] focus:ring-2 focus:ring-[#74ECC7]/25 focus:outline-none"
+                  className="w-full bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-lg transition-all duration-300 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25 focus:outline-none"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="New password"
@@ -317,7 +317,7 @@ export const ResetPasswordConfirm = () => {
               <div>
                 <input
                   type="password"
-                  className="w-full bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-lg transition-all duration-300 focus:border-[#74ECC7] focus:ring-2 focus:ring-[#74ECC7]/25 focus:outline-none"
+                  className="w-full bg-slate-800 border border-slate-600 text-white px-4 py-3 rounded-lg transition-all duration-300 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25 focus:outline-none"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm new password"
@@ -326,7 +326,7 @@ export const ResetPasswordConfirm = () => {
               </div>
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-[#74ECC7] to-green-500 text-slate-900 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-[#74ECC7]/25 transition-all duration-300"
+                className="w-full bg-gradient-to-r from-emerald-400 to-green-500 text-slate-900 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-emerald-400/25 transition-all duration-300"
               >
                 Reset password
               </button>
@@ -335,7 +335,7 @@ export const ResetPasswordConfirm = () => {
             <p className="text-slate-300 text-center">Invalid or missing reset token.</p>
           )}
           <div className="text-center mt-6">
-            <a href="#/login" className="text-[#74ECC7] hover:text-[#74ECC7] transition-colors">
+            <a href="#/login" className="text-emerald-400 hover:text-emerald-300 transition-colors">
               Back to login
             </a>
           </div>
