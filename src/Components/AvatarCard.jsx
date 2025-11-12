@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Edit, Play, MoreHorizontal, Copy, Trash2, User, Plus } from 'lucide-react';
+import { Edit, Play, MoreHorizontal, Copy, Trash2, User, Plus, Loader2 } from 'lucide-react';
 import { Button } from './Button';
 import { Card, CardPreview, CardContent, CardBadge, CardActions } from './Card';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './Dropdown';
@@ -35,7 +35,7 @@ const Select = ({ defaultValue, className }) => {
   );
 };
 
-export function AvatarCard({ avatar, onEdit, onPlay, onDelete, onDuplicate, onUpdateName }) {
+export function AvatarCard({ avatar, onEdit, onPlay, onDelete, onDuplicate, onUpdateName, isLaunching = false }) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(avatar.name);
 
@@ -105,19 +105,23 @@ export function AvatarCard({ avatar, onEdit, onPlay, onDelete, onDuplicate, onUp
 
         {/* Action Buttons */}
         <CardActions className="space-x-2">
-          <Button variant="secondary" size="sm" className="flex-1" onClick={() => onEdit(avatar)}>
+          <Button variant="secondary" size="sm" className="flex-1" onClick={() => onEdit(avatar)} disabled={isLaunching}>
             <Edit className="w-4 h-4 mr-1" />
             Embed
           </Button>
-          <Button variant="primary" size="sm" className="flex-1" onClick={() => onPlay(avatar)}>
-            <Play className="w-4 h-4 mr-1" />
-            Launch
+          <Button variant="primary" size="sm" className="flex-1" onClick={() => onPlay(avatar)} disabled={isLaunching}>
+            {isLaunching ? (
+              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+            ) : (
+              <Play className="w-4 h-4 mr-1" />
+            )}
+            {isLaunching ? 'Launching...' : 'Launch'}
           </Button>
 
           {/* More Options */}
           <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="secondary" size="sm">
+            <DropdownMenuTrigger disabled={isLaunching}>
+              <Button variant="secondary" size="sm" disabled={isLaunching}>
                 <MoreHorizontal className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>

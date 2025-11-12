@@ -16,6 +16,7 @@ import { Button } from '@/Components/Button';
 import { AvatarCard, CreateAvatarCard } from '@/Components/AvatarCard';
 import { useAvatarLivestream } from './contexts/AvatarLivestreamContext';
 import { useConfig } from './contexts/ConfigContext';
+import { Modal, ModalHeader, ModalContent, ModalFooter } from '@/Components/Modal';
 
 // Embed Modal Component
 const EmbedModal = ({ avatar, onClose }) => {
@@ -82,6 +83,8 @@ const CharPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showEmbedModal, setShowEmbedModal] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState(null);
+  const [launchingAvatarId, setLaunchingAvatarId] = useState(null);
+  const [errorModal, setErrorModal] = useState({ isOpen: false, message: '', title: 'Error' });
 
   useEffect(() => {
     async function fetchCharacters() {
@@ -105,6 +108,7 @@ const CharPage = () => {
   };
 
   const handlePlay = async (avatar) => {
+    setLaunchingAvatarId(avatar.id);
     try {
       applyAvatarSession(avatar);
 
@@ -119,10 +123,25 @@ const CharPage = () => {
       };
 
       const sessionId = await createSession(config);
-      navigate(`/console/conversational-ai/${sessionId}`);
+      // Navigate with full page refresh
+      window.location.href = `#/console/conversational-ai/${sessionId}`;
     } catch (error) {
       console.error('Failed to create session:', error);
-      alert(`Failed to create session: ${error.message}`);
+
+      // Special handling for 503 Service Unavailable - session is created, navigate anyway
+      if (error.status === 503 && error.sessionId) {
+        console.log('Service unavailable but session created, navigating to:', error.sessionId);
+        window.location.href = `#/console/conversational-ai/${error.sessionId}`;
+        return;
+      }
+
+      // For all other errors, show error modal and stop loading
+      setLaunchingAvatarId(null);
+      setErrorModal({
+        isOpen: true,
+        title: 'Failed to Launch Avatar',
+        message: error.message || 'An unknown error occurred while launching the avatar.',
+      });
     }
   };
 
@@ -166,6 +185,7 @@ const CharPage = () => {
               avatar={character}
               onEdit={handleEdit}
               onPlay={handlePlay}
+              isLaunching={launchingAvatarId === character.id}
             />
           ))}
 
@@ -197,6 +217,24 @@ const CharPage = () => {
           }}
         />
       )}
+
+      {/* Error Modal */}
+      <Modal
+        isOpen={errorModal.isOpen}
+        onClose={() => setErrorModal({ ...errorModal, isOpen: false })}
+      >
+        <ModalHeader onClose={() => setErrorModal({ ...errorModal, isOpen: false })}>
+          {errorModal.title}
+        </ModalHeader>
+        <ModalContent>
+          <p className="text-text-secondary">{errorModal.message}</p>
+        </ModalContent>
+        <ModalFooter>
+          <Button variant="primary" onClick={() => setErrorModal({ ...errorModal, isOpen: false })}>
+            Close
+          </Button>
+        </ModalFooter>
+      </Modal>
     </div>
   );
 };

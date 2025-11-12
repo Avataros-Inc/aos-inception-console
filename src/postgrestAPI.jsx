@@ -533,7 +533,32 @@ export const createLivestream = async (config) => {
     if (!response.ok) {
       const errorData = await response.text();
       console.error('Livestream creation failed:', response.status, errorData);
-      throw new Error(`Failed to create livestream: ${response.status} ${errorData}`);
+
+      // Special handling for 503 Service Unavailable - session is created but service is unavailable
+      if (response.status === 503) {
+        let sessionId = null;
+        try {
+          // Try to parse response as JSON to extract session ID
+          const errorJson = JSON.parse(errorData);
+          sessionId = errorJson.id || errorJson.session_id || errorJson.sessionId;
+        } catch (e) {
+          // If JSON parse fails, try to extract UUID from error text
+          const uuidMatch = errorData.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+          if (uuidMatch) {
+            sessionId = uuidMatch[0];
+          }
+        }
+
+        const error = new Error(`Service temporarily unavailable: ${errorData}`);
+        error.status = 503;
+        error.sessionId = sessionId;
+        throw error;
+      }
+
+      // For other errors, include status code in the error
+      const error = new Error(`Failed to create livestream: ${errorData}`);
+      error.status = response.status;
+      throw error;
     }
 
     const livestream = await response.json();
@@ -547,15 +572,28 @@ export const createLivestream = async (config) => {
   } catch (error) {
     console.error(`Error creating livestream:`, error);
 
-    // Enhanced error handling with more specific messages
+    // If error already has status and sessionId (from our 503 handling), preserve them
+    if (error.status) {
+      throw error;
+    }
+
+    // Enhanced error handling with more specific messages for legacy string-based errors
     if (error.message.includes('401')) {
-      throw new Error('Authentication failed. Please login again.');
+      const newError = new Error('Authentication failed. Please login again.');
+      newError.status = 401;
+      throw newError;
     } else if (error.message.includes('403')) {
-      throw new Error('Permission denied. Check your account privileges.');
+      const newError = new Error('Permission denied. Check your account privileges.');
+      newError.status = 403;
+      throw newError;
     } else if (error.message.includes('429')) {
-      throw new Error('Too many requests. Please wait a moment and try again.');
+      const newError = new Error('Too many requests. Please wait a moment and try again.');
+      newError.status = 429;
+      throw newError;
     } else if (error.message.includes('500')) {
-      throw new Error('Server error. Please try again later.');
+      const newError = new Error('Server error. Please try again later.');
+      newError.status = 500;
+      throw newError;
     }
 
     throw error;
