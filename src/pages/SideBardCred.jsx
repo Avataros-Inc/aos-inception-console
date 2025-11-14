@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { getProducts, getUsage } from '../services/billingService';
+import { getProducts, getUsage, getUserPlan } from '../services/billingService';
 import CreditsCard from './CreditsCard';
 
 function CreditsCardCred() {
   const [plans, setPlans] = useState([]);
   const [usage, setUsage] = useState(null);
+  const [userPlan, setUserPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCreditsModal, setShowCreditsModal] = useState(false);
@@ -13,9 +14,14 @@ function CreditsCardCred() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [productsData, usageData] = await Promise.all([getProducts(), getUsage()]);
+        const [productsData, usageData, userPlanData] = await Promise.all([
+          getProducts(),
+          getUsage(),
+          getUserPlan(),
+        ]);
         setPlans(productsData);
         setUsage(usageData);
+        setUserPlan(userPlanData);
       } catch (err) {
         console.error('Error fetching billing data:', err);
         setError('Failed to load billing information');
@@ -40,7 +46,25 @@ function CreditsCardCred() {
     );
   };
 
-  const { totalJobs, totalMinutes } = calculateTotalUsage();
+  const { totalMinutes } = calculateTotalUsage();
+
+  // Get monthly credits from user's plan
+  const getMonthlyCredits = () => {
+    if (!userPlan || !plans || plans.length === 0) return 1000; // Default fallback
+
+    // Find the product that matches the user's plan
+    const userProduct = plans.find((product) => product.id === userPlan.ProductID);
+
+    if (userProduct && userProduct.metadata && userProduct.metadata.monthly_credits) {
+      return parseInt(userProduct.metadata.monthly_credits, 10);
+    }
+
+    return 1000; // Default fallback
+  };
+
+  const totalCredits = getMonthlyCredits();
+  const usedCredits = totalMinutes;
+  const percentage = Math.min(100, Math.max(0, (usedCredits / totalCredits) * 100));
 
   if (loading) {
     return (
@@ -53,7 +77,7 @@ function CreditsCardCred() {
   return (
     <div
       onClick={() => setShowCreditsModal(true)}
-      className={`max-w-sm mx-3 rounded-lg mb-8 border  border-gray-500 hover:border-[#74ecc8] transition-all duration-300 ${'block '}`}
+      className={`max-w-sm mx-3 rounded-lg mb-8 border  border-gray-500 hover:border-[#74ecc8] transition-all duration-300 cursor-pointer ${'block '}`}
     >
       <div className="shadow-sm  p-6">
         {/* Header */}
@@ -65,8 +89,7 @@ function CreditsCardCred() {
             className="justify-center rounded font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent-mint focus:ring-offset-2 focus:ring-offset-bg-primary disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-accent-mint to-emerald-600 text-bg-primary hover:from-emerald-600 hover:to-accent-mint hover:shadow-lg hover:shadow-accent-mint/20 px-2 py-1 flex items-center text-sm gap-2"
             onClick={(e) => {
               e.stopPropagation();
-              const el = document.getElementById('billing-plans');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
+              window.location.hash = '#/console/billing';
             }}
           >
             Upgrade
@@ -74,16 +97,19 @@ function CreditsCardCred() {
         </div>
 
         {/* Usage Summary */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-white text-sm">Credits</span>
-              <span className="text-white font-semibold">{totalMinutes.toLocaleString()}</span>
+        <div className="space-y-2">
+          {/* Credits Used with Progress Bar */}
+          <div className="space-y-1">
+            <span className="text-white text-sm">Credits Used</span>
+            <div className="text-white font-semibold text-lg">
+              {usedCredits.toLocaleString()} / {totalCredits.toLocaleString()}
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-white text-sm">Total Jobs</span>
-              <span className="text-white font-semibold">{totalJobs.toLocaleString()}</span>
-            </div>
+          </div>
+          <div className="w-full bg-gray-700 rounded-full h-2">
+            <div
+              className="bg-[#74ecc8] h-2 rounded-full transition-all duration-500"
+              style={{ width: `${percentage}%` }}
+            />
           </div>
         </div>
       </div>
