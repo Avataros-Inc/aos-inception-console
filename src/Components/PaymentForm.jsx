@@ -19,7 +19,7 @@ const PaymentForm = ({ plan, onSuccess, onCancel }) => {
     setProcessing(true);
     setError(null);
     try {
-      // Create payment intent on your server
+      // Create payment intent or subscription on your server
       const response = await fetch(`${API_BASE_URL}/api/v1/billing/intent`, {
         method: 'POST',
         headers: {
@@ -34,30 +34,57 @@ const PaymentForm = ({ plan, onSuccess, onCancel }) => {
         }),
       });
 
-      const { clientSecret } = await response.json();
-
-      // Confirm the card payment
-      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: elements.getElement(CardElement),
-          billing_details: {
-            name: 'Customer Name', // You can collect this from a form
-          },
-        },
-      });
-
-      if (stripeError) {
-        setError(stripeError.message);
-        setProcessing(false);
-        return;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.error || 'Failed to process subscription');
       }
 
-      if (paymentIntent.status === 'succeeded') {
-        setSucceeded(true);
-        onSuccess(paymentIntent);
+      const responseData = await response.json();
+
+      // Check if backend returned a clientSecret (requires payment confirmation)
+      // or subscriptionId (subscription already created/updated)
+      if (responseData.clientSecret) {
+        // Flow 1: Payment confirmation required
+        const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(responseData.clientSecret, {
+          payment_method: {
+            card: elements.getElement(CardElement),
+            billing_details: {
+              name: 'Customer Name', // You can collect this from a form
+            },
+          },
+        });
+
+        if (stripeError) {
+          setError(stripeError.message);
+          setProcessing(false);
+          return;
+        }
+
+        if (paymentIntent.status === 'succeeded') {
+          setSucceeded(true);
+          onSuccess(paymentIntent);
+        }
+      } else if (responseData.subscriptionId && responseData.status) {
+        // Flow 2: Subscription already created/updated (e.g., for existing customers)
+        if (responseData.status === 'active' || responseData.status === 'trialing') {
+          setSucceeded(true);
+          onSuccess(responseData);
+        } else if (responseData.status === 'incomplete' || responseData.status === 'past_due') {
+          setError(`Subscription status: ${responseData.status}. Please update your payment method.`);
+          setProcessing(false);
+        } else {
+          setError(`Unexpected subscription status: ${responseData.status}`);
+          setProcessing(false);
+        }
+      } else {
+        // Unexpected response format
+        console.error('Unexpected API response:', responseData);
+        setError('Unexpected response from server. Please contact support.');
+        setProcessing(false);
       }
     } catch (err) {
-      setError(err.message);
+      console.error('Payment processing error:', err);
+      setError(err.message || 'An error occurred while processing your payment');
       setProcessing(false);
     }
   };

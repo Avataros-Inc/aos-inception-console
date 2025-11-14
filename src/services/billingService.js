@@ -28,3 +28,17 @@ export const getUsage = async () => {
 
   return response.json();
 };
+
+export const getUserPlan = async () => {
+  const response = await fetch(`${API_BASE_URL}/api/v1/billing/subscription`, {
+    headers: {
+      Authorization: `Bearer ${getSessionToken()}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch user plan');
+  }
+
+  return response.json();
+};

@@ -30,7 +30,6 @@ const navItems = [
 ];
 
 const settingsItems = [{ key: 'account', label: 'Account', icon: LogOut, path: '/console/account' }];
-
 export const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();

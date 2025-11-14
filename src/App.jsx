@@ -25,7 +25,6 @@ import {
   Video,
   MessageSquare,
   ArrowLeftRight,
-  Users,
   Receipt,
   User as UserIcon,
   Key,
