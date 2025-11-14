@@ -41,10 +41,45 @@ const PaymentForm = ({ plan, onSuccess, onCancel }) => {
 
       const responseData = await response.json();
 
-      // Check if backend returned a clientSecret (requires payment confirmation)
-      // or subscriptionId (subscription already created/updated)
-      if (responseData.clientSecret) {
-        // Flow 1: Payment confirmation required
+      // Prioritize checking subscription status to determine the correct flow
+      if (responseData.subscriptionId && responseData.status) {
+        // Flow 1: Subscription created, check if payment confirmation needed
+        if (responseData.status === 'incomplete' && (responseData.clientSecret || responseData.paymentIntentClientSecret)) {
+          // Payment confirmation required for incomplete subscription
+          const clientSecret = responseData.paymentIntentClientSecret || responseData.clientSecret;
+
+          const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+            payment_method: {
+              card: elements.getElement(CardElement),
+              billing_details: {
+                name: 'Customer Name', // You can collect this from a form
+              },
+            },
+          });
+
+          if (stripeError) {
+            setError(stripeError.message);
+            setProcessing(false);
+            return;
+          }
+
+          if (paymentIntent.status === 'succeeded') {
+            setSucceeded(true);
+            onSuccess({ ...responseData, paymentIntent });
+          }
+        } else if (responseData.status === 'active' || responseData.status === 'trialing') {
+          // Subscription already active
+          setSucceeded(true);
+          onSuccess(responseData);
+        } else if (responseData.status === 'past_due') {
+          setError(`Subscription status: ${responseData.status}. Please update your payment method.`);
+          setProcessing(false);
+        } else {
+          setError(`Unexpected subscription status: ${responseData.status}`);
+          setProcessing(false);
+        }
+      } else if (responseData.clientSecret) {
+        // Flow 2: Legacy flow - just a payment intent without subscription details
         const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(responseData.clientSecret, {
           payment_method: {
             card: elements.getElement(CardElement),
@@ -63,18 +98,6 @@ const PaymentForm = ({ plan, onSuccess, onCancel }) => {
         if (paymentIntent.status === 'succeeded') {
           setSucceeded(true);
           onSuccess(paymentIntent);
-        }
-      } else if (responseData.subscriptionId && responseData.status) {
-        // Flow 2: Subscription already created/updated (e.g., for existing customers)
-        if (responseData.status === 'active' || responseData.status === 'trialing') {
-          setSucceeded(true);
-          onSuccess(responseData);
-        } else if (responseData.status === 'incomplete' || responseData.status === 'past_due') {
-          setError(`Subscription status: ${responseData.status}. Please update your payment method.`);
-          setProcessing(false);
-        } else {
-          setError(`Unexpected subscription status: ${responseData.status}`);
-          setProcessing(false);
         }
       } else {
         // Unexpected response format
