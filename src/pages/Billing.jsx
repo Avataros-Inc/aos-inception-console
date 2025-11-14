@@ -128,8 +128,23 @@ const PlanCard = ({ plan, onSelect, userPlan }) => {
   const isUpgrade = userPlan && !isCurrentPlan && plan.default_price?.unit_amount > currentPlanAmount;
   const isDowngrade = userPlan && !isCurrentPlan && plan.default_price?.unit_amount < currentPlanAmount;
 
+  // Check if subscription is canceled
+  const isCanceled = userPlan?.Status === 'canceled';
+  const cutoffDate = userPlan?.CurrentPeriodEnd ? new Date(userPlan.CurrentPeriodEnd * 1000) : null;
+
+  // Format the cutoff date
+  const formatDate = (date) => {
+    if (!date) return '';
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   const handleClick = () => {
-    if (!isCurrentPlan) {
+    // Allow selecting plan if it's not current, or if it's current but canceled (to resubscribe)
+    if (!isCurrentPlan || (isCurrentPlan && isCanceled)) {
       onSelect(plan);
     }
   };
@@ -137,12 +152,18 @@ const PlanCard = ({ plan, onSelect, userPlan }) => {
   return (
     <div
       className={`flex flex-col group h-full border-2 ${
-        isCurrentPlan ? 'border-[#74ecc8]' : 'border-gray-600 hover:border-[#74ecc8]'
+        isCurrentPlan && !isCanceled ? 'border-[#74ecc8]' : 'border-gray-600 hover:border-[#74ecc8]'
       } relative rounded-lg`}
     >
-      {isCurrentPlan && (
+      {isCurrentPlan && !isCanceled && (
         <div className="absolute -top-3 right-4 bg-[#74ecc8] text-gray-800 text-xs font-bold px-3 py-1 rounded-full">
           Current Plan
+        </div>
+      )}
+
+      {isCurrentPlan && isCanceled && cutoffDate && (
+        <div className="absolute -top-3 right-4 bg-orange-400 text-gray-800 text-xs font-bold px-3 py-1 rounded-full">
+          Active until {formatDate(cutoffDate)}
         </div>
       )}
 
@@ -161,7 +182,7 @@ const PlanCard = ({ plan, onSelect, userPlan }) => {
         onClick={handleClick}
         className={`text-xl font-[500] w-full px-4 py-5 rounded-lg transition-colors
           ${
-            isCurrentPlan
+            isCurrentPlan && !isCanceled
               ? 'bg-[#74ecc8] text-gray-800 cursor-default'
               : 'bg-slate-800/50 text-white group-hover:bg-[#74ecc8] group-hover:text-gray-800'
           }`}
