@@ -3,12 +3,14 @@ import { Form, Spinner, Alert } from 'react-bootstrap';
 import { Mic, Stop, Upload, Play, Trash } from 'react-bootstrap-icons';
 import ConfigSidebar from '@/Components/ConfigSidebar';
 import { useConfig } from './contexts/ConfigContext';
+import { useTopBarOffset } from './Components/TopBar';
 import { insertRenderJob, API_BASE_URL, getSessionToken } from './postgrestAPI';
 import RenderJobVideo from './Components/RenderJobVideo';
 import { Button } from '@/Components/Button';
 
 const AudioToAvatar = () => {
   const { config } = useConfig();
+  const { topOffset } = useTopBarOffset();
   const [audioFile, setAudioFile] = useState(null);
   const [currentRenderJob, setCurrentRenderJob] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
@@ -294,7 +296,7 @@ const AudioToAvatar = () => {
           <RenderJobVideo renderJobID={currentRenderJob} />
         </div>
       </div>
-      <ConfigSidebar visual a2f />
+      <ConfigSidebar visual a2f topOffset={topOffset} />
     </div>
   );
 };

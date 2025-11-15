@@ -14,6 +14,7 @@ const ConfigSidebar = ({
   llm = false,
   sendMessage = null,
   isLiveSession = false,
+  topOffset = 0,
 }) => {
   const { characters, config, updateConfig } = useConfig();
   const [activeTab, setActiveTab] = useState('visual');
@@ -55,7 +56,10 @@ const ConfigSidebar = ({
   }
 
   return (
-    <div className="fixed top-0 right-0 w-[480px] h-screen sidebar-glass-right border-l border-border-subtle p-5 overflow-y-auto z-[900] transform transition-transform duration-500 ease-in-out translate-x-0 before:ml-[480px]">
+    <div
+      className="fixed right-0 w-[480px] sidebar-glass-right border-l border-border-subtle p-5 overflow-y-auto z-[900] transform transition-transform duration-500 ease-in-out translate-x-0 before:ml-[480px]"
+      style={{ top: `${topOffset}px`, height: `calc(100vh - ${topOffset}px)` }}
+    >
       {/* Tab Navigation */}
       <div className="border-b border-border-subtle mb-5">
         <div className="flex gap-2 pb-3">

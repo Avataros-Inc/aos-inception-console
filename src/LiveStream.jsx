@@ -3,6 +3,7 @@ import { getSessionToken, API_BASE_URL } from './postgrestAPI';
 import ConfigSidebar from '@/Components/ConfigSidebar';
 import { useConfig } from './contexts/ConfigContext';
 import { useAvatarLivestream } from './contexts/AvatarLivestreamContext';
+import { useTopBarOffset } from './Components/TopBar';
 import { Button } from '@/Components/Button';
 import { Play, Loader2 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -14,6 +15,7 @@ const LiveStreamPage = () => {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { createSession, endSession } = useAvatarLivestream();
+  const { topOffset } = useTopBarOffset();
   const [permissionsGranted, setPermissionsGranted] = useState(false);
   const [permissionError, setPermissionError] = useState(null);
   const [errorModal, setErrorModal] = useState({ isOpen: false, message: '', title: 'Error' });
@@ -138,7 +140,7 @@ const LiveStreamPage = () => {
           )}
         </div>
 
-        <ConfigSidebar visual voice a2f llm isLiveSession />
+        <ConfigSidebar visual voice a2f llm isLiveSession topOffset={topOffset} />
       </div>
     );
   }
@@ -179,7 +181,7 @@ const LiveStreamPage = () => {
           </div>
         </div>
 
-        <ConfigSidebar visual voice a2f llm isLiveSession={false} />
+        <ConfigSidebar visual voice a2f llm isLiveSession={false} topOffset={topOffset} />
       </div>
 
       {/* Error Modal */}

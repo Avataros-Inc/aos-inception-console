@@ -30,7 +30,7 @@ const navItems = [
 ];
 
 const settingsItems = [{ key: 'account', label: 'Account', icon: LogOut, path: '/console/account' }];
-export const Sidebar = () => {
+export const Sidebar = ({ topOffset = 64 }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -55,7 +55,10 @@ export const Sidebar = () => {
   };
 
   return (
-    <aside className="fixed left-0 top-16 bottom-0 w-64 z-50 sidebar-glass border-border-subtle bg-none">
+    <aside
+      className="fixed left-0 bottom-0 w-64 z-50 sidebar-glass border-border-subtle bg-none"
+      style={{ top: `${topOffset}px` }}
+    >
       <div className="flex flex-col h-full">
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1">

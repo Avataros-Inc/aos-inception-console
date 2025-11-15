@@ -3,6 +3,7 @@ import { Container, Nav, Navbar, Card, Form, Row, Col } from 'react-bootstrap';
 import { Button } from '@/Components/Button';
 import ConfigSidebar from '@/Components/ConfigSidebar';
 import { useConfig } from './contexts/ConfigContext';
+import { useTopBarOffset } from './Components/TopBar';
 import { insertRenderJob } from './postgrestAPI';
 import RenderJobVideo from './Components/RenderJobVideo';
 
@@ -12,6 +13,7 @@ const default_text =
 // TextToAvatar Component
 const TextToAvatar = () => {
   const { config, updateConfig } = useConfig();
+  const { topOffset } = useTopBarOffset();
   const [text, setText] = useState(default_text);
   const [currentRenderJob, setCurrentRenderJob] = useState(null);
 
@@ -51,7 +53,7 @@ const TextToAvatar = () => {
           <RenderJobVideo renderJobID={currentRenderJob} />
         </div>
       </div>
-      <ConfigSidebar visual voice a2f />
+      <ConfigSidebar visual voice a2f topOffset={topOffset} />
     </div>
   );
 };

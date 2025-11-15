@@ -13,8 +13,7 @@ import { ComingSoonCard, AlphaCard } from './Components/ComingSoon';
 import { Login, Register, ResetPassword, ResetPasswordConfirm } from './LoginRegister';
 import ApiKeys from './ApiKeys';
 import LiveStreamPage from './LiveStream';
-import { Sidebar } from './Components/Sidebar';
-import { Header } from './Components/Header';
+import { TopBar, useTopBarOffset } from './Components/TopBar';
 import { ConfigProvider } from './contexts/ConfigContext';
 import { AvatarLivestreamProvider } from './contexts/AvatarLivestreamContext';
 
@@ -35,6 +34,61 @@ import {
 import BillingPage from './pages/Billing';
 import CreditsCard from './pages/CreditsCard';
 
+
+// Content wrapper that uses dynamic top offset
+const ConsoleContent = ({ characters }) => {
+  const { topOffset } = useTopBarOffset();
+
+  return (
+    <div
+      className="ml-0 lg:ml-64 pl-4 pr-4 min-h-screen"
+      style={{ backgroundColor: 'var(--bg-primary)', paddingTop: `${topOffset}px` }}
+    >
+      <Routes>
+        <Route path="/" element={<CharPage characters={characters} />} />
+        <Route path="/characters" element={<CharPage characters={characters} />} />
+        <Route path="/text-to-avatar" element={<TextToAvatar />} />
+        <Route path="/audio-to-avatar" element={<AudioToAvatar />} />
+        <Route
+          path="/scenes"
+          element={
+            <div>
+              <h2 className="gradient-text text-3xl font-bold text-white mb-4">My Scenes</h2>
+              <ComingSoonCard />
+            </div>
+          }
+        />
+        <Route
+          path="/scene-editor"
+          element={
+            <div>
+              <h2 className="gradient-text text-3xl font-bold text-white mb-4">Scene Editor</h2>
+              <ComingSoonCard />
+            </div>
+          }
+        />
+        <Route
+          path="/trainer"
+          element={
+            <div>
+              <h2 className="gradient-text text-3xl font-bold text-white mb-4">Avatar Trainer</h2>
+              <ComingSoonCard />
+            </div>
+          }
+        />
+        <Route path="/renders" element={<RenderQueue characters={characters} />} />
+        <Route path="/files" element={<Files />} />
+        <Route path="/conversational-ai" element={<LiveStreamPage />} />
+        <Route path="/conversational-ai/:sessionId" element={<LiveStreamPage />} />
+        <Route path="/apikeys" element={<ApiKeys />} />
+        <Route path="/billing" element={<BillingPage />} />
+        <Route path="/credits" element={<CreditsCard />} />
+        <Route path="/account" element={<AccountSettings />} />
+        <Route path="/fetch-asset/:org/:job/:filename" element={<AssetFetcher />} />
+      </Routes>
+    </div>
+  );
+};
 
 // Main App Component
 const Console = () => {
@@ -68,53 +122,9 @@ const Console = () => {
     <AvatarLivestreamProvider>
       <ConfigProvider characters={characters}>
         <div className="min-h-screen bg-background">
-          <div className="fixed top-3 left-4 text-3xl">HelloAvatarOS</div>
-          <Header />
-          <Sidebar />
-          <div className="ml-0 lg:ml-64 pl-4 pr-4 pt-16 min-h-screen " style={{ backgroundColor: 'var(--bg-primary)' }}>
-            <Routes>
-              <Route path="/" element={<CharPage characters={characters} />} />
-              <Route path="/characters" element={<CharPage characters={characters} />} />
-              <Route path="/text-to-avatar" element={<TextToAvatar />} />
-              <Route path="/audio-to-avatar" element={<AudioToAvatar />} />
-              <Route
-                path="/scenes"
-                element={
-                  <div>
-                    <h2 className="gradient-text text-3xl font-bold text-white mb-4">My Scenes</h2>
-                    <ComingSoonCard />
-                  </div>
-                }
-              />
-              <Route
-                path="/scene-editor"
-                element={
-                  <div>
-                    <h2 className="gradient-text text-3xl font-bold text-white mb-4">Scene Editor</h2>
-                    <ComingSoonCard />
-                  </div>
-                }
-              />
-              <Route
-                path="/trainer"
-                element={
-                  <div>
-                    <h2 className="gradient-text text-3xl font-bold text-white mb-4">Avatar Trainer</h2>
-                    <ComingSoonCard />
-                  </div>
-                }
-              />
-              <Route path="/renders" element={<RenderQueue characters={characters}/>} />
-              <Route path="/files" element={<Files />} />
-              <Route path="/conversational-ai" element={<LiveStreamPage />} />
-              <Route path="/conversational-ai/:sessionId" element={<LiveStreamPage />} />
-              <Route path="/apikeys" element={<ApiKeys />} />
-              <Route path="/billing" element={<BillingPage />} />
-              <Route path="/credits" element={<CreditsCard />} />
-              <Route path="/account" element={<AccountSettings />} />
-              <Route path="/fetch-asset/:org/:job/:filename" element={<AssetFetcher />} />
-            </Routes>
-          </div>
+          <TopBar>
+            <ConsoleContent characters={characters} />
+          </TopBar>
         </div>
       </ConfigProvider>
     </AvatarLivestreamProvider>
