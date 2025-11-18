@@ -26,7 +26,7 @@ const ConfigSidebar = ({
     if (!isLiveSession) {
       if (visual) tabs.push({ key: 'visual', label: 'Visual', component: VisualConfigTab });
       if (voice) tabs.push({ key: 'voice', label: 'Voice', component: VoiceConfigTab });
-      if (a2f) tabs.push({ key: 'a2f', label: 'Config', component: A2FConfigTab });
+      // if (a2f) tabs.push({ key: 'a2f', label: 'Config', component: A2FConfigTab });
       if (llm) tabs.push({ key: 'llm', label: 'LLM Config', component: LLMConfigTab });
     }
 
