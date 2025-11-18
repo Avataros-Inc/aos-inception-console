@@ -44,7 +44,7 @@ function CreditsCard({ isOpen, onClose }) {
 
   // For now, using placeholder values for credits until we get the multiplier
   const totalCredits = 1000; // Will be updated with actual value
-  const usedCredits = totalMinutes * 2; // Simple multiplier for now
+  const usedCredits = totalMinutes * 1; // Simple multiplier for now
   const remainingCredits = Math.max(0, totalCredits - usedCredits);
   const percentage = Math.min(100, Math.max(0, (usedCredits / totalCredits) * 100));
 
