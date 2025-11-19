@@ -4,8 +4,8 @@ import { API_BASE_URL, setSessionObj } from './postgrestAPI';
 import { AlphaCard } from './Components/ComingSoon';
 import { Loader2 } from 'lucide-react';
 
-// Re-export Register from its new location
-export { Register } from './pages/Register';
+// Re-export Register and EmailVerificationPending from their new location
+export { Register, EmailVerificationPending } from './pages/Register';
 
 // Login.jsx
 export const Login = () => {

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../postgrestAPI';
-import { Check, X } from 'lucide-react';
+import { Check, X, Mail } from 'lucide-react';
 
 // Get password validation criteria
 const getPasswordCriteria = (password) => {
@@ -284,6 +284,95 @@ export const Register = () => {
             <a href="#/login" className="text-emerald-400 hover:text-emerald-300 transition-colors">
               Already have an account? Sign in
             </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// EmailVerificationPending component
+export const EmailVerificationPending = () => {
+  const navigate = useNavigate();
+  const [resending, setResending] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
+
+  const handleResendEmail = async () => {
+    try {
+      setResending(true);
+      setSuccessMessage(null);
+      setErrorMessage(null);
+
+      // Import the function dynamically to avoid circular dependencies
+      const { resendVerificationEmail } = await import('../services/billingService');
+      const response = await resendVerificationEmail();
+
+      setSuccessMessage(response.message || 'Verification email sent successfully!');
+    } catch (error) {
+      console.error('Failed to resend verification email:', error);
+
+      // Handle specific error cases
+      if (error.status === 429) {
+        setErrorMessage('Too many requests. Please wait a minute before trying again.');
+      } else if (error.status === 400 && error.message === 'email already verified') {
+        setErrorMessage('Your email is already verified. Please try logging in.');
+      } else {
+        setErrorMessage(error.message || 'Failed to resend verification email. Please try again.');
+      }
+    } finally {
+      setResending(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-8">
+          <div className="text-center mb-6">
+            <div className="mx-auto w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-4">
+              <Mail className="w-8 h-8 text-blue-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Email Verification Required</h2>
+          </div>
+
+          {/* Success Message */}
+          {successMessage && (
+            <div className="bg-emerald-900/20 border border-emerald-700/50 rounded-lg p-3 mb-4">
+              <p className="text-emerald-300 text-sm text-center">{successMessage}</p>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-3 mb-4">
+              <p className="text-red-300 text-sm text-center">{errorMessage}</p>
+            </div>
+          )}
+
+          <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4 mb-6">
+            <p className="text-blue-300 text-sm text-center mb-4">
+              Please check your email inbox (and spam folder) for a verification link. You must verify your email address before you can access your account.
+            </p>
+            <p className="text-blue-300 text-sm text-center">
+              Click the verification link in the email to activate your account, then return here to log in.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={handleResendEmail}
+              disabled={resending}
+              className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {resending ? 'Sending...' : 'Resend Verification Email'}
+            </button>
+            <button
+              onClick={() => navigate('/login')}
+              className="w-full bg-gradient-to-r from-emerald-400 to-green-500 text-slate-900 py-3 rounded-lg font-medium hover:shadow-lg hover:shadow-emerald-400/25 transition-all duration-300"
+            >
+              Go to Login
+            </button>
           </div>
         </div>
       </div>

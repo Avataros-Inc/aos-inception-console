@@ -26,6 +26,14 @@ export function BillingProvider({ children }) {
       setUserPlan(userPlanData);
     } catch (err) {
       console.error('Failed to fetch billing data:', err);
+
+      // Check if this is an email verification error
+      if (err.status === 401 && err.message === 'email verification required') {
+        // Redirect to email verification pending page
+        window.location.hash = '#/email-verification-pending';
+        return;
+      }
+
       setError(err.message);
     } finally {
       setLoading(false);
