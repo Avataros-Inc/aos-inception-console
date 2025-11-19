@@ -4,6 +4,9 @@ import { API_BASE_URL, setSessionObj } from './postgrestAPI';
 import { AlphaCard } from './Components/ComingSoon';
 import { Loader2 } from 'lucide-react';
 
+// Re-export Register from its new location
+export { Register } from './pages/Register';
+
 // Login.jsx
 export const Login = () => {
   const [email, setEmail] = useState('');
@@ -123,40 +126,6 @@ export const Login = () => {
               <small className="text-slate-500">Status: {JSON.stringify(apiStatus)}</small>
             </div>
           )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Register.jsx
-export const Register = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('Registration currently by invite only');
-  const [success, setSuccess] = useState(null);
-  const navigate = useNavigate();
-
-  return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-8">
-          <h2 className="text-center text-2xl font-bold text-white mb-6">Create your account</h2>
-          {error && (
-            <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-3 mb-4">
-              <p className="text-red-300 text-sm">{error}</p>
-            </div>
-          )}
-          {success && (
-            <div className="bg-green-900/20 border border-green-700/50 rounded-lg p-3 mb-4">
-              <p className="text-green-300 text-sm">{success}</p>
-            </div>
-          )}
-          <div className="text-center mt-6">
-            <a href="#/login" className="text-emerald-400 hover:text-emerald-300 transition-colors">
-              Already have an account? Sign in
-            </a>
-          </div>
         </div>
       </div>
     </div>
