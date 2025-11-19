@@ -14,8 +14,25 @@ export function CreditWarningBanner() {
   const isClosed = useMemo(() => searchParams.get('hideCreditWarning') === 'true', [searchParams]);
 
   useEffect(() => {
-    // Only calculate if banner is not already closed and data is available
-    if (isClosed || loading || !usage || !products || !userPlan) {
+    // Only calculate if banner is not already closed and data is loaded
+    if (isClosed || loading) {
+      setShowBanner(false);
+      return;
+    }
+
+    // Check if user has no subscription
+    if (!userPlan || userPlan.subscribed === false) {
+      setCredits({
+        used: 0,
+        total: 0,
+        remaining: 0,
+      });
+      setShowBanner(true);
+      return;
+    }
+
+    // If we don't have products or usage data, don't show banner
+    if (!usage || !products) {
       setShowBanner(false);
       return;
     }
@@ -67,13 +84,19 @@ export function CreditWarningBanner() {
     return null;
   }
 
+  const hasNoSubscription = !userPlan || userPlan.subscribed === false;
+
   return (
     <div data-credit-banner className="fixed top-0 left-0 right-0 z-[60] bg-orange-500 text-white px-4 py-3 shadow-md">
       <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3 flex-1">
           <AlertTriangle size={20} className="flex-shrink-0" />
           <div>
-            {credits.remaining <= 0 ? (
+            {hasNoSubscription ? (
+              <span className="font-semibold">
+                No active subscription! You won't be able to start sessions without an active subscription. Activate a plan to continue using AvatarOS.
+              </span>
+            ) : credits.remaining <= 0 ? (
               <span className="font-semibold">
                 You're out of credits! Upgrade your plan to continue using AvatarOS.
               </span>
@@ -90,7 +113,7 @@ export function CreditWarningBanner() {
             onClick={handleUpgrade}
             className="bg-white text-orange-500 px-4 py-1.5 rounded font-medium hover:bg-orange-50 transition-colors flex-shrink-0"
           >
-            Upgrade Now
+            {hasNoSubscription ? 'Activate Plan' : 'Upgrade Now'}
           </button>
           <button
             onClick={handleClose}

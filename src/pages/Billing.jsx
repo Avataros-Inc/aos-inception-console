@@ -42,12 +42,33 @@ const BillingPage = () => {
     setSelectedPlan(null);
   };
 
+  const hasNoSubscription = !userPlan || userPlan.subscribed === false;
+
   return (
     <Elements stripe={stripePromise}>
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Billing & Subscription</h1>
         </div>
+
+        {hasNoSubscription && !selectedPlan && (
+          <div className="mb-6 bg-orange-500/20 border-2 border-orange-500 rounded-lg p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 mt-1">
+                <svg className="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-orange-500 mb-2">No Active Subscription</h3>
+                <p className="text-gray-300">
+                  You currently don't have an active subscription. Please select a plan below to activate your account and start using AvatarOS.
+                  Without an active subscription, you won't be able to start sessions or create content.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {selectedPlan ? (
           <div className="max-w-2xl mx-auto bg-gray-800 rounded-lg shadow-lg p-6">
@@ -65,7 +86,7 @@ const BillingPage = () => {
           <>
             {/* Subscription Plans */}
             <div>
-              <h2 className="text-xl font-semibold mb-4">Choose a Plan</h2>
+              <h2 className="text-xl font-semibold mb-4">{hasNoSubscription ? 'Select a Plan to Get Started' : 'Choose a Plan'}</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[...plans].reverse().map((plan) => (
                   <PlanCard key={plan.id} plan={plan} onSelect={handlePlanSelect} userPlan={userPlan} />
@@ -85,10 +106,11 @@ const PlanCard = ({ plan, onSelect, userPlan }) => {
   const currency = plan.default_price?.currency?.toUpperCase() || 'USD';
   const features = plan.metadata || {};
   const name = plan.name || '';
+  const hasNoSubscription = !userPlan || userPlan.subscribed === false;
   const isCurrentPlan = userPlan?.PlanID === plan.default_price?.id;
   const currentPlanAmount = userPlan?.PriceUnitAmount || 0;
-  const isUpgrade = userPlan && !isCurrentPlan && plan.default_price?.unit_amount > currentPlanAmount;
-  const isDowngrade = userPlan && !isCurrentPlan && plan.default_price?.unit_amount < currentPlanAmount;
+  const isUpgrade = userPlan && userPlan.subscribed && !isCurrentPlan && plan.default_price?.unit_amount > currentPlanAmount;
+  const isDowngrade = userPlan && userPlan.subscribed && !isCurrentPlan && plan.default_price?.unit_amount < currentPlanAmount;
 
   // Check if subscription is canceled
   const isCanceled = userPlan?.Status === 'canceled';
@@ -129,12 +151,17 @@ const PlanCard = ({ plan, onSelect, userPlan }) => {
         </div>
       )}
 
-      {!isCurrentPlan && isUpgrade && (
+      {!isCurrentPlan && hasNoSubscription && (
+        <div className="absolute -top-3 right-4 bg-emerald-400 text-gray-800 text-xs font-bold px-3 py-1 rounded-full">
+          Activate
+        </div>
+      )}
+      {!isCurrentPlan && !hasNoSubscription && isUpgrade && (
         <div className="absolute -top-3 right-4 bg-yellow-400 text-gray-800 text-xs font-bold px-3 py-1 rounded-full">
           Upgrade
         </div>
       )}
-      {!isCurrentPlan && isDowngrade && (
+      {!isCurrentPlan && !hasNoSubscription && isDowngrade && (
         <div className="absolute -top-3 right-4 bg-blue-400 text-gray-800 text-xs font-bold px-2 py-1 rounded-full">
           Downgrade
         </div>

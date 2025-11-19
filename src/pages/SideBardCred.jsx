@@ -6,6 +6,8 @@ function CreditsCardCred() {
   const { products: plans, usage, userPlan, loading } = useBilling();
   const [showCreditsModal, setShowCreditsModal] = useState(false);
 
+  const hasNoSubscription = !userPlan || userPlan.subscribed === false;
+
   // Calculate total usage from the API data
   const calculateTotalUsage = () => {
     if (!usage || !Array.isArray(usage)) return { totalJobs: 0, totalMinutes: 0 };
@@ -56,7 +58,7 @@ function CreditsCardCred() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <span className="text-white text-sm font-medium">Usage/Mon</span>
+            <span className="text-white text-sm font-medium">{hasNoSubscription ? 'Subscription' : 'Usage/Mon'}</span>
           </div>
           <button
             className="justify-center rounded font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent-mint focus:ring-offset-2 focus:ring-offset-bg-primary disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-accent-mint to-emerald-600 text-bg-primary hover:from-emerald-600 hover:to-accent-mint hover:shadow-lg hover:shadow-accent-mint/20 px-2 py-1 flex items-center text-sm gap-2"
@@ -65,26 +67,36 @@ function CreditsCardCred() {
               window.location.hash = '#/console/billing';
             }}
           >
-            Upgrade
+            {hasNoSubscription ? 'Activate' : 'Upgrade'}
           </button>
         </div>
 
-        {/* Usage Summary */}
-        <div className="space-y-2">
-          {/* Credits Used with Progress Bar */}
-          <div className="space-y-1">
-            <span className="text-white text-sm">Credits Used</span>
-            <div className="text-white font-semibold text-lg">
-              {usedCredits.toLocaleString()} / {totalCredits.toLocaleString()}
+        {/* Usage Summary or No Subscription Message */}
+        {hasNoSubscription ? (
+          <div className="space-y-2">
+            <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-4">
+              <p className="text-orange-300 text-sm">
+                No active subscription. Activate a plan to start using AvatarOS.
+              </p>
             </div>
           </div>
-          <div className="w-full bg-gray-700 rounded-full h-2">
-            <div
-              className="bg-[#74ecc8] h-2 rounded-full transition-all duration-500"
-              style={{ width: `${percentage}%` }}
-            />
+        ) : (
+          <div className="space-y-2">
+            {/* Credits Used with Progress Bar */}
+            <div className="space-y-1">
+              <span className="text-white text-sm">Credits Used</span>
+              <div className="text-white font-semibold text-lg">
+                {usedCredits.toLocaleString()} / {totalCredits.toLocaleString()}
+              </div>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-[#74ecc8] h-2 rounded-full transition-all duration-500"
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </div>
       <CreditsCard
         isOpen={showCreditsModal}

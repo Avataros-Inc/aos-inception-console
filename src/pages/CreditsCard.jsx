@@ -8,6 +8,9 @@ function CreditsCard({ isOpen, onClose, plans: plansProp, usage: usageProp }) {
   const plans = plansProp || billingContext.products;
   const usage = usageProp || billingContext.usage;
   const loading = billingContext.loading;
+  const userPlan = billingContext.userPlan;
+
+  const hasNoSubscription = !userPlan || userPlan.subscribed === false;
 
   // Calculate total usage from the API data
   const calculateTotalUsage = () => {
@@ -133,7 +136,7 @@ function CreditsCard({ isOpen, onClose, plans: plansProp, usage: usageProp }) {
                   if (onClose) onClose();
                 }}
               >
-                Upgrade
+                {hasNoSubscription ? 'Activate' : 'Upgrade'}
               </button>
             </div>
           </div>
