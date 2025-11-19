@@ -16,6 +16,7 @@ import LiveStreamPage from './LiveStream';
 import { TopBar, useTopBarOffset } from './Components/TopBar';
 import { ConfigProvider } from './contexts/ConfigContext';
 import { AvatarLivestreamProvider } from './contexts/AvatarLivestreamContext';
+import { BillingProvider } from './contexts/BillingContext';
 
 import {
   Home,
@@ -121,11 +122,13 @@ const Console = () => {
   return (
     <AvatarLivestreamProvider>
       <ConfigProvider characters={characters}>
-        <div className="min-h-screen bg-background">
-          <TopBar>
-            <ConsoleContent characters={characters} />
-          </TopBar>
-        </div>
+        <BillingProvider>
+          <div className="min-h-screen bg-background">
+            <TopBar>
+              <ConsoleContent characters={characters} />
+            </TopBar>
+          </div>
+        </BillingProvider>
       </ConfigProvider>
     </AvatarLivestreamProvider>
   );

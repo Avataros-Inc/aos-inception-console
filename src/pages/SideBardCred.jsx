@@ -1,37 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { getProducts, getUsage, getUserPlan } from '../services/billingService';
+import React, { useState } from 'react';
+import { useBilling } from '../contexts/BillingContext';
 import CreditsCard from './CreditsCard';
 
 function CreditsCardCred() {
-  const [plans, setPlans] = useState([]);
-  const [usage, setUsage] = useState(null);
-  const [userPlan, setUserPlan] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { products: plans, usage, userPlan, loading } = useBilling();
   const [showCreditsModal, setShowCreditsModal] = useState(false);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [productsData, usageData, userPlanData] = await Promise.all([
-          getProducts(),
-          getUsage(),
-          getUserPlan(),
-        ]);
-        setPlans(productsData);
-        setUsage(usageData);
-        setUserPlan(userPlanData);
-      } catch (err) {
-        console.error('Error fetching billing data:', err);
-        setError('Failed to load billing information');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
 
   // Calculate total usage from the API data
   const calculateTotalUsage = () => {
@@ -113,7 +86,12 @@ function CreditsCardCred() {
           </div>
         </div>
       </div>
-      <CreditsCard isOpen={showCreditsModal} onClose={() => setShowCreditsModal(false)} />
+      <CreditsCard
+        isOpen={showCreditsModal}
+        onClose={() => setShowCreditsModal(false)}
+        plans={plans}
+        usage={usage}
+      />
     </div>
   );
 }

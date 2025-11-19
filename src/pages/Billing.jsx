@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
-import { getProducts, getUsage, getUserPlan } from '../services/billingService';
+import { useBilling } from '../contexts/BillingContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../Components/Card';
 import PaymentForm from '../Components/PaymentForm';
 
@@ -9,51 +9,13 @@ import PaymentForm from '../Components/PaymentForm';
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 const BillingPage = () => {
-  const [plans, setPlans] = useState([]);
-  const [usage, setUsage] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { products: plans, usage, userPlan, loading, refetch } = useBilling();
   const [isCreditsVisible, setIsCreditsVisible] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
-  const [userPlan, setUserPlan] = useState(null);
-  // const [clientSecret, setClientSecret] = useState('');
-
-  const getPlan = async () => {
-    try {
-      const userPlan = await getUserPlan();
-      if (userPlan && userPlan.subscribed) {
-        setUserPlan(userPlan);
-      }
-    } catch (error) {
-      console.error('Error fetching user plan:', error);
-    }
-  };
-
-  useEffect(() => {
-    getPlan();
-  }, []);
 
   const toggleCreditsVisibility = () => {
     setIsCreditsVisible(!isCreditsVisible);
   };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [productsData, usageData] = await Promise.all([getProducts(), getUsage()]);
-        setPlans(productsData);
-        setUsage(usageData);
-      } catch (err) {
-        console.error('Error fetching billing data:', err);
-        setError('Failed to load billing information');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
 
   if (loading) {
     return (
@@ -69,8 +31,8 @@ const BillingPage = () => {
 
   const handlePaymentSuccess = async (paymentIntent) => {
     console.log('Payment successful:', paymentIntent);
-    // Refresh user plan data after successful payment
-    await getPlan();
+    // Refresh billing data after successful payment
+    await refetch();
     setSelectedPlan(null);
     // You can add additional success handling here, like showing a success message
     // or redirecting to a success page

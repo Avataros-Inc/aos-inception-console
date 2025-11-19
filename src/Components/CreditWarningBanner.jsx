@@ -1,77 +1,56 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AlertTriangle, X } from 'lucide-react';
-import { getProducts, getUsage, getUserPlan } from '../services/billingService';
+import { useBilling } from '../contexts/BillingContext';
 
 export function CreditWarningBanner() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [showBanner, setShowBanner] = useState(false);
   const [credits, setCredits] = useState({ used: 0, total: 0, remaining: 0 });
-  const [loading, setLoading] = useState(true);
+  const { products, usage, userPlan, loading } = useBilling();
 
   // Check if banner is closed via query param (memoized to prevent recreating on every render)
   const isClosed = useMemo(() => searchParams.get('hideCreditWarning') === 'true', [searchParams]);
 
   useEffect(() => {
-    // Only fetch if banner is not already closed
-    if (isClosed) {
-      setLoading(false);
+    // Only calculate if banner is not already closed and data is available
+    if (isClosed || loading || !usage || !products || !userPlan) {
       setShowBanner(false);
       return;
     }
 
-    const fetchCredits = async () => {
-      try {
-        setLoading(true);
-        const [productsData, usageData, userPlanData] = await Promise.all([
-          getProducts(),
-          getUsage(),
-          getUserPlan(),
-        ]);
+    // Calculate total usage
+    const totalMinutes = usage?.reduce(
+      (acc, item) => acc + (item.billed_minutes || 0),
+      0
+    ) || 0;
 
-        // Calculate total usage
-        const totalMinutes = usageData?.reduce(
-          (acc, item) => acc + (item.billed_minutes || 0),
-          0
-        ) || 0;
+    // Get monthly credits from user's plan
+    let totalCredits = 1000; // Default fallback
+    if (userPlan && products && products.length > 0) {
+      const userProduct = products.find(
+        (product) => product.id === userPlan.ProductID
+      );
 
-        // Get monthly credits from user's plan
-        let totalCredits = 1000; // Default fallback
-        if (userPlanData && productsData && productsData.length > 0) {
-          const userProduct = productsData.find(
-            (product) => product.id === userPlanData.ProductID
-          );
-
-          if (userProduct?.metadata?.monthly_credits) {
-            totalCredits = parseInt(userProduct.metadata.monthly_credits, 10);
-          }
-        }
-
-        const usedCredits = totalMinutes;
-        const remainingCredits = Math.max(0, totalCredits - usedCredits);
-
-        setCredits({
-          used: usedCredits,
-          total: totalCredits,
-          remaining: remainingCredits,
-        });
-
-        // Show banner if credits are exhausted or very low (less than 5%)
-        const shouldShow = remainingCredits <= 0 || remainingCredits < totalCredits * 0.05;
-        setShowBanner(shouldShow);
-      } catch (err) {
-        console.error('Error fetching credits:', err);
-        // Don't show banner if we can't fetch data
-        setShowBanner(false);
-      } finally {
-        setLoading(false);
+      if (userProduct?.metadata?.monthly_credits) {
+        totalCredits = parseInt(userProduct.metadata.monthly_credits, 10);
       }
-    };
+    }
 
-    fetchCredits();
-    // Only depend on isClosed - fetch when component mounts or when banner is reopened
-  }, [isClosed]);
+    const usedCredits = totalMinutes;
+    const remainingCredits = Math.max(0, totalCredits - usedCredits);
+
+    setCredits({
+      used: usedCredits,
+      total: totalCredits,
+      remaining: remainingCredits,
+    });
+
+    // Show banner if credits are exhausted or very low (less than 5%)
+    const shouldShow = remainingCredits <= 0 || remainingCredits < totalCredits * 0.05;
+    setShowBanner(shouldShow);
+  }, [isClosed, loading, usage, products, userPlan]);
 
   const handleClose = useCallback(() => {
     // Set query param to hide the banner

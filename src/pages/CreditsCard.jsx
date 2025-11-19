@@ -1,31 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { getProducts, getUsage } from '../services/billingService';
+import React, { useState } from 'react';
+import { useBilling } from '../contexts/BillingContext';
 import ReactDOM from 'react-dom';
 
-function CreditsCard({ isOpen, onClose }) {
-  const [plans, setPlans] = useState([]);
-  const [usage, setUsage] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [productsData, usageData] = await Promise.all([getProducts(), getUsage()]);
-        setPlans(productsData);
-        setUsage(usageData);
-      } catch (err) {
-        console.error('Error fetching billing data:', err);
-        setError('Failed to load billing information');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [isOpen]);
+function CreditsCard({ isOpen, onClose, plans: plansProp, usage: usageProp }) {
+  // Use props if provided (from SideBardCred), otherwise use context (from route)
+  const billingContext = useBilling();
+  const plans = plansProp || billingContext.products;
+  const usage = usageProp || billingContext.usage;
+  const loading = billingContext.loading;
 
   // Calculate total usage from the API data
   const calculateTotalUsage = () => {
